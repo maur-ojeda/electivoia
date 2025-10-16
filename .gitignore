@@ -1,0 +1,64 @@
+# =============
+# Reflex + Python
+# =============
+.web/
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# =============
+# Entorno virtual
+# =============
+.venv/
+venv/
+ENV/
+
+# =============
+# Archivos de configuración local
+# =============
+.env
+.env.local
+.env.*.local
+
+# =============
+# Base de datos local (si usas SQLite en desarrollo)
+# =============
+*.db
+*.sqlite3
+
+# =============
+# IDE / Editores
+# =============
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# =============
+# Documentación local (opcional)
+# =============
+# Quita esta línea si quieres subir la documentación a GitHub
+documentacion/
+
+# =============
+# Logs y estados de Reflex
+# =============
+.states/
+rx.lock
