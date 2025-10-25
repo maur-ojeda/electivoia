@@ -1,0 +1,46 @@
+{% extends 'student/base.html.twig' %}
+
+{% block content %}
+	<h1 class="text-2xl font-bold mb-6">Mi Perfil de Intereses</h1>
+
+	<p class="mb-6 text-gray-600">Completa este formulario para recibir recomendaciones personalizadas.</p>
+
+	<form method="post" class="space-y-6 max-w-2xl">
+		{% set interests = profile.interests ?? {} %}
+
+		<div>
+			<label class="block text-sm font-medium text-gray-700 mb-2">Arte y Creatividad</label>
+			<input type="range" name="arte" min="0" max="5" value="{{ interests['arte'] ?? 0 }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+			<span class="text-sm text-gray-500">0 (nada) – 5 (mucho)</span>
+		</div>
+
+		<div>
+			<label class="block text-sm font-medium text-gray-700 mb-2">Ciencia y Naturaleza</label>
+			<input type="range" name="ciencia" min="0" max="5" value="{{ interests['ciencia'] ?? 0 }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+			<span class="text-sm text-gray-500">0 (nada) – 5 (mucho)</span>
+		</div>
+
+		<div>
+			<label class="block text-sm font-medium text-gray-700 mb-2">Tecnología e Informática</label>
+			<input type="range" name="tecnologia" min="0" max="5" value="{{ interests['tecnologia'] ?? 0 }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+			<span class="text-sm text-gray-500">0 (nada) – 5 (mucho)</span>
+		</div>
+
+		<div>
+			<label class="block text-sm font-medium text-gray-700 mb-2">Deporte y Actividad Física</label>
+			<input type="range" name="deporte" min="0" max="5" value="{{ interests['deporte'] ?? 0 }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+			<span class="text-sm text-gray-500">0 (nada) – 5 (mucho)</span>
+		</div>
+
+		<div>
+			<label class="block text-sm font-medium text-gray-700 mb-2">Música</label>
+			<input type="range" name="musica" min="0" max="5" value="{{ interests['musica'] ?? 0 }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+			<span class="text-sm text-gray-500">0 (nada) – 5 (mucho)</span>
+		</div>
+
+		<button type="submit" class="px-6 py-2 bg-primary text-white font-medium rounded hover:bg-blue-700">
+			Guardar perfil
+		</button>
+		<a href="{{ path('student_courses') }}" class="ml-4 text-gray-600 hover:underline">Cancelar</a>
+	</form>
+{% endblock %}
