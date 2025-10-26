@@ -20,6 +20,8 @@ security:
                 login_path: app_login
                 check_path: app_login
                 enable_csrf: true
+                # AÑADIR ESTA LÍNEA para usar el manejador de éxito
+                success_handler: App\Security\LoginSuccessHandler
             logout:
                 path: app_logout
                 # where to redirect after logout
@@ -34,8 +36,10 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        - { path: ^/student, roles: ROLE_STUDENT }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/teacher, roles: ROLE_TEACHER }
+        - { path: ^/student, roles: ROLE_STUDENT }
+        - { path: ^/guardian, roles: ROLE_GUARDIAN }
         - { path: ^/login, roles: PUBLIC_ACCESS }
 
 when@test:

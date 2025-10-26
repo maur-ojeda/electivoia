@@ -50,6 +50,12 @@ class Course
     #[ORM\Column(nullable: true)]
     private ?array $targetGrades = null;
 
+    /**
+     * @var Collection<int, Attendance>
+     */
+    #[ORM\OneToMany(targetEntity: Attendance::class, mappedBy: 'course')]
+    private Collection $attendances;
+
 
     public function __construct()
     {
@@ -57,6 +63,7 @@ class Course
         $this->currentEnrollment = 0;
         $this->isActive = true;
         $this->enrollments = new ArrayCollection();
+        $this->attendances = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -191,6 +198,36 @@ class Course
     public function setTargetGrades(?array $targetGrades): static
     {
         $this->targetGrades = $targetGrades;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Attendance>
+     */
+    public function getAttendances(): Collection
+    {
+        return $this->attendances;
+    }
+
+    public function addAttendance(Attendance $attendance): static
+    {
+        if (!$this->attendances->contains($attendance)) {
+            $this->attendances->add($attendance);
+            $attendance->setCourse($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttendance(Attendance $attendance): static
+    {
+        if ($this->attendances->removeElement($attendance)) {
+            // set the owning side to null (unless already changed)
+            if ($attendance->getCourse() === $this) {
+                $attendance->setCourse(null);
+            }
+        }
 
         return $this;
     }

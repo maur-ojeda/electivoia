@@ -35,6 +35,16 @@
 								{% endfor %}
 							</ul>
 						{% endif %}
+
+
+						<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+							Exportar alumnos
+						</a>
+
+						<a href="{{ path('teacher_attendance', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+							Pasar lista
+						</a>
+
 					</div>
 				</div>
 			{% endfor %}

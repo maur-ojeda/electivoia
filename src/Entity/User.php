@@ -63,13 +63,47 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $grade = null;
 
-    // Se eliminó la propiedad Collection $enrollments duplicada y conflictiva.
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\ManyToMany(targetEntity: self::class, inversedBy: 'guardians')]
+    private Collection $guardianStudents;
+
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\ManyToMany(targetEntity: self::class, mappedBy: 'guardianStudents')]
+    private Collection $guardians;
+
+    /**
+     * @var Collection<int, Attendance>
+     */
+    #[ORM\OneToMany(targetEntity: Attendance::class, mappedBy: 'student')]
+    private Collection $attendances;
+
+    #[ORM\Column(options: ['default' => true])]
+    private bool $active = true;
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+
+    public function setActive(bool $active): self
+    {
+        $this->active = $active;
+        return $this;
+    }
 
     public function __construct()
     {
         $this->coursesAsTeacher = new ArrayCollection();
         $this->enrollmentsAsStudent = new ArrayCollection();
         // Se eliminó la inicialización de $this->enrollments
+        $this->guardianStudents = new ArrayCollection();
+        $this->guardians = new ArrayCollection();
+        $this->attendances = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -104,10 +138,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
+        if (!$this->active) {
+            return []; // Usuario desactivado no tiene roles
+        }
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
@@ -272,6 +307,87 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setGrade(?string $grade): static
     {
         $this->grade = $grade;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getGuardianStudents(): Collection
+    {
+        return $this->guardianStudents;
+    }
+
+    public function addGuardianStudent(self $guardianStudent): static
+    {
+        if (!$this->guardianStudents->contains($guardianStudent)) {
+            $this->guardianStudents->add($guardianStudent);
+        }
+
+        return $this;
+    }
+
+    public function removeGuardianStudent(self $guardianStudent): static
+    {
+        $this->guardianStudents->removeElement($guardianStudent);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getGuardians(): Collection
+    {
+        return $this->guardians;
+    }
+
+    public function addGuardian(self $guardian): static
+    {
+        if (!$this->guardians->contains($guardian)) {
+            $this->guardians->add($guardian);
+            $guardian->addGuardianStudent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeGuardian(self $guardian): static
+    {
+        if ($this->guardians->removeElement($guardian)) {
+            $guardian->removeGuardianStudent($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Attendance>
+     */
+    public function getAttendances(): Collection
+    {
+        return $this->attendances;
+    }
+
+    public function addAttendance(Attendance $attendance): static
+    {
+        if (!$this->attendances->contains($attendance)) {
+            $this->attendances->add($attendance);
+            $attendance->setStudent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttendance(Attendance $attendance): static
+    {
+        if ($this->attendances->removeElement($attendance)) {
+            // set the owning side to null (unless already changed)
+            if ($attendance->getStudent() === $this) {
+                $attendance->setStudent(null);
+            }
+        }
 
         return $this;
     }

@@ -6,7 +6,7 @@ use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Service\EnrollmentService;
 use App\Entity\InterestProfile;
-use App\Service\RecommendationService; //<-ya está agregado
+use App\Service\RecommendationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,56 +14,18 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-
-
-
-
 #[Route('/student', name: 'student_')]
 #[IsGranted('ROLE_STUDENT')]
 class StudentController extends AbstractController
 {
-
     private $enrollmentService;
+
     public function __construct(EnrollmentService $enrollmentService)
     {
         $this->enrollmentService = $enrollmentService;
     }
 
-
-    /*
-    #[Route('/courses', name: 'courses')]
-    public function courses(
-        EntityManagerInterface $em,
-        RecommendationService $recommendationService
-    ): Response {
-        $student = $this->getUser();
-        $courses = $em->getRepository(Course::class)->findBy(['isActive' => true]);
-        $enrollments = $em->getRepository(Enrollment::class)->findBy(['student' => $student]);
-
-
-        // Contar inscripciones por curso
-        $enrollmentCounts = [];
-        foreach ($courses as $course) {
-            $enrollmentCounts[$course->getId()] = $em->getRepository(Enrollment::class)->count(['course' => $course]);
-        }
-
-        // Cursos ya inscritos
-        $enrolledCourseIds = array_map(fn($e) => $e->getCourse()->getId(), $enrollments);
-
-        // Recomendaciones (si tiene perfil)
-        $recommendations = [];
-        if ($student->getInterestProfile()) {
-            $recommendations = $recommendationService->getForStudent($student); // ← Sin $this->get()
-        }
-
-        return $this->render('student/courses.html.twig', [
-            'courses' => $courses,
-            'enrollmentCounts' => $enrollmentCounts,
-            'enrolledCourseIds' => $enrolledCourseIds,
-            'recommendations' => $recommendations,
-        ]);
-    }*/
-
+    //---------------
 
     #[Route('/courses', name: 'courses')]
     public function courses(
@@ -74,24 +36,45 @@ class StudentController extends AbstractController
         $student = $this->getUser();
         $showAvailableOnly = (bool) $request->query->get('available', false);
 
+        // Iniciar la consulta base
         $qb = $em->getRepository(Course::class)->createQueryBuilder('c')
             ->where('c.isActive = true');
-        // Filtrar por grado si existe
-        if ($studentGrade = $student->getGrade()) {
-            /*
-            $qb->andWhere('c.targetGrade = :grade OR c.targetGrade IS NULL')
-                ->setParameter('grade', $studentGrade);
-            */
-            $qb->andWhere('JSON_CONTAINS(c.targetGrades, :grade) = true OR JSON_LENGTH(c.targetGrades) = 0')
-                ->setParameter('grade', '"' . $studentGrade . '"');
-        }
 
-        // Filtrar por disponibilidad
+        // --- FILTRAR POR DISPONIBILIDAD (si aplica) ---
         if ($showAvailableOnly) {
-            $qb->andWhere('(SELECT COUNT(e) FROM App\Entity\Enrollment e WHERE e.course = c.id) < c.maxCapacity');
+            $qb
+                ->leftJoin('c.enrollments', 'e')
+                ->leftJoin('c.teacher', 't')
+                ->addSelect('t')
+                ->groupBy('c.id')
+                ->addGroupBy('t.id')
+                ->having('c.maxCapacity > COUNT(e.id)');
+        } else {
+            // Si no se filtra por disponibilidad, solo seleccionamos c y t si se necesita t
+            $qb->leftJoin('c.teacher', 't')
+                ->addSelect('t');
+        }
+        // ------------------------------------------------
+
+        // Ejecutar la consulta base (filtrada por isActive y disponibilidad)
+        $allCourses = $qb->getQuery()->getResult();
+
+        // Filtrar por grado del estudiante en PHP
+        $studentGrade = $student->getGrade(); // Asumiendo que getGrade() devuelve un string como '1B', '2M', etc.
+        if ($studentGrade) {
+            $filteredCourses = array_filter($allCourses, function (Course $course) use ($studentGrade) {
+                $targetGrades = $course->getTargetGrades(); // Devuelve el array PHP
+                // Verificar si el grado del estudiante está en el array de grados objetivo
+                // Asegurarse de que targetGrades no sea null antes de usar in_array
+                return $targetGrades !== null && in_array($studentGrade, $targetGrades);
+            });
+            $courses = array_values($filteredCourses); // Reindexar el array si es necesario
+        } else {
+            // Si el estudiante no tiene grado, no debería ver ningún curso basado en este filtro
+            $courses = [];
         }
 
-        $courses = $qb->getQuery()->getResult();
+        // Obtener inscripciones del estudiante
         $enrollments = $em->getRepository(Enrollment::class)->findBy(['student' => $student]);
 
         // Contar inscripciones por curso
@@ -100,22 +83,29 @@ class StudentController extends AbstractController
             $enrollmentCounts[$course->getId()] = $em->getRepository(Enrollment::class)->count(['course' => $course]);
         }
 
-        // Cursos ya inscritos
-        $enrolledCourseIds = array_map(fn($e) => $e->getCourse()->getId(), $enrollments);
+        // --- Obtener recomendaciones ---
+        // Usar el método correcto del servicio
+        $recommendations = $recommendationService->getForStudentWithReasons($student);
 
-        // Recomendaciones con razones
-        $recommendations = [];
-        if ($student->getInterestProfile()) {
-            $recommendations = $recommendationService->getForStudentWithReasons($student);
-        }
+        // También necesitas pasar la lista de IDs de cursos en los que el estudiante está inscrito
+        // para mostrar correctamente el botón "Inscrito".
+        $enrolledCourseIds = array_map(function (Enrollment $enrollment) {
+            return $enrollment->getCourse()->getId();
+        }, $enrollments);
 
         return $this->render('student/courses.html.twig', [
+            'student' => $student,
             'courses' => $courses,
+            'enrollments' => $enrollments,
             'enrollmentCounts' => $enrollmentCounts,
-            'enrolledCourseIds' => $enrolledCourseIds,
-            'recommendations' => $recommendations,
+            'showAvailableOnly' => $showAvailableOnly,
+            'recommendations' => $recommendations, // <-- Variable añadida
+            'enrolledCourseIds' => $enrolledCourseIds, // <-- Variable añadida
         ]);
     }
+
+
+    //---------------
 
     #[Route('/enrollments', name: 'enrollments')]
     public function enrollments(EntityManagerInterface $em): Response
@@ -128,20 +118,17 @@ class StudentController extends AbstractController
         ]);
     }
 
-
     #[Route('/enroll/{id}', name: 'enroll', methods: ['POST'])]
     public function enroll(Course $course, EntityManagerInterface $em): Response
     {
         $student = $this->getUser();
         $now = new \DateTimeImmutable();
 
-        // Validar: fecha límite
         if ($course->getEnrollmentDeadline() && $now > $course->getEnrollmentDeadline()) {
             $this->addFlash('error', 'La inscripción para este curso ya está cerrada.');
             return $this->redirectToRoute('student_courses');
         }
 
-        // Validar: ya inscrito
         $existing = $em->getRepository(Enrollment::class)->findOneBy([
             'student' => $student,
             'course' => $course
@@ -151,10 +138,8 @@ class StudentController extends AbstractController
             return $this->redirectToRoute('student_courses');
         }
 
-        // Contar inscripciones actuales
         $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
         if ($currentCount < $course->getMaxCapacity()) {
-            // Hay cupo → inscribir
             $enrollment = new Enrollment();
             $enrollment->setStudent($student);
             $enrollment->setCourse($course);
@@ -163,14 +148,12 @@ class StudentController extends AbstractController
             $em->flush();
             $this->addFlash('success', '¡Inscripción exitosa!');
         } else {
-            // Sin cupo → prioridad por promedio
             $studentGrade = $student->getAverageGrade();
             if ($studentGrade === null) {
                 $this->addFlash('error', 'No puedes inscribirte sin promedio registrado.');
                 return $this->redirectToRoute('student_courses');
             }
 
-            // Buscar estudiante con menor promedio
             $lowestEnrollment = $em->createQuery('
                 SELECT e FROM App\Entity\Enrollment e
                 JOIN e.student s
@@ -222,12 +205,55 @@ class StudentController extends AbstractController
             $profile->setInterests($interests);
             $em->persist($profile);
             $em->flush();
-            $this->addFlash('success', 'Perfil de intereses actualizado.');
+            $this->addFlash('success', 'Perfil actualizado. Recomendaciones actualizadas.');
             return $this->redirectToRoute('student_courses');
         }
 
         return $this->render('student/profile.html.twig', [
             'profile' => $profile,
         ]);
+    }
+
+    #[Route('/unenroll/{id}', name: 'unenroll', methods: ['POST'])]
+    #[IsGranted('ROLE_STUDENT')]
+    public function unenroll(Course $course, EntityManagerInterface $em): Response
+    {
+        $student = $this->getUser();
+        $enrollment = $em->getRepository(Enrollment::class)->findOneBy([
+            'student' => $student,
+            'course' => $course
+        ]);
+
+        if (!$enrollment) {
+            $this->addFlash('error', 'No estás inscrito en este curso.');
+            return $this->redirectToRoute('student_courses');
+        }
+
+        $em->remove($enrollment);
+        $em->flush();
+        $this->addFlash('success', 'Te has dado de baja del curso.');
+        return $this->redirectToRoute('student_enrollments');
+    }
+
+    #[Route('/update-interests', name: 'update_interests', methods: ['POST'])]
+    #[IsGranted('ROLE_STUDENT')]
+    public function updateInterests(Request $request, EntityManagerInterface $em): Response
+    {
+        $student = $this->getUser();
+        $profile = $student->getInterestProfile() ?? new InterestProfile();
+        $profile->setStudent($student);
+
+        $interests = [
+            'arte' => (int) $request->request->get('arte', 0),
+            'ciencia' => (int) $request->request->get('ciencia', 0),
+            'tecnologia' => (int) $request->request->get('tecnologia', 0),
+            'deporte' => (int) $request->request->get('deporte', 0),
+            'musica' => (int) $request->request->get('musica', 0),
+        ];
+        $profile->setInterests($interests);
+        $em->persist($profile);
+        $em->flush();
+
+        return $this->redirectToRoute('student_courses');
     }
 }
