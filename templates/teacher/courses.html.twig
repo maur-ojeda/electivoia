@@ -1,0 +1,53 @@
+{% extends 'student/base.html.twig' %}
+
+{% block title %}Mis Cursos - Profesor
+{% endblock %}
+
+{% block content %}
+	<h1 class="text-2xl font-bold mb-6">Mis Cursos Asignados</h1>
+
+	{% if courses|length == 0 %}
+		<p class="text-gray-600">No tienes cursos asignados.</p>
+	{% else %}
+		<div class="space-y-6">
+			{% for course in courses %}
+				<div class="bg-white rounded-xl shadow-md overflow-hidden">
+					<div class="p-5">
+						<h2 class="text-xl font-bold text-gray-900">{{ course.name }}</h2>
+						<p class="text-gray-600 mt-1">{{ course.schedule }}</p>
+						<p class="text-sm text-gray-500 mt-2">Cupo:
+							{{ enrollmentsByCourse[course.id]|length }}
+							/
+							{{ course.maxCapacity }}</p>
+
+						<h3 class="font-semibold mt-4 mb-2">Alumnos inscritos ({{ enrollmentsByCourse[course.id]|length }}):</h3>
+						{% if enrollmentsByCourse[course.id]|length == 0 %}
+							<p class="text-gray-500 text-sm">No hay alumnos inscritos aún.</p>
+						{% else %}
+							<ul class="list-disc list-inside text-sm text-gray-700">
+								{% for enrollment in enrollmentsByCourse[course.id] %}
+									<li>{{ enrollment.student.email }}
+										{% if enrollment.student.averageGrade is not null %}
+											(Promedio:
+											{{ enrollment.student.averageGrade }})
+										{% endif %}
+									</li>
+								{% endfor %}
+							</ul>
+						{% endif %}
+
+
+						<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+							Exportar alumnos
+						</a>
+
+						<a href="{{ path('teacher_attendance', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+							Pasar lista
+						</a>
+
+					</div>
+				</div>
+			{% endfor %}
+		</div>
+	{% endif %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'student/base.html.twig' %}
+
+{% block content %}
+	<h1 class="text-2xl font-bold mb-6">Mis Cursos Inscritos</h1>
+
+	{% if enrollments|length == 0 %}
+		<p class="text-gray-600">No estás inscrito en ningún curso aún.</p>
+		<a href="{{ path('student_courses') }}" class="mt-4 inline-block text-blue-600 hover:underline">Explorar cursos disponibles</a>
+	{% else %}
+		<div class="space-y-4">
+			{% for enrollment in enrollments %}
+				<div class="bg-white p-4 rounded shadow border-l-4 border-green-500">
+					<h3 class="font-bold text-lg">{{ enrollment.course.name }}</h3>
+					<p class="text-gray-600">{{ enrollment.course.schedule }}</p>
+					<p class="text-sm text-gray-500 mt-1">Inscrito el:
+						{{ enrollment.enrolledAt|date('d/m/Y H:i') }}</p>
+
+					<form method="post" action="{{ path('student_unenroll', {id: enrollment.course.id}) }}" class="inline">
+						<button type="submit" class="text-red-600 hover:underline text-sm">Dar de baja</button>
+					</form>
+				</div>
+			{% endfor %}
+		</div>
+		<a href="{{ path('student_courses') }}" class="mt-6 inline-block text-blue-600 hover:underline">← Volver a explorar cursos</a>
+	{% endif %}
+{% endblock %}

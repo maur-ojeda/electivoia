@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>
+			{% block title %}ElectivoIA
+			{% endblock %}
+		</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet"/>
+		<script>
+			tailwind.config = {
+theme: {
+extend: {
+colors: {
+primary: '#3b82f6'
+}
+}
+}
+}
+		</script>
+	</head>
+	<body class="bg-gray-50">
+		<nav class="bg-white shadow">
+			<div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+				<div class="text-xl font-bold text-primary">ElectivoIA</div>
+				<div>
+					<span class="text-gray-700">Hola,
+						{{ app.user.email }}</span>
+					<a href="{{ path('app_logout') }}" class="ml-4 text-red-600 hover:underline">Salir</a>
+				</div>
+			</div>
+		</nav>
+
+		<main class="max-w-7xl mx-auto px-4 py-6">
+			{% for message in app.flashes('success') %}
+				<div class="mb-4 p-4 bg-green-100 text-green-800 rounded-lg">{{ message }}</div>
+			{% endfor %}
+			{% for message in app.flashes('error') %}
+				<div class="mb-4 p-4 bg-red-100 text-red-800 rounded-lg">{{ message }}</div>
+			{% endfor %}
+			{% for message in app.flashes('warning') %}
+				<div class="mb-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg">{{ message }}</div>
+			{% endfor %}
+
+			{% block content %}{% endblock %}
+		</main>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+	</body>
+</html>

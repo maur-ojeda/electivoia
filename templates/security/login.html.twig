@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Iniciar Sesión | Sistema Escolar
+{% endblock %}
+
+{% block body %}
+	<!-- Contenedor principal centrado, utilizando flexbox y centrado de pantalla -->
+	<!-- Se mantiene el fondo oscuro/claro basado en la clase 'dark' que DEBE ser aplicada al <html> por el JS en base.html.twig -->
+		<div
+		class="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 px-4"> <!-- Tarjeta de Login (componente Flowbite/Tailwind) -->
+		<div class="w-full max-w-md bg-white rounded-lg shadow-xl dark:bg-gray-800 p-6 sm:p-8">
+			<h1 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-6 text-center">
+				Iniciar Sesión
+			</h1>
+
+			{% if error %}
+				<div id="alert-error" class="flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-700 dark:text-red-400" role="alert">
+					<svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewbox="0 0 20 20">
+						<path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3h-1a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+					</svg>
+					<span class="sr-only">Error</span>
+					<div>
+						<span class="font-medium">Error de autenticación:</span>
+						{{ error.messageKey|trans(error.messageData, 'security') }}
+					</div>
+				</div>
+			{% endif %}
+
+			{% if app.user %}
+				<div class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-700 dark:text-blue-400">
+					Estás logueado como
+					<span class="font-medium">{{ app.user.userIdentifier }}</span>.
+					<a href="{{ path('app_logout') }}" class="font-medium hover:underline">Cerrar Sesión</a>
+				</div>
+			{% endif %}
+
+			<form class="space-y-6" method="post">
+				<div>
+					<label for="username" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+					<input type="email" value="{{ last_username }}" name="_username" id="username" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="nombre@dominio.com" autocomplete="email" required autofocus>
+				</div>
+
+				<div>
+					<label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Contraseña</label>
+					<input type="password" name="_password" id="password" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" autocomplete="current-password" required>
+				</div>
+
+				<div class="flex items-start"><!-- Puedes descomentar esto si tienes la funcionalidad "Recuérdame" configurada -->
+					{#
+					                    <div class="flex items-center h-5">
+					                        <input id="_remember_me" name="_remember_me" type="checkbox" value="true" class="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-blue-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:focus:ring-offset-gray-800" >
+					                    </div>
+					                    <label for="_remember_me" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Recuérdame</label>
+					                    #}
+				</div>
+
+				<input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
+
+				<button type="submit" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-lg px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 transition duration-150">
+					Ingresar
+				</button>
+			</form>
+
+			<!-- Información de prueba -->
+			<div class="mt-6 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-400 space-y-2">
+				<p class="font-semibold text-gray-900 dark:text-white">Credenciales de prueba:</p>
+				<ul class="list-disc list-inside space-y-1">
+					<li>**Estudiante:** estudiante0@electivoia.local / 123456</li>
+					<li>**Admin:** admin@electivoia.local / 123456</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+{% endblock %}

@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -31,6 +33,78 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     #[ORM\Column]
     private ?string $password = null;
+
+    /**
+     * @var Collection<int, Course>
+     * Relación: Un profesor tiene muchos cursos
+     */
+    #[ORM\OneToMany(targetEntity: Course::class, mappedBy: 'teacher')]
+    private Collection $coursesAsTeacher;
+
+    /**
+     * @var Collection<int, Enrollment>
+     * Relación: Un estudiante tiene muchas inscripciones
+     * NOTA: Esta propiedad fue la elegida para mantener la relación con Enrollment,
+     * eliminando la duplicada '$enrollments'.
+     */
+    #[ORM\OneToMany(targetEntity: Enrollment::class, mappedBy: 'student')]
+    private Collection $enrollmentsAsStudent;
+
+    /**
+     * @var ?InterestProfile
+     * Relación: Un estudiante tiene un perfil de intereses (uno a uno)
+     */
+    #[ORM\OneToOne(mappedBy: 'student', targetEntity: InterestProfile::class, cascade: ['persist', 'remove'])]
+    private ?InterestProfile $interestProfile = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?float $averageGrade = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $grade = null;
+
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\ManyToMany(targetEntity: self::class, inversedBy: 'guardians')]
+    private Collection $guardianStudents;
+
+    /**
+     * @var Collection<int, self>
+     */
+    #[ORM\ManyToMany(targetEntity: self::class, mappedBy: 'guardianStudents')]
+    private Collection $guardians;
+
+    /**
+     * @var Collection<int, Attendance>
+     */
+    #[ORM\OneToMany(targetEntity: Attendance::class, mappedBy: 'student')]
+    private Collection $attendances;
+
+    #[ORM\Column(options: ['default' => true])]
+    private bool $active = true;
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+
+    public function setActive(bool $active): self
+    {
+        $this->active = $active;
+        return $this;
+    }
+
+    public function __construct()
+    {
+        $this->coursesAsTeacher = new ArrayCollection();
+        $this->enrollmentsAsStudent = new ArrayCollection();
+        // Se eliminó la inicialización de $this->enrollments
+        $this->guardianStudents = new ArrayCollection();
+        $this->guardians = new ArrayCollection();
+        $this->attendances = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -64,10 +138,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
+        if (!$this->active) {
+            return []; // Usuario desactivado no tiene roles
+        }
         $roles = $this->roles;
-        // guarantee every user at least has ROLE_USER
         $roles[] = 'ROLE_USER';
-
         return array_unique($roles);
     }
 
@@ -76,10 +151,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function setRoles(array $roles): static
     {
-        $this->roles = $roles;
-
+        $this->roles = $roles ?: ['ROLE_USER'];
         return $this;
     }
+
+
+
+
+
 
     /**
      * @see PasswordAuthenticatedUserInterface
@@ -102,7 +181,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
+        $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
 
         return $data;
     }
@@ -111,5 +190,205 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
         // @deprecated, to be removed when upgrading to Symfony 8
+    }
+
+    // --- Relación con Course (profesor) ---
+
+    /**
+     * @return Collection<int, Course>
+     */
+    public function getCoursesAsTeacher(): Collection
+    {
+        return $this->coursesAsTeacher;
+    }
+
+    public function addCourseAsTeacher(Course $course): static
+    {
+        if (!$this->coursesAsTeacher->contains($course)) {
+            $this->coursesAsTeacher->add($course);
+            $course->setTeacher($this); // Establece el profesor en el curso
+        }
+
+        return $this;
+    }
+
+    public function removeCourseAsTeacher(Course $course): static
+    {
+        if ($this->coursesAsTeacher->removeElement($course)) {
+            // Si el curso aún apunta a este usuario como profesor, lo reseteamos
+            if ($course->getTeacher() === $this) {
+                $course->setTeacher(null);
+            }
+        }
+
+        return $this;
+    }
+
+    // --- Relación con Enrollment (estudiante) ---
+
+    /**
+     * @return Collection<int, Enrollment>
+     */
+    public function getEnrollmentsAsStudent(): Collection
+    {
+        return $this->enrollmentsAsStudent;
+    }
+
+    public function addEnrollmentAsStudent(Enrollment $enrollment): static
+    {
+        if (!$this->enrollmentsAsStudent->contains($enrollment)) {
+            $this->enrollmentsAsStudent->add($enrollment);
+            $enrollment->setStudent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeEnrollmentAsStudent(Enrollment $enrollment): static
+    {
+        if ($this->enrollmentsAsStudent->removeElement($enrollment)) {
+            // Si la inscripción aún apunta a este usuario como estudiante, lo reseteamos
+            if ($enrollment->getStudent() === $this) {
+                $enrollment->setStudent(null);
+            }
+        }
+
+        return $this;
+    }
+
+    // --- Relación con InterestProfile ---
+
+    public function getInterestProfile(): ?InterestProfile
+    {
+        return $this->interestProfile;
+    }
+
+    public function setInterestProfile(?InterestProfile $interestProfile): static
+    {
+        // Rompe relación inversa si ya existía
+        if ($this->interestProfile) {
+            $this->interestProfile->setStudent(null);
+        }
+
+        $this->interestProfile = $interestProfile;
+
+        // Establece relación inversa
+        if ($interestProfile) {
+            $interestProfile->setStudent($this);
+        }
+
+        return $this;
+    }
+
+    // Se eliminaron los métodos getEnrollments(), addEnrollment() y removeEnrollment() duplicados.
+
+    public function getAverageGrade(): ?float
+    {
+        return $this->averageGrade;
+    }
+
+    public function setAverageGrade(?float $averageGrade): static
+    {
+        $this->averageGrade = $averageGrade;
+
+        return $this;
+    }
+
+    public function __toString(): string
+    {
+        return $this->getEmail() ?? 'Usuario sin email';
+    }
+
+    public function getGrade(): ?string
+    {
+        return $this->grade;
+    }
+
+    public function setGrade(?string $grade): static
+    {
+        $this->grade = $grade;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getGuardianStudents(): Collection
+    {
+        return $this->guardianStudents;
+    }
+
+    public function addGuardianStudent(self $guardianStudent): static
+    {
+        if (!$this->guardianStudents->contains($guardianStudent)) {
+            $this->guardianStudents->add($guardianStudent);
+        }
+
+        return $this;
+    }
+
+    public function removeGuardianStudent(self $guardianStudent): static
+    {
+        $this->guardianStudents->removeElement($guardianStudent);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, self>
+     */
+    public function getGuardians(): Collection
+    {
+        return $this->guardians;
+    }
+
+    public function addGuardian(self $guardian): static
+    {
+        if (!$this->guardians->contains($guardian)) {
+            $this->guardians->add($guardian);
+            $guardian->addGuardianStudent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeGuardian(self $guardian): static
+    {
+        if ($this->guardians->removeElement($guardian)) {
+            $guardian->removeGuardianStudent($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Attendance>
+     */
+    public function getAttendances(): Collection
+    {
+        return $this->attendances;
+    }
+
+    public function addAttendance(Attendance $attendance): static
+    {
+        if (!$this->attendances->contains($attendance)) {
+            $this->attendances->add($attendance);
+            $attendance->setStudent($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttendance(Attendance $attendance): static
+    {
+        if ($this->attendances->removeElement($attendance)) {
+            // set the owning side to null (unless already changed)
+            if ($attendance->getStudent() === $this) {
+                $attendance->setStudent(null);
+            }
+        }
+
+        return $this;
     }
 }
