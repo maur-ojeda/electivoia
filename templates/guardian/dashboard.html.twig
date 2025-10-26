@@ -1,3 +1,4 @@
+{# templates/guardian/dashboard.html.twig #}
 {% extends 'student/base.html.twig' %}
 
 {% block content %}
@@ -8,17 +9,22 @@
 	{% else %}
 		<div class="space-y-6">
 			{% for pupil in pupils %}
+
 				<div class="bg-white p-4 rounded shadow">
 					<h2 class="font-bold text-lg">{{ pupil.email }}</h2>
 					<h3 class="mt-2 font-semibold">Cursos inscritos:</h3>
-					{% set enrollments = pupil.enrollmentsAsStudent %}
+					{% set enrollments = pupilEnrollments[pupil.id] ?? [] %}
 					{% if enrollments|length == 0 %}
 						<p class="text-gray-500 text-sm">Sin cursos inscritos.</p>
 					{% else %}
 						<ul class="list-disc list-inside text-sm text-gray-700 mt-1">
 							{% for enrollment in enrollments %}
-								<li>{{ enrollment.course.name }}
-									({{ enrollment.course.schedule }})</li>
+								<li>
+									{{ enrollment.course.name }}
+									{% if enrollment.course.schedule %}
+										<span class="text-gray-500">({{ enrollment.course.schedule }})</span>
+									{% endif %}
+								</li>
 							{% endfor %}
 						</ul>
 					{% endif %}
