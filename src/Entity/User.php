@@ -84,6 +84,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(options: ['default' => true])]
     private bool $active = true;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $fullName = null;
+
+    #[ORM\Column(length: 12, nullable: true)]
+    private ?string $rut = null;
+
     public function isActive(): bool
     {
         return $this->active;
@@ -100,7 +106,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->coursesAsTeacher = new ArrayCollection();
         $this->enrollmentsAsStudent = new ArrayCollection();
-        // Se eliminó la inicialización de $this->enrollments
+
         $this->guardianStudents = new ArrayCollection();
         $this->guardians = new ArrayCollection();
         $this->attendances = new ArrayCollection();
@@ -130,7 +136,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        return $this->rut ?? $this->email; // Usa RUT si existe, sino email
+
     }
 
     /**
@@ -388,6 +395,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $attendance->setStudent(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getFullName(): ?string
+    {
+        return $this->fullName;
+    }
+
+    public function setFullName(string $fullName): static
+    {
+        $this->fullName = $fullName;
+
+        return $this;
+    }
+
+    public function getRut(): ?string
+    {
+        return $this->rut;
+    }
+
+    public function setRut(string $rut): static
+    {
+        $this->rut = $rut;
 
         return $this;
     }

@@ -1,4 +1,4 @@
-{% extends 'student/base.html.twig' %}
+{% extends 'base.html.twig' %}
 
 {% block title %}Mis Cursos - Profesor
 {% endblock %}
@@ -14,7 +14,8 @@
 				<div class="bg-white rounded-xl shadow-md overflow-hidden">
 					<div class="p-5">
 						<h2 class="text-xl font-bold text-gray-900">{{ course.name }}</h2>
-						<p class="text-gray-600 mt-1">{{ course.schedule }}</p>
+
+
 						<p class="text-sm text-gray-500 mt-2">Cupo:
 							{{ enrollmentsByCourse[course.id]|length }}
 							/
@@ -50,4 +51,152 @@
 			{% endfor %}
 		</div>
 	{% endif %}
-{% endblock %}
+
+	_______________________
+
+
+	<div
+		class="rbt-page-banner-wrapper">
+		<!-- Start Banner BG Image  -->
+		<div class="rbt-banner-image"></div>
+		<!-- End Banner BG Image  -->
+	</div>
+
+	<!-- Start Card Style -->
+	<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
+		<div class="container">
+			<div class="row">
+				<div class="rbt-dashboard-content-wrapper col-12 col-md-4">
+					<div class="tutor-bg-photo bg_image bg_image--23 h-100" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
+					<!-- Start Tutor Information  -->
+					<div class=" rbt-tutor-information">
+						<div class="rbt-tutor-information-left">
+							<div class="tutor-content">
+
+								<h6 class="title">Hola:
+								</h6>
+								<h3 class="title">{{app.user.fullName}}</h3>
+								<ul class="rbt-meta rbt-meta-white mt--5">
+									<li>
+										curso:
+										{{app.user.grade}}
+									</li>
+									<li></li>
+								</ul>
+							</div>
+						</div>
+
+					</div>
+					<!-- End Tutor Information  -->
+				</div>
+				<div class="rbt-dashboard-content-wrapper col-12 col-md-8">
+					<div class="rbt-card rbt-hover">
+						<div class="rbt-card-body">
+							<h5 class="rbt-card-title">Mis intereses 🌟
+							</h5>
+
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+			<div class="container">
+
+				<div
+					class="row g-5">
+
+					<!-- Start Single Course  -->
+
+					{% for course in courses %}
+						{# Excluir cursos que ya se mostraron como recomendados #}
+
+
+						{% set category_map = {				'Filosofía': '01',
+														'Matemática': '02',
+														'Educación física y salud': '03',
+														'Historia, geografía y ciencias sociales': '04',
+														'Ciencias': '05',
+														'Lengua y literatura': '07',
+														'Artes': '09'
+													} %}
+						{% set image_number = category_map[course.category.name]|default('default') %}
+
+						<div class="col-lg-4 col-md-6 col-12">
+							<div class="rbt-card variation-01 rbt-hover">
+								<div class="rbt-card-img">
+									<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}" alt="Imagen del curso de {{ course.category.name }}">
+								</div>
+
+
+								<div class="rbt-card-body">
+
+
+									<div class="rbt-card-top">
+										<div class="rbt-review">
+											<span class="rbt-badge-5">{{ course.category.area }}</span>
+											<span class="rbt-badge-5">{{ course.category.name }}</span>
+										</div>
+
+									</div>
+
+
+									<h5 class="">
+										{{ course.name }}
+									</h5>
+									<p class="small">{{ course.description }}</p>
+									<ul class="rbt-meta">
+										<li>
+											<i class="feather-user"></i>
+											{{ course.teacher.fullName }}
+										</li>
+
+
+										<li>
+											<i class="feather-hash"></i>
+											{{ enrollmentsByCourse[course.id]|length }}
+											/
+											{{ course.maxCapacity }}
+
+										</li>
+
+
+									</ul>
+
+
+									<div class="rbt-card-bottom">
+										<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="mt-4">
+
+
+											<button type="submit" class="rbt-btn btn-gradient hover-icon-reverse">
+												<span class="icon-reverse-wrapper">
+													<span class="btn-text">Inscribirse</span>
+													<span class="btn-icon">
+														<i class="feather-arrow-right"></i>
+													</span>
+													<span class="btn-icon">
+														<i class="feather-arrow-right"></i>
+													</span>
+												</span>
+											</button>
+
+
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>
+
+
+					{% endfor %}
+
+					<!-- End Single Course  -->
+
+
+				</div>
+
+
+			</div>
+		</div>
+	</div>
+</div>________________________{% endblock %}

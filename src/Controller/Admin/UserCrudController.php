@@ -18,18 +18,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 class UserCrudController extends AbstractCrudController
 {
     private const CHILEAN_GRADES = [
-        // Educación Básica
-        '1° Básico' => '1B',
-        '2° Básico' => '2B',
-        '3° Básico' => '3B',
-        '4° Básico' => '4B',
-        '5° Básico' => '5B',
-        '6° Básico' => '6B',
-        '7° Básico' => '7B',
-        '8° Básico' => '8B',
-        // Educación Media
-        '1° Medio' => '1M',
-        '2° Medio' => '2M',
         '3° Medio' => '3M',
         '4° Medio' => '4M',
     ];
@@ -70,7 +58,26 @@ class UserCrudController extends AbstractCrudController
 
         $fields = [
             IdField::new('id')->onlyOnIndex(),
+
+
+            // Nombre completo (obligatorio para todos)
+            TextField::new('fullName', 'Nombre completo')
+                ->setRequired(true),
+
+            // RUT (obligatorio para todos, único)
+            TextField::new('rut', 'RUT')
+                ->setHelp('Formato chileno: 12345678-9')
+                ->setRequired(true),
+
+
+
+
             EmailField::new('email'),
+
+
+
+
+
             ChoiceField::new('grade', 'Curso/Grado')
                 ->setChoices(self::CHILEAN_GRADES)
                 ->allowMultipleChoices(false)
