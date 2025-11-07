@@ -36,13 +36,6 @@
 				</div>
 				<!-- End Tutor Information  -->
 			</div>
-
-
-
-
-
-
-
 			<div class="rbt-dashboard-content-wrapper col-12 col-md-8">
 				<div class="rbt-card rbt-hover">
 					<div class="rbt-card-body">
@@ -84,16 +77,6 @@
 
 
 		<div class="container">
-
-
-
-
-
-
-
-
-
-
 			<div class="col-12 col-md-12 mb-5 ">
 
 				<form method="GET">
@@ -131,14 +114,12 @@
 							<div class="filter-select">
 								<span class="select-label d-block">&nbsp;</span>
 
-								<button type="submit" class="rbt-btn bg-primary-opacity btn-md">
-									<span class="btn-icon">Filtrar <i class="feather-filter"></i></span>
+								<button type="submit" class="rbt-btn btn-gradient btn-md">
+									Buscar
 								</button>
-
-								<a class="rbt-btn bg-primary-opacity btn-md" href="{{ path('student_courses') }}">
-									<span class="btn-icon">Limpiar <i class="feather-x"></i></span>
+								<a class="rbt-btn btn-gradient btn-md" href="{{ path('student_courses') }}">
+									Limpiar
 								</a>
-
 							</div>
 
 
@@ -149,13 +130,86 @@
 			</div>
 
 
+
+
+			{% if recommendations|length > 0 %}
+			<div class="col-12 mb-5">
+				<h4 class="rbt-card-title mb-4">🎯 Cursos recomendados para ti</h4>
+				<div class="row g-4">
+					{% for item in recommendations %}
+					{% set course = item.course %}
+					{% set category_map = {
+                    'Filosofía': '01',
+                    'Matemática': '02',
+                    'Educación física y salud': '03',
+                    'Historia, geografía y ciencias sociales': '04',
+                    'Ciencias': '05',
+                    'Lengua y literatura': '07',
+                    'Artes': '09'
+                } %}
+					{% set image_number = category_map[course.category.name]|default('default') %}
+
+					<div class="col-lg-3 col-md-6 col-12">
+						<div class="rbt-card variation-01 rbt-hover border border-primary">
+							<div class="rbt-card-img">
+								<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}" alt="Recomendado: {{ course.name }}">
+							</div>
+							<div class="rbt-card-body">
+								<div class="rbt-card-top">
+									<div class="rbt-review">
+										<span class="rbt-badge-5 me-1">{{ course.category.area }}</span>
+										<span class="rbt-badge-5">{{ course.category.name }}</span>
+									</div>
+								</div>
+								<h5>{{ course.name }}</h5>
+								<p class="small">{{ course.description }}</p>
+								<ul class="rbt-meta">
+									<li class="text-muted small"><i class="feather-user"></i>Profesor/a:
+										{{ course.teacher.fullName }}
+									</li>
+									<li class="text-muted small"><i class="feather-hash"></i> Cupos:
+										{{ enrollmentCounts[course.id] ?? 0 }} / {{ course.maxCapacity }}
+										{{ enrollmentsByCourse[course.id]?? 0 }}
+									</li>
+
+
+
+									{# Mostrar razones (HU #10) #}
+									<li class="text-muted small">
+										<i class="feather-star"></i> Recomendado por: {{ item.reasons|join(', ') }}
+									</li>
+								</ul>
+								<div class="rbt-card-bottom">
+									<form method="post" action="{{ path('student_enroll', {id: course.id}) }}">
+										{% if course.id in enrolledCourseIds %}
+										<button class="rbt-btn bg-secondary-opacity btn-sm" disabled>
+											Inscrito
+										</button>
+										{% else %}
+										<button type="submit" class="rbt-btn btn-sm btn-gradient"
+											{% if enrollmentCounts[course.id] ?? 0 >= course.maxCapacity %}disabled{% endif %}>
+											Inscribirse
+										</button>
+										{% endif %}
+									</form>
+								</div>
+							</div>
+						</div>
+					</div>
+					{% endfor %}
+				</div>
+			</div>
+			{% endif %}
+
+
+
 			<div
 				class="row g-5">
 
 				<!-- Start Single Course  -->
 				{% set recommendedCourseIds = recommendations|map(r => r.course.id)|keys %}
 				{% for course in courses %}
-				{# Excluir cursos que ya se mostraron como recomendados #}
+
 				{% if course.id not in recommendedCourseIds %}
 
 
@@ -169,7 +223,7 @@
 													} %}
 				{% set image_number = category_map[course.category.name]|default('default') %}
 
-				<div class="col-lg-4 col-md-6 col-12">
+				<div class="col-lg-3 col-md-6 col-12">
 					<div class="rbt-card variation-01 rbt-hover">
 						<div class="rbt-card-img">
 							<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}" alt="Imagen del curso de {{ course.category.name }}">
@@ -181,7 +235,7 @@
 
 							<div class="rbt-card-top">
 								<div class="rbt-review">
-									<span class="rbt-badge-5">{{ course.category.area }}</span>
+									<span class="rbt-badge-5 me-1">{{ course.category.area }}</span>
 									<span class="rbt-badge-5">{{ course.category.name }}</span>
 								</div>
 
@@ -194,7 +248,7 @@
 							<p class="small">{{ course.description }}</p>
 							<ul class="rbt-meta">
 								<li>
-									<i class="feather-user"></i>
+									<i class="feather-user"></i>Profesor/a:
 									{{ course.teacher.fullName }}
 								</li>
 								<li>
@@ -221,30 +275,14 @@
 							<div class="rbt-card-bottom">
 								<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="mt-4">
 									{% if course.id in enrolledCourseIds %}
-									<button class="rbt-btn bg-secondary-opacity hover-icon-reverse">
-										<span class="icon-reverse-wrapper">
-											<span class="btn-text">Inscrito</span>
-											<span class="btn-icon">
-												<i class="feather-check-circle"></i>
-											</span>
-											<span class="btn-icon">
-												<i class="feather-check-circle"></i>
-											</span>
-										</span>
+									<button class="rbt-btn btn-sm bg-secondary-opacity">
+										Inscrito
 									</button>
 									{% else %}
 
 
-									<button type="submit" class="rbt-btn btn-gradient hover-icon-reverse">
-										<span class="icon-reverse-wrapper">
-											<span class="btn-text">Inscribirse</span>
-											<span class="btn-icon">
-												<i class="feather-arrow-right"></i>
-											</span>
-											<span class="btn-icon">
-												<i class="feather-arrow-right"></i>
-											</span>
-										</span>
+									<button type="submit" class="rbt-btn btn-sm btn-gradient">
+										Inscribirse
 									</button>
 
 

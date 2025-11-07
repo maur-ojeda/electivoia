@@ -4,59 +4,12 @@
 {% endblock %}
 
 {% block content %}
-	<h1 class="text-2xl font-bold mb-6">Mis Cursos Asignados</h1>
-
-	{% if courses|length == 0 %}
-		<p class="text-gray-600">No tienes cursos asignados.</p>
-	{% else %}
-		<div class="space-y-6">
-			{% for course in courses %}
-				<div class="bg-white rounded-xl shadow-md overflow-hidden">
-					<div class="p-5">
-						<h2 class="text-xl font-bold text-gray-900">{{ course.name }}</h2>
-
-
-						<p class="text-sm text-gray-500 mt-2">Cupo:
-							{{ enrollmentsByCourse[course.id]|length }}
-							/
-							{{ course.maxCapacity }}</p>
-
-						<h3 class="font-semibold mt-4 mb-2">Alumnos inscritos ({{ enrollmentsByCourse[course.id]|length }}):</h3>
-						{% if enrollmentsByCourse[course.id]|length == 0 %}
-							<p class="text-gray-500 text-sm">No hay alumnos inscritos aún.</p>
-						{% else %}
-							<ul class="list-disc list-inside text-sm text-gray-700">
-								{% for enrollment in enrollmentsByCourse[course.id] %}
-									<li>{{ enrollment.student.email }}
-										{% if enrollment.student.averageGrade is not null %}
-											(Promedio:
-											{{ enrollment.student.averageGrade }})
-										{% endif %}
-									</li>
-								{% endfor %}
-							</ul>
-						{% endif %}
-
-
-						<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-							Exportar alumnos
-						</a>
-
-						<a href="{{ path('teacher_attendance', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-							Pasar lista
-						</a>
-
-					</div>
-				</div>
-			{% endfor %}
-		</div>
-	{% endif %}
-
-	_______________________
 
 
 	<div
 		class="rbt-page-banner-wrapper">
+
+
 		<!-- Start Banner BG Image  -->
 		<div class="rbt-banner-image"></div>
 		<!-- End Banner BG Image  -->
@@ -64,40 +17,77 @@
 
 	<!-- Start Card Style -->
 	<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
-		<div class="container">
-			<div class="row">
-				<div class="rbt-dashboard-content-wrapper col-12 col-md-4">
-					<div class="tutor-bg-photo bg_image bg_image--23 h-100" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
-					<!-- Start Tutor Information  -->
-					<div class=" rbt-tutor-information">
-						<div class="rbt-tutor-information-left">
-							<div class="tutor-content">
+		<div
+			class="container">
 
-								<h6 class="title">Hola:
-								</h6>
-								<h3 class="title">{{app.user.fullName}}</h3>
-								<ul class="rbt-meta rbt-meta-white mt--5">
-									<li>
-										curso:
-										{{app.user.grade}}
-									</li>
-									<li></li>
-								</ul>
+
+			<!-- Start Dashboard Top  -->
+			<div class="rbt-dashboard-content-wrapper">
+				<div class="tutor-bg-photo bg_image height-350" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
+				<!-- Start Tutor Information  -->
+
+
+				<div class="rbt-tutor-information">
+					<div class="rbt-tutor-information-left">
+						<div class="thumbnail rbt-avatars size-lg">
+							<img src={{app.user.avatarUrl}}/>
+
+						</div>
+						<div class="tutor-content">
+
+
+							<h5 class="title">Hola:
+							</h5>
+							<h3 class="title">{{app.user.fullName}}</h3>
+
+						</div>
+					</div>
+
+
+				</div>
+				<!-- End Tutor Information  -->
+			</div>
+			<!-- End Dashboard Top  -->
+
+
+			<div class="mb-4 p-3  rounded">
+				<form method="GET">
+
+					<div class="row">
+						<div class="col-12 col-md-5">
+							<div class="filter-select rbt-modern-select text-dark">
+								<span class="select-label d-block">Nombre o descripción</span>
+								<input type="text" name="q" placeholder="Buscar en nombre o descripción..." value="{{ searchQuery }}">
 							</div>
 						</div>
 
-					</div>
-					<!-- End Tutor Information  -->
-				</div>
-				<div class="rbt-dashboard-content-wrapper col-12 col-md-8">
-					<div class="rbt-card rbt-hover">
-						<div class="rbt-card-body">
-							<h5 class="rbt-card-title">Mis intereses 🌟
-							</h5>
+						<div class="col-12 col-md-4">
+							<div class="filter-select rbt-modern-select ">
+								<span class="select-label d-block text-dark">Por Categoría</span>
 
+								<select name="category" class="w-100" data-live-search="true">
+									<option value="">Todas las categorías</option>
+									{% for cat in allCategories %}
+										<option value="{{ cat.id }}" {% if cat.id == selectedCategory %} selected {% endif %}>
+											{{ cat.name }}
+										</option>
+									{% endfor %}
+								</select>
+							</div>
 						</div>
+
+
+						<div class="col-12 col-md-3">
+							<div class="filter-select text-end">
+								<span class="select-label d-block">&nbsp;</span>
+								<button type="submit" class="rbt-btn btn-gradient btn-md">Filtrar</button>
+								<a href="{{ path('teacher_courses') }}" class="rbt-btn btn-gradient btn-md">Limpiar</a>
+							</div>
+						</div>
+
+
 					</div>
-				</div>
+				</form>
 			</div>
 
 
@@ -109,7 +99,6 @@
 					<!-- Start Single Course  -->
 
 					{% for course in courses %}
-						{# Excluir cursos que ya se mostraron como recomendados #}
 
 
 						{% set category_map = {				'Filosofía': '01',
@@ -134,8 +123,8 @@
 
 									<div class="rbt-card-top">
 										<div class="rbt-review">
-											<span class="rbt-badge-5">{{ course.category.area }}</span>
-											<span class="rbt-badge-5">{{ course.category.name }}</span>
+											<span class="rbt-badge-5 me-1 bg-color-primary-opacity ">{{ course.category.area }}</span>
+											<span class="rbt-badge-5 bg-color-secondary-opacity">{{ course.category.name }}</span>
 										</div>
 
 									</div>
@@ -146,42 +135,22 @@
 									</h5>
 									<p class="small">{{ course.description }}</p>
 									<ul class="rbt-meta">
-										<li>
-											<i class="feather-user"></i>
-											{{ course.teacher.fullName }}
-										</li>
 
-
-										<li>
-											<i class="feather-hash"></i>
+										<li class="text-muted small">
+											<i class="feather-users"></i>
+											Estudiantes
 											{{ enrollmentsByCourse[course.id]|length }}
 											/
 											{{ course.maxCapacity }}
-
 										</li>
 
 
 									</ul>
 
 
-									<div class="rbt-card-bottom">
-										<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="mt-4">
+									<div class="rbt-card-bottom text-end">
 
-
-											<button type="submit" class="rbt-btn btn-gradient hover-icon-reverse">
-												<span class="icon-reverse-wrapper">
-													<span class="btn-text">Inscribirse</span>
-													<span class="btn-icon">
-														<i class="feather-arrow-right"></i>
-													</span>
-													<span class="btn-icon">
-														<i class="feather-arrow-right"></i>
-													</span>
-												</span>
-											</button>
-
-
-										</form>
+										<a class="rbt-btn btn-sm btn-gradient" href="{{ path('teacher_attendance', {id: course.id}) }}">Ver listado</a>
 									</div>
 								</div>
 							</div>
@@ -199,4 +168,4 @@
 			</div>
 		</div>
 	</div>
-</div>________________________{% endblock %}
+</div>{% endblock %}

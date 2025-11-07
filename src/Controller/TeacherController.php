@@ -23,20 +23,86 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class TeacherController extends AbstractController
 {
     #[Route('/courses', name: 'courses')]
-    public function courses(EntityManagerInterface $em): Response
+    public function courses(Request $request, EntityManagerInterface $em): Response
     {
         $teacher = $this->getUser();
-        $courses = $em->getRepository(\App\Entity\Course::class)->findBy(['teacher' => $teacher]);
 
+        $searchQuery = trim((string) $request->query->get('q', ''));
+        $selectedCategory = $request->query->get('category');
+
+        // Subconsulta para contar inscripciones (evita N+1 al contar)
+        $countQb = $em->createQueryBuilder()
+            ->select('c.id, COUNT(e.id) as enrollmentCount')
+            ->from(\App\Entity\Course::class, 'c')
+            ->leftJoin('c.enrollments', 'e')
+            ->where('c.teacher = :teacher')
+            ->andWhere('c.isActive = true')
+            ->setParameter('teacher', $teacher);
+
+        // Aplicar mismos filtros a la subconsulta
+        if ($selectedCategory) {
+            $countQb->andWhere('c.category = :categoryId')
+                ->setParameter('categoryId', $selectedCategory);
+        }
+        if ($searchQuery !== '') {
+            $countQb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search')
+                ->setParameter('search', '%' . strtolower($searchQuery) . '%');
+        }
+
+        $countResults = $countQb->groupBy('c.id')->getQuery()->getResult();
+        $enrollmentCounts = [];
+        foreach ($countResults as $row) {
+            $enrollmentCounts[$row['id']] = (int) $row['enrollmentCount'];
+        }
+
+        // Consulta principal: cursos + relaciones (optimizada con fetch join)
+        $qb = $em->createQueryBuilder()
+            ->select('c, cat, t, e, s')
+            ->from(\App\Entity\Course::class, 'c')
+            ->leftJoin('c.category', 'cat')
+            ->leftJoin('c.teacher', 't')
+            ->leftJoin('c.enrollments', 'e')
+            ->leftJoin('e.student', 's')
+            ->where('c.teacher = :teacher')
+            ->andWhere('c.isActive = true')
+            ->setParameter('teacher', $teacher);
+
+        if ($selectedCategory) {
+            $qb->andWhere('c.category = :categoryId')
+                ->setParameter('categoryId', $selectedCategory);
+        }
+        if ($searchQuery !== '') {
+            $qb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search')
+                ->setParameter('search', '%' . strtolower($searchQuery) . '%');
+        }
+
+        $courses = $qb->getQuery()->getResult();
+
+        // Reagrupar enrollments por curso (como antes)
         $enrollmentsByCourse = [];
         foreach ($courses as $course) {
-            $enrollments = $em->getRepository(\App\Entity\Enrollment::class)->findBy(['course' => $course]);
-            $enrollmentsByCourse[$course->getId()] = $enrollments;
+            // Doctrine ya trajo los enrollments gracias al fetch join
+            $enrollmentsByCourse[$course->getId()] = $course->getEnrollments()->toArray();
         }
+
+        // Obtener categorías para el filtro
+        $allCategories = $em->getRepository(\App\Entity\CourseCategory::class)->findAll();
+
+
+        $enrollmentStatus = $request->query->get('enrollmentStatus');
+
+
+
+
+
 
         return $this->render('teacher/courses.html.twig', [
             'courses' => $courses,
             'enrollmentsByCourse' => $enrollmentsByCourse,
+            'enrollmentCounts' => $enrollmentCounts, // útil para mostrar cupo sin iterar
+            'allCategories' => $allCategories,
+            'selectedCategory' => $selectedCategory,
+            'searchQuery' => $searchQuery,
         ]);
     }
 
