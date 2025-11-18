@@ -7,7 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\HttpFoundation\Request; // Importar Request
+use Symfony\Component\HttpFoundation\Request;
 use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\Attendance;
@@ -15,11 +15,11 @@ use App\Entity\User; // Importar User
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-
+use Symfony\Component\ExpressionLanguage\Expression;
 
 
 #[Route('/teacher', name: 'teacher_')]
-#[IsGranted('ROLE_TEACHER')]
+#[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN")'))]
 class TeacherController extends AbstractController
 {
     #[Route('/courses', name: 'courses')]
@@ -180,7 +180,6 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/export/course/{id}/students.xlsx', name: 'export_students')]
-    #[IsGranted('ROLE_TEACHER')]
     public function exportStudents(Course $course, EntityManagerInterface $em): StreamedResponse
     {
         // Verificar que el curso pertenezca al profesor
@@ -194,16 +193,18 @@ class TeacherController extends AbstractController
 
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
-            $sheet->setCellValue('A1', 'Email');
-            $sheet->setCellValue('B1', 'Grado');
-            $sheet->setCellValue('C1', 'Promedio');
+            $sheet->setCellValue('A1', 'Alumno');
+            $sheet->setCellValue('B1', 'RUT');
+            $sheet->setCellValue('C1', 'CURSO');
+            $sheet->setCellValue('D1', 'PROMEDIO');
 
             $row = 2;
             foreach ($enrollments as $enrollment) {
                 $student = $enrollment->getStudent();
-                $sheet->setCellValue('A' . $row, $student->getEmail());
-                $sheet->setCellValue('B' . $row, $student->getGrade());
-                $sheet->setCellValue('C' . $row, $student->getAverageGrade());
+                $sheet->setCellValue('A' . $row, $student->getFullName());
+                $sheet->setCellValue('B' . $row, $student->getRut());
+                $sheet->setCellValue('C' . $row, $student->getGrade());
+                $sheet->setCellValue('D' . $row, $student->getAverageGrade());
                 $row++;
             }
 

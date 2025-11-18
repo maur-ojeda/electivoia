@@ -11,7 +11,7 @@
 			{% for enrollment in enrollments %}
 				<div class="bg-white p-4 rounded shadow border-l-4 border-green-500">
 					<h3 class="font-bold text-lg">{{ enrollment.course.name }}</h3>
-					<p class="text-gray-600">{{ enrollment.course.schedule }}</p>
+
 					<p class="text-sm text-gray-500 mt-1">Inscrito el:
 						{{ enrollment.enrolledAt|date('d/m/Y H:i') }}</p>
 

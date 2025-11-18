@@ -6,52 +6,52 @@
 {% block content %}
 
 
-<div
-	class="rbt-page-banner-wrapper">
-	<!-- Start Banner BG Image  -->
-	<div class="rbt-banner-image"></div>
-	<!-- End Banner BG Image  -->
-</div>
-
-<!-- Start Card Style -->
-<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
 	<div
-		class="container">
-
-
-		<!-- Start Dashboard Top  -->
-		<div class="rbt-dashboard-content-wrapper">
-			<div class="tutor-bg-photo bg_image height-350" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
-			<!-- Start Tutor Information  -->
-
-
-			<div class="rbt-tutor-information">
-				<div class="rbt-tutor-information-left">
-					<div class="thumbnail rbt-avatars size-lg">
-						<img src={{app.user.avatarUrl}} />
-					</div>
-					<div class="tutor-content">
-
-
-						<h5 class="title">Hola:
-						</h5>
-						<h3 class="title">{{app.user.fullName}}</h3>
-
-					</div>
-				</div>
-
-
-			</div>
-			<!-- End Tutor Information  -->
-		</div>
-		<!-- End Dashboard Top  -->
-
+		class="rbt-page-banner-wrapper">
+		<!-- Start Banner BG Image  -->
+		<div class="rbt-banner-image"></div>
+		<!-- End Banner BG Image  -->
 	</div>
 
+	<!-- Start Card Style -->
+	<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
+		<div
+			class="container">
 
-	<div class="container">
 
-		{% set category_map = {				'Filosofía': '01',
+			<!-- Start Dashboard Top  -->
+			<div class="rbt-dashboard-content-wrapper">
+				<div class="tutor-bg-photo bg_image height-350" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
+				<!-- Start Tutor Information  -->
+
+
+				<div class="rbt-tutor-information">
+					<div class="rbt-tutor-information-left">
+						<div class="thumbnail rbt-avatars size-lg">
+							<img src={{app.user.avatarUrl}}/>
+						</div>
+						<div class="tutor-content">
+
+
+							<h5 class="title">Hola:
+							</h5>
+							<h3 class="title">{{app.user.fullName}}</h3>
+
+						</div>
+					</div>
+
+
+				</div>
+				<!-- End Tutor Information  -->
+			</div>
+			<!-- End Dashboard Top  -->
+
+		</div>
+
+
+		<div class="container">
+
+			{% set category_map = {				'Filosofía': '01',
 														'Matemática': '02',
 														'Educación física y salud': '03',
 														'Historia, geografía y ciencias sociales': '04',
@@ -59,170 +59,175 @@
 														'Lengua y literatura': '07',
 														'Artes': '09'
 													} %}
-		{% set image_number = category_map[course.category.name]|default('default') %}
+			{% set image_number = category_map[course.category.name]|default('default') %}
 
 
+			<div class="row">
 
-		<div class="row">
+				<div class="col-lg-3">
 
-			<div class="col-lg-3">
+					<div class="rbt-default-sidebar sticky-top rbt-shadow-box rbt-gradient-border">
+						<div class="inner">
+							<div class="content-item-content">
 
-				<div class="rbt-default-sidebar sticky-top rbt-shadow-box rbt-gradient-border">
-					<div class="inner">
-						<div class="content-item-content">
-
-							<div class="rbt-default-sidebar-wrapper">
-
+								<div class="rbt-default-sidebar-wrapper">
 
 
-								<div class="inner">
-									<div class="content-item-content">
+									<div class="inner">
+										<div class="content-item-content">
 
-										<div class="rbt-default-sidebar-wrapper">
-											<div class="section-title mb--20">
-												<h6 class="rbt-title-style-2">{{ course.name }}</h6>
+											<div class="rbt-default-sidebar-wrapper">
+												<div class="section-title mb--20">
+													<h6 class="rbt-title-style-2">{{ course.name }}</h6>
+												</div>
+												<nav class="mainmenu-nav">
+													<ul class="dashboard-mainmenu rbt-default-sidebar-list ">
+
+														<li>
+															<i class="feather-maximize"></i>
+															<span>{{ course.category.area }}</span>
+														</li>
+														<li>
+															<i class="feather-tag"></i>
+															<span>{{ course.category.name }}</span>
+														</li>
+
+													</ul>
+												</nav>
+
+
 											</div>
-											<nav class="mainmenu-nav">
-												<ul class="dashboard-mainmenu rbt-default-sidebar-list ">
-
-													<li><i class="feather-maximize"></i><span>{{ course.category.area }}</span></li>
-													<li><i class="feather-tag"></i><span>{{ course.category.name }}</span></li>
-
-												</ul>
-											</nav>
-
-
-
-
-
 
 										</div>
-
 									</div>
+
+
 								</div>
 
-
-
-
-
-
 							</div>
-
 						</div>
 					</div>
 				</div>
-			</div>
 
-			<div class="col-lg-9">
-				<div class="rbt-dashboard-content bg-color-white rbt-shadow-box mb--60">
-					<div class="content">
+				<div class="col-lg-9">
+					<div class="rbt-dashboard-content bg-color-white rbt-shadow-box mb--60">
+						<div class="content">
 
-						<div class="row gy-5">
-							<div class="col-lg-12">
-								<div class="rbt-dashboard-table table-responsive">
-									<table class="rbt-table table table-borderless">
-										<thead>
-											<tr>
-												<th></th>
-												<th class="text-start">Alumno</th>
-												<th class="text-start">Rut</th>
-												<th class="text-start">Curso</th>
-												<th class="text-start">Promedio</th>
-											</tr>
-										</thead>
-										<tbody>
+							<div class="section-title">
+								<div>
+									<h4 class="rbt-title-style-3">Listado de alumnos
 
 
-											{% for student in students %}
-											<tr class="border-t">
-
-												<td class="py-2 px-4">
-													<div class="rbt-avatars m-auto size-sm">
-														<img src={{student.avatarUrl}} />
-													</div>
-
-												</td>
-
-												<th>{{ student.fullName }}</th>
-												<td class="py-2 px-4">
-													{{student.rut}}
-												</td>
-												<td class="py-2 px-4">
-													{{student.grade}}
-												</td>
-												<td class="py-2 px-4">
-													{{student.averageGrade}}
-												</td>
-
-											</tr>
-											{% endfor %}
-
-
-
-
-										</tbody>
-									</table>
+										<a class="rbt-btn btn-xs bg-primary-opacity radius-round" href="{{ path('teacher_export_students', {id: course.id}) }}">
+											<i class="feather-edit pl--0"></i>
+											Exportar listado
+										</a>
+									</h4>
 								</div>
 
 
 							</div>
+
+							<div class="row gy-5">
+								<div class="col-lg-12">
+									<div class="rbt-dashboard-table table-responsive">
+										<table class="rbt-table table table-borderless">
+											<thead>
+												<tr>
+													<th></th>
+													<th class="text-start">Alumno</th>
+													<th class="text-start">Rut</th>
+													<th class="text-start">Curso</th>
+													<th class="text-start">Promedio</th>
+												</tr>
+											</thead>
+											<tbody>
+
+
+												{% for student in students %}
+													<tr class="border-t">
+
+														<td class="py-2 px-4">
+															<div class="rbt-avatars m-auto size-sm">
+																<img src={{student.avatarUrl}}/>
+															</div>
+
+														</td>
+
+														<th>{{ student.fullName }}</th>
+														<td class="py-2 px-4">
+															{{student.rut}}
+														</td>
+														<td class="py-2 px-4">
+															{{student.grade}}
+														</td>
+														<td class="py-2 px-4">
+															{{student.averageGrade}}
+														</td>
+
+													</tr>
+												{% endfor %}
+
+
+											</tbody>
+										</table>
+									</div>
+
+
+								</div>
+							</div>
+
 						</div>
-
 					</div>
+
+					<div class="col-12">
+						<a href="{{ path('teacher_courses') }}" class="rbt-btn rbt-switch-btn btn-gradient btn-sm hover-transform-none">
+							Volver a mis cursos</a>
+					</div>
+
 				</div>
 
-				<div class="col-12">
-					<a href="{{ path('teacher_courses') }}" class="rbt-btn rbt-switch-btn btn-gradient btn-sm hover-transform-none"> Volver a mis cursos</a>
-				</div>
 
 			</div>
-
 
 		</div>
 
-	</div>
 
-
-
-
-	<!--form method="post" action="{{ path('teacher_attendance_save', {id: course.id}) }}">
-		<input type="hidden" name="date" value="{{ date|date('Y-m-d') }}">
-		
-		<div class="overflow-x-auto">
-			<table class="min-w-full bg-white border">
-				<thead>
-					<tr class="bg-gray-100">
-						<th class="py-2 px-4 text-left">Alumno</th>
-						<th class="py-2 px-4 text-left">Asistencia</th>
-					</tr>
-				</thead>
-				<tbody>
-					{% for student in students %}
-					<tr class="border-t">
-						<td class="py-2 px-4">{{ student.fullName }}</td>
-						<td class="py-2 px-4">
-							<select
-							name="status[{{ student.id }}]" class="border rounded px-2 py-1">
-							{# CORRECCIÓN: Usar el operador Null Coalescing (??) para evitar errores de clave no definida. #}
-	<option value="present" {% if (attendanceMap[student.id] ?? 'none') == 'present' %} selected {% endif %}>Presente</option>
-	<option value="absent" {% if (attendanceMap[student.id] ?? 'none') == 'absent' %} selected {% endif %}>Ausente</option>
-	<option value="justified" {% if (attendanceMap[student.id] ?? 'none') == 'justified' %} selected {% endif %}>Justificado</option>
-	</select>
-	<input type="hidden" name="student_ids[]" value="{{ student.id }}">
-	</td>
-	</tr>
-	{% endfor %}
-	</tbody>
-	</table>
-</div>
-
-<button type="submit" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-	Guardar asistencia
-</button>
-</form-->
-
-
-
+		<!--form method="post" action="{{ path('teacher_attendance_save', {id: course.id}) }}">
+																								<input type="hidden" name="date" value="{{ date|date('Y-m-d') }}">
+																								
+																								<div class="overflow-x-auto">
+																									<table class="min-w-full bg-white border">
+																										<thead>
+																											<tr class="bg-gray-100">
+																												<th class="py-2 px-4 text-left">Alumno</th>
+																												<th class="py-2 px-4 text-left">Asistencia</th>
+																											</tr>
+																										</thead>
+																										<tbody>
+																											{% for student in students %}
+																											<tr class="border-t">
+																												<td class="py-2 px-4">{{ student.fullName }}</td>
+																												<td class="py-2 px-4">
+																													<select
+																													name="status[{{ student.id }}]" class="border rounded px-2 py-1">
+																													{# CORRECCIÓN: Usar el operador Null Coalescing (??) para evitar errores de clave no definida. #}
+																							<option value="present" {% if (attendanceMap[student.id] ?? 'none') == 'present' %} selected {% endif %}>Presente</option>
+																							<option value="absent" {% if (attendanceMap[student.id] ?? 'none') == 'absent' %} selected {% endif %}>Ausente</option>
+																							<option value="justified" {% if (attendanceMap[student.id] ?? 'none') == 'justified' %} selected {% endif %}>Justificado</option>
+																							</select>
+																							<input type="hidden" name="student_ids[]" value="{{ student.id }}">
+																							</td>
+																							</tr>
+																							{% endfor %}
+																							</tbody>
+																							</table>
+																						</div>
+																						
+																						<button type="submit" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+																							Guardar asistencia
+																						</button>
+																						</form-->
 
 
 	{% endblock %}

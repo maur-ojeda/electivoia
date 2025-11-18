@@ -105,6 +105,16 @@ class StudentController extends AbstractController
 
         $interests = $student->getInterestProfile()?->getInterests() ?? [];
 
+
+
+        // Reagrupar enrollments por curso (como antes)
+        $enrollmentsByCourse = [];
+        foreach ($courses as $course) {
+            // Doctrine ya trajo los enrollments gracias al fetch join
+            $enrollmentsByCourse[$course->getId()] = $course->getEnrollments()->toArray();
+        }
+
+
         return $this->render('student/courses.html.twig', [
             'student' => $student,
             'courses' => $courses,
@@ -116,6 +126,7 @@ class StudentController extends AbstractController
             'allCategories' => $allCategories,
             'selectedCategory' => $selectedCategory,
             'searchQuery' => $searchQuery,
+            'enrollmentsByCourse' => $enrollmentsByCourse,
         ]);
     }
 
@@ -256,6 +267,6 @@ class StudentController extends AbstractController
         $em->remove($enrollment);
         $em->flush();
         $this->addFlash('success', 'Te has dado de baja del curso.');
-        return $this->redirectToRoute('student_enrollments');
+        return $this->redirectToRoute('student_courses');
     }
 }

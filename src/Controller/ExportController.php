@@ -4,30 +4,29 @@ namespace App\Controller;
 
 use App\Entity\Course;
 use App\Entity\Enrollment;
-use App\Service\EnrollmentService;
-use App\Entity\InterestProfile;
-use App\Service\RecommendationService; //<-ya está agregado
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-
+use Symfony\Component\ExpressionLanguage\Expression;
 
 
 #[Route('/admin/export')]
 class ExportController extends AbstractController
 {
     #[Route('/export/course/{id}/students.xlsx', name: 'admin_export_students')]
-    #[IsGranted('ROLE_TEACHER')]
+    #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN")'))]
     public function exportStudents(Course $course, EntityManagerInterface $em): StreamedResponse
     {
-        // Verificar que el curso pertenezca al profesor
-        if ($course->getTeacher() !== $this->getUser()) {
+
+        $currentUser = $this->getUser();
+
+        if (!$this->isGranted('ROLE_ADMIN') && $course->getTeacher() !== $currentUser) {
             throw $this->createAccessDeniedException('No tienes permiso para exportar este curso.');
         }
+
 
         $response = new StreamedResponse();
         $response->setCallback(function () use ($course, $em) {
