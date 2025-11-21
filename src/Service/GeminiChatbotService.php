@@ -8,7 +8,7 @@ use Psr\Log\LoggerInterface;
 
 class GeminiChatbotService
 {
-    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
     
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -67,6 +67,14 @@ class GeminiChatbotService
         } catch (\Exception $e) {
             $this->logger->error('Error en Gemini chatbot: ' . $e->getMessage());
             
+            // Detectar error de límite de cuota (429)
+            if (str_contains($e->getMessage(), '429') || str_contains($e->getMessage(), 'RESOURCE_EXHAUSTED')) {
+                return [
+                    'success' => false,
+                    'message' => 'El asistente IA está temporalmente ocupado. Por favor intenta de nuevo en unos segundos. 😊'
+                ];
+            }
+            
             return [
                 'success' => false,
                 'message' => 'Lo siento, estoy teniendo problemas técnicos. Por favor intenta más tarde.'
@@ -81,12 +89,13 @@ class GeminiChatbotService
         
         foreach ($courses as $course) {
             $context .= sprintf(
-                "- %s (Categoría: %s)\n  Descripción: %s\n  Profesor: %s\n  Cupos: %d\n\n",
+                "- %s (Categoría: %s)\n  Descripción: %s\n  Profesor: %s\n  Cupos: %d/%d\n\n",
                 $course->getName(),
                 $course->getCategory()?->getName() ?? 'Sin categoría',
                 $course->getDescription() ?? 'Sin descripción',
                 $course->getTeacher()?->getFullName() ?? 'Por asignar',
-                $course->getCapacity()
+                $course->getCurrentEnrollment(),
+                $course->getMaxCapacity()
             );
         }
         
