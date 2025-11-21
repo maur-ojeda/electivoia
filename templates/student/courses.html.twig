@@ -388,201 +388,98 @@
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
-const categorySelect = document.getElementById('category');
-if (categorySelect) {
-categorySelect.addEventListener('change', function () {
-this.closest('form').submit();
-});
-}
-});
+			const categorySelect = document.getElementById('category');
+			if (categorySelect) {
+				categorySelect.addEventListener('change', function () {
+					this.closest('form').submit();
+				});
+			}
+		});
 	</script>
 
-
 	<script>
-		const faq = [
-{
-q: "¿Cómo me inscribo a un curso?",
-keywords: [
-"inscribir",
-"inscripción",
-"inscribirme",
-"ingresar",
-"unirme",
-"registrarme"
-],
-a: "Haz clic en 'Inscribirse' en el curso que te interese. Si está lleno, podrías ser aceptado si tienes mejor promedio que otros estudiantes inscritos."
-},
-{
-q: "¿Qué pasa si el curso está lleno?",
-keywords: [
-"lleno",
-"sin cupo",
-"no hay cupo",
-"no puedo inscribirme",
-"capacidad máxima"
-],
-a: "Si el curso está lleno, puedes intentar inscribirte igual. Si tu promedio es mayor que el del estudiante con menor promedio inscrito, serás reemplazado automáticamente."
-},
-{
-q: "¿Cómo cambio mis intereses?",
-keywords: [
-"cambiar intereses",
-"modificar intereses",
-"ajustar intereses",
-"editar intereses",
-"perfil de intereses"
-],
-a: "Haz clic en el botón 'Mis intereses' en la parte superior. Usa los deslizadores para indicar qué áreas te interesan más y guarda los cambios."
-},
-{
-q: "¿Por qué me recomiendan ciertos cursos?",
-keywords: [
-"por qué recomienda",
-"razón recomendación",
-"por qué este curso",
-"motivo recomendación",
-"por qué me sugiere"
-],
-a: "Basándonos en tus intereses y tu grado, el sistema sugiere cursos que coinciden con tus preferencias. Puedes ver la razón al hacer clic en '¿Por qué se recomienda?'."
-}, {
-q: "¿Puedo desinscribirme de un curso?",
-keywords: [
-"desinscribir",
-"salir del curso",
-"retirarme",
-"cancelar inscripción",
-"borrar inscripción"
-],
-a: "Sí, ve a 'Mis cursos inscritos', y haz clic en 'Desinscribirse'."
-}, {
-q: "¿Cuándo termina el periodo de inscripción?",
-keywords: [
-"fecha límite",
-"fin inscripción",
-"último día",
-"plazo inscripción",
-"cerrar inscripción"
-],
-a: "Cada curso tiene su propia fecha límite. La verás en la tarjeta del curso, debajo del nombre."
-}, {
-q: "¿Quién puede ver mis cursos?",
-keywords: [
-"quién ve",
-"privacidad",
-"otros ven",
-"visibilidad",
-"pueden ver mis cursos"
-],
-a: "Solo tú, tu profesor y tu apoderado (si lo tienes vinculado). Los administradores también pueden verlos para gestión."
-}, {
-q: "¿Qué significa 'Cupo: X/Y'?",
-keywords: [
-"cupo x/y",
-"cupo",
-"cupos",
-"capacidad",
-"inscritos",
-"plazas"
-],
-a: "X es el número de estudiantes inscritos. Y es el cupo máximo permitido. Si X = Y, el curso está lleno."
-}, {
-q: "¿Cómo sé si tengo cupo en un curso?",
-keywords: [
-"tengo cupo",
-"hay espacio",
-"puedo inscribirme",
-"está disponible",
-"no está lleno"
-],
-a: "Si ves el botón 'Inscribirse' y no está deshabilitado, aún hay cupo. Si está deshabilitado y dice 'Lleno', no hay espacio."
-}, {
-q: "¿Dónde puedo ver mis cursos inscritos?",
-keywords: [
-"mis cursos",
-"cursos inscritos",
-"mis inscripciones",
-"lista cursos",
-"ver cursos"
-],
-a: "Haz clic en 'Mis cursos inscritos' en la parte superior de la página."
-}
-];
+		// Gemini AI Chatbot
+		const chatBody = document.querySelector('#chatbotModal .modal-body');
+		const chatInput = document.getElementById('chatbotInput');
+		const sendBtn = document.getElementById('chatbotSend');
+		let isProcessing = false;
 
-const chatBody = document.querySelector('#chatbotModal .modal-body');
-const chatInput = document.getElementById('chatbotInput');
-const sendBtn = document.getElementById('chatbotSend');
+		function addMessage(text, isUser = false, isLoading = false) {
+			const div = document.createElement('div');
+			div.className = `mb-2 p-2 rounded ${
+				isUser ? 'bg-primary text-white ms-auto' : 'bg-light'
+			}`;
+			div.style.maxWidth = '70%';
+			
+			if (isLoading) {
+				div.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div> Pensando...';
+				div.id = 'loading-message';
+			} else {
+				div.textContent = text;
+			}
+			
+			chatBody.appendChild(div);
+			chatBody.scrollTop = chatBody.scrollHeight;
+			return div;
+		}
 
-function addMessage(text, isUser = false) {
-const div = document.createElement('div');
-div.className = `mb-2 p-2 rounded ${
-isUser ? 'bg-primary text-white ms-auto' : 'bg-light'
-}`;
-div.style.maxWidth = '70%';
-div.textContent = text;
-chatBody.appendChild(div);
-chatBody.scrollTop = chatBody.scrollHeight;
-}
+		async function sendMessage() {
+			const message = chatInput.value.trim();
+			if (!message || isProcessing) return;
 
-function sendMessage() {
-const message = chatInput.value.trim();
-if (! message) 
-return;
+			isProcessing = true;
+			sendBtn.disabled = true;
+			
+			// Mostrar mensaje del usuario
+			addMessage(message, true);
+			chatInput.value = '';
 
+			// Mostrar indicador de carga
+			const loadingDiv = addMessage('', false, true);
 
+			try {
+				// Llamar a la API de Gemini
+				const response = await fetch('/api/chatbot', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ message: message })
+				});
 
-addMessage(message, true);
-chatInput.value = '';
+				const data = await response.json();
 
-setTimeout(() => {
-let response = "Lo siento, no entiendo esa pregunta. Puedes preguntar sobre inscripciones, cupos, intereses o cómo desinscribirte.";
-const lowerQ = message.toLowerCase();
+				// Remover indicador de carga
+				loadingDiv.remove();
 
-// Normalizar la pregunta del usuario (quitar signos de puntuación y convertir a minúsculas)
-const cleanQuestion = lowerQ.replace(/[^\w\s]/g, '');
-// Elimina signos como ?, !, ., etc.
+				// Mostrar respuesta del bot
+				if (data.success) {
+					addMessage(data.message);
+				} else {
+					addMessage('Lo siento, tuve un problema procesando tu mensaje. ¿Puedes intentar de nuevo?');
+				}
+			} catch (error) {
+				console.error('Error:', error);
+				loadingDiv.remove();
+				addMessage('Lo siento, hubo un error de conexión. Por favor intenta más tarde.');
+			} finally {
+				isProcessing = false;
+				sendBtn.disabled = false;
+				chatInput.focus();
+			}
+		}
 
-// Dividir la pregunta en palabras
-const userWords = cleanQuestion.split(/\s+/);
+		sendBtn.addEventListener('click', sendMessage);
+		chatInput.addEventListener('keypress', (e) => {
+			if (e.key === 'Enter' && !isProcessing) {
+				sendMessage();
+			}
+		});
 
-// Buscar coincidencia con palabras clave
-let bestMatch = null;
-let maxMatches = 0;
-
-for (const item of faq) {
-let matches = 0;
-for (const keyword of item.keywords) {
-const keywordWords = keyword.toLowerCase().split(/\s+/);
-for (const kw of keywordWords) {
-if (userWords.includes(kw)) {
-matches++;
-}
-}
-}
-
-// Si encontramos más coincidencias, es una mejor respuesta
-if (matches > maxMatches) {
-maxMatches = matches;
-bestMatch = item;
-}
-}
-
-// Si hubo al menos una coincidencia, usamos esa respuesta
-if (bestMatch && maxMatches > 0) {
-response = bestMatch.a;
-}
-
-addMessage(response);
-}, 800);
-}
-
-sendBtn.addEventListener('click', sendMessage);
-chatInput.addEventListener('keypress', (e) => {
-if (e.key === 'Enter') 
-sendMessage();
-
-
-
-});
+		// Limpiar chat al abrir el modal
+		document.getElementById('chatbotModal').addEventListener('show.bs.modal', function () {
+			chatBody.innerHTML = '<div class="mb-3 p-2 bg-light rounded">¡Hola! Soy tu asistente inteligente para cursos electivos. Puedo ayudarte a encontrar el curso perfecto para ti. ¿Qué te gustaría saber? 🌟</div>';
+		});
 	</script>
 
 	<!-- End Card Style -->
