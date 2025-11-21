@@ -57,38 +57,22 @@ class RecommendationService
     public function getForStudentWithReasons(User $student): array
     {
         $interests = $student->getInterestProfile()?->getInterests() ?? [];
-        if (empty($interests)) {
-            return [];
-        }
-
         $courses = $this->em->getRepository(Course::class)->findBy(['isActive' => true]);
         $results = [];
 
         foreach ($courses as $course) {
             $reasons = [];
-            $description = strtolower($course->getDescription() ?? '');
+            $cat = $course->getCategory();
 
-            if (($interests['arte'] ?? 0) >= 4 && str_contains($description, 'arte')) {
-                $reasons[] = 'arte';
-            }
-            if (($interests['ciencia'] ?? 0) >= 4 && (str_contains($description, 'ciencia') || str_contains($description, 'científ'))) {
-                $reasons[] = 'ciencia';
-            }
-            if (($interests['tecnologia'] ?? 0) >= 4 && (str_contains($description, 'tecnología') || str_contains($description, 'tecnolog') || str_contains($description, 'programación'))) {
-                $reasons[] = 'tecnología';
-            }
-            if (($interests['deporte'] ?? 0) >= 4 && str_contains($description, 'deporte')) {
-                $reasons[] = 'deporte';
-            }
-            if (($interests['musica'] ?? 0) >= 4 && str_contains($description, 'música')) {
-                $reasons[] = 'música';
+            if (!$cat) continue;
+
+            $catName = $cat->getName();
+            if (($interests[$catName] ?? 0) >= 4) {
+                $reasons[] = $catName;
             }
 
             if (!empty($reasons)) {
-                $results[] = [
-                    'course' => $course,
-                    'reasons' => $reasons,
-                ];
+                $results[] = ['course' => $course, 'reasons' => $reasons];
             }
         }
 

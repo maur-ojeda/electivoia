@@ -1,6 +1,16 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Flowbite */
-@import "flowbite";
+@import url(../theme/css/vendor/bootstrap.min.css);
+@import url(../theme/css/vendor/slick.css);
+@import url(../theme/css/vendor/slick-theme.css);
+@import url(../theme/css/plugins/sal.css);
+@import url(../theme/css/plugins/feather.css);
+@import url(../theme/css/plugins/fontawesome.min.css);
+@import url(../theme/css/plugins/euclid-circulara.css);
+@import url(../theme/css/plugins/swiper.css);
+@import url(../theme/css/plugins/magnify.css);
+@import url(../theme/css/plugins/odometer.css);
+@import url(../theme/css/plugins/animation.css);
+@import url(../theme/css/plugins/bootstrap-select.min.css);
+@import url(../theme/css/plugins/jquery-ui.css);
+@import url(../theme/css/plugins/magnigy-popup.min.css);
+@import url(../theme/css/plugins/plyr.css);
+@import url(../theme/css/style.css);

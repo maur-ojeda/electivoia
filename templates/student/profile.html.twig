@@ -5,26 +5,30 @@
 
 	<p class="mb-6 text-gray-600">Ajusta tus intereses para mejorar las recomendaciones.</p>
 
-	<form method="post" id="interestForm" class="space-y-6 max-w-2xl">
-		{% set interests = profile.interests ?? {} %}
+	{% set categories = [
+    'Filosofía',
+    'Historia, geografía y ciencias sociales',
+    'Lengua y literatura',
+    'Matemática',
+    'Ciencias',
+    'Artes',
+    'Educación física y salud'
+] %}
 
-		{% for category, label in {
-        'arte': 'Arte y Creatividad',
-        'ciencia': 'Ciencia y Naturaleza',
-        'tecnologia': 'Tecnología e Informática',
-        'deporte': 'Deporte y Actividad Física',
-        'musica': 'Música'
-    } %}
-			<div class="bg-gray-50 p-4 rounded-lg">
-				<div class="flex justify-between items-center mb-2">
-					<label class="block text-sm font-medium text-gray-700">{{ label }}</label>
-					<span id="value-{{ category }}" class="text-sm font-bold text-blue-600">{{ interests[category] ?? 0 }}/5</span>
+	<form method="post" id="interestForm">
+		<h3 class="font-medium mb-2">Ajusta tus intereses:</h3>
+		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+			{% for category in categories %}
+				<div class="bg-gray-50 p-3 rounded">
+					<label class="block text-sm font-medium text-gray-700 mb-1">{{ category }}</label>
+					<input type="range" name="interests[{{ category }}]" min="0" max="5" value="{{ (interests[category] ?? 0) }}" class="w-full" oninput="this.nextElementSibling.value = this.value">
+					<output class="text-xs text-gray-600 mt-1">{{ interests[category] ?? 0 }}/5</output>
 				</div>
-				<input type="range" name="{{ category }}" min="0" max="5" value="{{ interests[category] ?? 0 }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" oninput="updateValue('{{ category }}', this.value)" onchange="document.getElementById('interestForm').submit()">
-			</div>
-		{% endfor %}
-
-		<button type="submit" class="hidden"></button>
+			{% endfor %}
+		</div>
+		<button type="submit" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+			Guardar cambios
+		</button>
 	</form>
 
 	<script>

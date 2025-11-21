@@ -44,7 +44,7 @@ class EnrollmentService
         // Verificar si ya está inscrito
         $existingEnrollment = $this->enrollmentRepository->findOneBy(['student' => $student, 'course' => $course]);
         if ($existingEnrollment) {
-            return ['success' => false, 'message' => 'Ya estás inscrito en este curso.'];
+            return ['success' => false, 'message' => 'Ya estás inscrito en este curso. existingEnrollment'];
         }
 
         $currentEnrollmentCount = $course->getCurrentEnrollment();

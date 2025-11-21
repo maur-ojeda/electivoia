@@ -28,9 +28,6 @@ class Course
     #[ORM\Column]
     private int $currentEnrollment = 0;
 
-    #[ORM\Column(length: 255)]
-    private ?string $schedule = null;
-
     #[ORM\Column]
     private bool $isActive = true;
 
@@ -56,6 +53,11 @@ class Course
     #[ORM\OneToMany(targetEntity: Attendance::class, mappedBy: 'course')]
     private Collection $attendances;
 
+    #[ORM\ManyToOne(targetEntity: CourseCategory::class)]
+    private ?CourseCategory $category = null;
+
+
+
 
     public function __construct()
     {
@@ -64,6 +66,7 @@ class Course
         $this->isActive = true;
         $this->enrollments = new ArrayCollection();
         $this->attendances = new ArrayCollection();
+        $this->courseCategories = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -115,16 +118,7 @@ class Course
         return $this;
     }
 
-    public function getSchedule(): ?string
-    {
-        return $this->schedule;
-    }
 
-    public function setSchedule(string $schedule): static
-    {
-        $this->schedule = $schedule;
-        return $this;
-    }
 
     public function isActive(): bool
     {
@@ -230,5 +224,22 @@ class Course
         }
 
         return $this;
+    }
+
+    // Getter y setter
+    public function getCategory(): ?CourseCategory
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?CourseCategory $category): static
+    {
+        $this->category = $category;
+        return $this;
+    }
+
+    public function __toString(): string
+    {
+        return $this->name ?? 'Curso sin nombre';
     }
 }

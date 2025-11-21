@@ -1,53 +1,165 @@
-{% extends 'student/base.html.twig' %}
+{% extends 'base.html.twig' %}
 
 {% block title %}Mis Cursos - Profesor
 {% endblock %}
 
 {% block content %}
-	<h1 class="text-2xl font-bold mb-6">Mis Cursos Asignados</h1>
-
-	{% if courses|length == 0 %}
-		<p class="text-gray-600">No tienes cursos asignados.</p>
-	{% else %}
-		<div class="space-y-6">
-			{% for course in courses %}
-				<div class="bg-white rounded-xl shadow-md overflow-hidden">
-					<div class="p-5">
-						<h2 class="text-xl font-bold text-gray-900">{{ course.name }}</h2>
-						<p class="text-gray-600 mt-1">{{ course.schedule }}</p>
-						<p class="text-sm text-gray-500 mt-2">Cupo:
-							{{ enrollmentsByCourse[course.id]|length }}
-							/
-							{{ course.maxCapacity }}</p>
-
-						<h3 class="font-semibold mt-4 mb-2">Alumnos inscritos ({{ enrollmentsByCourse[course.id]|length }}):</h3>
-						{% if enrollmentsByCourse[course.id]|length == 0 %}
-							<p class="text-gray-500 text-sm">No hay alumnos inscritos aún.</p>
-						{% else %}
-							<ul class="list-disc list-inside text-sm text-gray-700">
-								{% for enrollment in enrollmentsByCourse[course.id] %}
-									<li>{{ enrollment.student.email }}
-										{% if enrollment.student.averageGrade is not null %}
-											(Promedio:
-											{{ enrollment.student.averageGrade }})
-										{% endif %}
-									</li>
-								{% endfor %}
-							</ul>
-						{% endif %}
 
 
-						<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
-							Exportar alumnos
-						</a>
+	<div class="rbt-page-banner-wrapper">
+		<div class="rbt-banner-image"></div>
+	</div>
 
-						<a href="{{ path('teacher_attendance', {id: course.id}) }}" class="mt-2 inline-block px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-							Pasar lista
-						</a>
 
+	<!-- Start Card Style -->
+	<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
+		<div
+			class="container">
+
+			<!-- Start Dashboard Top  -->
+			<div class="rbt-dashboard-content-wrapper">
+				<div class="tutor-bg-photo bg_image height-350" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
+				<!-- Start Tutor Information  -->
+
+
+				<div class="rbt-tutor-information">
+					<div class="rbt-tutor-information-left">
+						<div class="thumbnail rbt-avatars size-lg">
+							<img src={{app.user.avatarUrl}}/>
+
+						</div>
+						<div class="tutor-content">
+
+
+							<h5 class="title">Hola:
+							</h5>
+							<h3 class="title">{{app.user.fullName}}</h3>
+
+						</div>
 					</div>
+
+
 				</div>
-			{% endfor %}
+				<!-- End Tutor Information  -->
+			</div>
+			<!-- End Dashboard Top  -->
+
+			<div class="row my-4">
+				<form method="GET">
+					<div class="rbt-search-with-category">
+						<div class="filter-select rbt-modern-select search-by-category">
+							<select id="category" name="category" class="w-100">
+								<option value="">Todas las categorías</option>
+								{% for cat in allCategories %}
+									<option value="{{ cat.id }}" {% if cat.id == selectedCategory %} selected {% endif %}>
+										{{ cat.name }}
+									</option>
+								{% endfor %}
+							</select>
+						</div>
+						<div class="search-field">
+							<input type="text" name="q" placeholder="Buscar" value="{{ searchQuery }}">
+							<button class="rbt-round-btn serach-btn" type="submit">
+								<i class="feather-search"></i>
+							</button>
+						</div>
+					</div>
+				</form>
+			</div>
+
+
+			<div class="container">
+
+				<div
+					class="row g-5">
+
+					<!-- Start Single Course  -->
+
+					{% for course in courses %}
+
+
+						{% set category_map = {				'Filosofía': '01',
+														'Matemática': '02',
+														'Educación física y salud': '03',
+														'Historia, geografía y ciencias sociales': '04',
+														'Ciencias': '05',
+														'Lengua y literatura': '07',
+														'Artes': '09'
+													} %}
+						{% set image_number = category_map[course.category.name]|default('default') %}
+
+						<div class="col-lg-4 col-md-6 col-12">
+							<div class="rbt-card variation-01 rbt-hover">
+								<div class="rbt-card-img">
+									<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}" alt="Imagen del curso de {{ course.category.name }}">
+								</div>
+
+
+								<div class="rbt-card-body">
+
+
+									<div class="rbt-card-top">
+										<div class="rbt-review">
+											<span class="rbt-badge-5 me-1 bg-color-primary-opacity ">{{ course.category.area }}</span>
+											<span class="rbt-badge-5 bg-color-secondary-opacity">{{ course.category.name }}</span>
+										</div>
+
+									</div>
+
+
+									<h5 class="">
+										{{ course.name }}
+									</h5>
+									<p class="small">{{ course.description }}</p>
+									<ul class="rbt-meta">
+
+										<li class="text-muted small">
+											<i class="feather-users"></i>
+											Estudiantes
+											{{ enrollmentsByCourse[course.id]|length }}
+											/
+											{{ course.maxCapacity }}
+										</li>
+
+
+									</ul>
+
+
+									<div class="rbt-card-bottom text-end">
+
+										<a class="rbt-btn btn-sm btn-gradient" href="{{ path('teacher_attendance', {id: course.id}) }}">Ver listado</a>
+
+										<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="rbt-btn btn-sm btn-gradient d-none">
+											Exportar Alumnos
+										</a>
+
+									</div>
+								</div>
+							</div>
+						</div>
+
+
+					{% endfor %}
+
+					<!-- End Single Course  -->
+
+
+				</div>
+
+
+			</div>
 		</div>
-	{% endif %}
-{% endblock %}
+	</div>
+</div>
+
+<script>
+
+	document.addEventListener('DOMContentLoaded', function () {
+const categorySelect = document.getElementById('category');
+if (categorySelect) {
+categorySelect.addEventListener('change', function () {
+this.closest('form').submit();
+});
+}
+});
+</script>{% endblock %}

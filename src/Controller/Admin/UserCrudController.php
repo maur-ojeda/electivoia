@@ -5,37 +5,29 @@ namespace App\Controller\Admin;
 use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use Symfony\Component\Validator\Constraints\Regex;
+
 
 class UserCrudController extends AbstractCrudController
 {
     private const CHILEAN_GRADES = [
-        // Educación Básica
-        '1° Básico' => '1B',
-        '2° Básico' => '2B',
-        '3° Básico' => '3B',
-        '4° Básico' => '4B',
-        '5° Básico' => '5B',
-        '6° Básico' => '6B',
-        '7° Básico' => '7B',
-        '8° Básico' => '8B',
-        // Educación Media
-        '1° Medio' => '1M',
-        '2° Medio' => '2M',
         '3° Medio' => '3M',
         '4° Medio' => '4M',
     ];
 
-    // Longitud de la contraseña temporal (usa un número par)
-    private const TEMPORARY_PASSWORD_LENGTH = 16;
+    // Longitud de la contraseña temporal (ya no se usa para generación aleatoria)
+    // private const TEMPORARY_PASSWORD_LENGTH = 16; // Comentamos o eliminamos esta constante
 
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
@@ -47,16 +39,51 @@ class UserCrudController extends AbstractCrudController
         return User::class;
     }
 
-    // 1. GENERAR CONTRASEÑA TEMPORAL Y ASIGNARLA A LA PROPIEDAD NO MAPEADA 'plainPassword'.
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInSingular('Usuario')
+            ->setEntityLabelInPlural('Usuarios')
+            ->setSearchFields(['fullName', 'rut'])
+            ->setDefaultSort(['fullName' => 'ASC']);
+    }
+
+    public function configureFilters(Filters $filters): Filters
+    {
+        return $filters
+            ->add('fullName')
+            ->add('rut')
+            ->add('grade')
+            ->add('gender')
+            ->add('active')
+            ->add(\App\Filter\RoleFilter::new('roles', 'Rol'));
+    }
+
+
+
+    // 1. GENERAR CONTRASEÑA TEMPORAL (ahora basada en RUT) Y ASIGNARLA A LA PROPIEDAD NO MAPEADA 'plainPassword'.
     public function createEntity(string $entityFqcn): User
     {
         /** @var User $user */
         $user = new $entityFqcn();
 
-        // Generar una contraseña aleatoria y segura.
-        $plainPassword = substr(bin2hex(random_bytes(self::TEMPORARY_PASSWORD_LENGTH / 2)), 0, self::TEMPORARY_PASSWORD_LENGTH);
+        // --- Nueva Lógica: Contraseña basada en RUT ---
+        $rut = $user->getRut();
+        if ($rut) {
+            // Extraer solo los dígitos antes del guión
+            $digits = preg_replace('/[^0-9]/', '', $rut);
+            // Tomar los primeros 6 dígitos
+            $plainPassword = substr($digits, 0, 6);
+        } else {
+            // Fallback: Si no hay RUT (aunque debería haberlo en este punto si se completa el formulario),
+            // generamos una contraseña temporal aleatoria como antes.
+            // Opcional: Lanzar una excepción o manejar este caso de otra manera.
+            // Para este ejemplo, generamos una corta y clara.
+            $plainPassword = 'rut_temp'; // Esto se sobrescribirá si se ingresa RUT y se envía de nuevo.
+        }
+        // --- Fin Nueva Lógica ---
 
-        // Establecer la contraseña en la propiedad 'plainPassword' del objeto User 
+        // Establecer la contraseña en la propiedad 'plainPassword' del objeto User
         $user->plainPassword = $plainPassword;
 
         return $user;
@@ -70,13 +97,43 @@ class UserCrudController extends AbstractCrudController
 
         $fields = [
             IdField::new('id')->onlyOnIndex(),
-            EmailField::new('email'),
+
+            // Nombre completo (obligatorio para todos)
+            TextField::new('fullName', 'Nombre completo')
+                ->setRequired(true),
+
+            // RUT (obligatorio para todos, único)
+            $rutField = TextField::new('rut', 'RUT')
+                ->setHelp('Formato chileno: 12345678-9')
+                ->setRequired(true)
+                ->setFormTypeOption('constraints', [
+                    new Regex([
+                        'pattern' => '/^\d{7,8}-[\dKk]$/',
+                        'message' => 'El RUT debe tener el formato 12345678-9 o 12345678-K.'
+                    ])
+                ]),
+
+            ChoiceField::new('gender', 'Género')->setChoices([
+                'Masculino' => 'M',
+                'Femenino' => 'F',
+                'Otro' => 'Otro',
+                'Prefiero no decirlo' => 'Prefiero no decirlo',
+            ])->allowMultipleChoices(false)->renderAsBadges(),
+
+
+            // Eliminado: EmailField::new('email'),
+
+
             ChoiceField::new('grade', 'Curso/Grado')
                 ->setChoices(self::CHILEAN_GRADES)
                 ->allowMultipleChoices(false)
                 ->renderAsNativeWidget(), // Muestra como <select> estándar
+            
+            NumberField::new('averageGrade', 'Promedio General')
+                ->setNumDecimals(1)
+                ->setHelp('Promedio de notas del estudiante (escala 1.0 - 7.0)'),
+            
             BooleanField::new('active', 'Activo'), // ← Campo para desactivar
-
 
         ];
 
@@ -98,9 +155,11 @@ class UserCrudController extends AbstractCrudController
             $passwordField
                 ->setFormTypeOption('attr', [
                     'type' => 'text',
-                    'readonly' => 'readonly'
+                    'readonly' => 'readonly',
+                    'style' => 'font-family: monospace; font-size: 1.2em; background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; padding: 8px 12px;' // Estilo para resaltar la contraseña
                 ])
-                ->setHelp("Contraseña generada: <code style='font-size: 1.1em;'>{$generatedPassword}</code>. Anótela si no va a cambiarla manualmente.");
+                // Actualizamos el mensaje para reflejar la nueva lógica
+                ->setHelp("Contraseña generada (primeros 6 dígitos del RUT): <code style='font-family: monospace; font-size: 1.2em; background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px;'>{$generatedPassword}</code>. Anótela si no va a cambiarla manualmente.");
         } else {
             // En la página de Edición
             $passwordField
@@ -154,6 +213,7 @@ class UserCrudController extends AbstractCrudController
     /**
      * Revisa si se proporcionó una nueva contraseña en el campo unmapped y la hashea,
      * obteniendo el valor directamente de la solicitud POST.
+     * Ahora también actualiza la contraseña temporal si se cambia el RUT en la creación.
      */
     private function hashPasswordIfRequired(User $user): void
     {
@@ -175,13 +235,19 @@ class UserCrudController extends AbstractCrudController
             }
         }
 
-        // Si el valor está vacío, pero estamos en la página de creación,
-        // tomamos la contraseña temporal que se generó en createEntity.
-        if (!$plainPassword && $isNewPage && isset($user->plainPassword)) {
-            $plainPassword = $user->plainPassword;
+        // --- Nueva Lógica: Actualizar contraseña temporal si es creación y no se ingresó manualmente ---
+        if ($isNewPage && !$plainPassword) {
+            // Si no se ingresó manualmente una contraseña nueva, usamos la basada en RUT
+            $rut = $user->getRut();
+            if ($rut) {
+                $digits = preg_replace('/[^0-9]/', '', $rut);
+                $plainPassword = substr($digits, 0, 6);
+            }
+            // Si no hay RUT aún (caso raro en PAGE_NEW si se envió el form), plainPassword seguirá siendo null o vacío.
         }
+        // --- Fin Nueva Lógica ---
 
-        // Solo hashear si se proporcionó un valor (manual o por defecto)
+        // Solo hashear si se proporcionó un valor (manual o por defecto basado en RUT)
         if ($plainPassword) {
             $hashedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);
             $user->setPassword($hashedPassword);

@@ -7,7 +7,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\HttpFoundation\Request; // Importar Request
+use Symfony\Component\HttpFoundation\Request;
 use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\Attendance;
@@ -15,28 +15,94 @@ use App\Entity\User; // Importar User
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-
+use Symfony\Component\ExpressionLanguage\Expression;
 
 
 #[Route('/teacher', name: 'teacher_')]
-#[IsGranted('ROLE_TEACHER')]
+#[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN")'))]
 class TeacherController extends AbstractController
 {
     #[Route('/courses', name: 'courses')]
-    public function courses(EntityManagerInterface $em): Response
+    public function courses(Request $request, EntityManagerInterface $em): Response
     {
         $teacher = $this->getUser();
-        $courses = $em->getRepository(\App\Entity\Course::class)->findBy(['teacher' => $teacher]);
 
+        $searchQuery = trim((string) $request->query->get('q', ''));
+        $selectedCategory = $request->query->get('category');
+
+        // Subconsulta para contar inscripciones (evita N+1 al contar)
+        $countQb = $em->createQueryBuilder()
+            ->select('c.id, COUNT(e.id) as enrollmentCount')
+            ->from(\App\Entity\Course::class, 'c')
+            ->leftJoin('c.enrollments', 'e')
+            ->where('c.teacher = :teacher')
+            ->andWhere('c.isActive = true')
+            ->setParameter('teacher', $teacher);
+
+        // Aplicar mismos filtros a la subconsulta
+        if ($selectedCategory) {
+            $countQb->andWhere('c.category = :categoryId')
+                ->setParameter('categoryId', $selectedCategory);
+        }
+        if ($searchQuery !== '') {
+            $countQb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search')
+                ->setParameter('search', '%' . strtolower($searchQuery) . '%');
+        }
+
+        $countResults = $countQb->groupBy('c.id')->getQuery()->getResult();
+        $enrollmentCounts = [];
+        foreach ($countResults as $row) {
+            $enrollmentCounts[$row['id']] = (int) $row['enrollmentCount'];
+        }
+
+        // Consulta principal: cursos + relaciones (optimizada con fetch join)
+        $qb = $em->createQueryBuilder()
+            ->select('c, cat, t, e, s')
+            ->from(\App\Entity\Course::class, 'c')
+            ->leftJoin('c.category', 'cat')
+            ->leftJoin('c.teacher', 't')
+            ->leftJoin('c.enrollments', 'e')
+            ->leftJoin('e.student', 's')
+            ->where('c.teacher = :teacher')
+            ->andWhere('c.isActive = true')
+            ->setParameter('teacher', $teacher);
+
+        if ($selectedCategory) {
+            $qb->andWhere('c.category = :categoryId')
+                ->setParameter('categoryId', $selectedCategory);
+        }
+        if ($searchQuery !== '') {
+            $qb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search')
+                ->setParameter('search', '%' . strtolower($searchQuery) . '%');
+        }
+
+        $courses = $qb->getQuery()->getResult();
+
+        // Reagrupar enrollments por curso (como antes)
         $enrollmentsByCourse = [];
         foreach ($courses as $course) {
-            $enrollments = $em->getRepository(\App\Entity\Enrollment::class)->findBy(['course' => $course]);
-            $enrollmentsByCourse[$course->getId()] = $enrollments;
+            // Doctrine ya trajo los enrollments gracias al fetch join
+            $enrollmentsByCourse[$course->getId()] = $course->getEnrollments()->toArray();
         }
+
+        // Obtener categorías para el filtro
+        $allCategories = $em->getRepository(\App\Entity\CourseCategory::class)->findAll();
+
+
+        $enrollmentStatus = $request->query->get('enrollmentStatus');
+
+
+
+
+
 
         return $this->render('teacher/courses.html.twig', [
             'courses' => $courses,
             'enrollmentsByCourse' => $enrollmentsByCourse,
+            'enrollmentCounts' => $enrollmentCounts, // útil para mostrar cupo sin iterar
+            'allCategories' => $allCategories,
+            'selectedCategory' => $selectedCategory,
+            'searchQuery' => $searchQuery,
         ]);
     }
 
@@ -114,7 +180,6 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/export/course/{id}/students.xlsx', name: 'export_students')]
-    #[IsGranted('ROLE_TEACHER')]
     public function exportStudents(Course $course, EntityManagerInterface $em): StreamedResponse
     {
         // Verificar que el curso pertenezca al profesor
@@ -128,16 +193,18 @@ class TeacherController extends AbstractController
 
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
-            $sheet->setCellValue('A1', 'Email');
-            $sheet->setCellValue('B1', 'Grado');
-            $sheet->setCellValue('C1', 'Promedio');
+            $sheet->setCellValue('A1', 'Alumno');
+            $sheet->setCellValue('B1', 'RUT');
+            $sheet->setCellValue('C1', 'CURSO');
+            $sheet->setCellValue('D1', 'PROMEDIO');
 
             $row = 2;
             foreach ($enrollments as $enrollment) {
                 $student = $enrollment->getStudent();
-                $sheet->setCellValue('A' . $row, $student->getEmail());
-                $sheet->setCellValue('B' . $row, $student->getGrade());
-                $sheet->setCellValue('C' . $row, $student->getAverageGrade());
+                $sheet->setCellValue('A' . $row, $student->getFullName());
+                $sheet->setCellValue('B' . $row, $student->getRut());
+                $sheet->setCellValue('C' . $row, $student->getGrade());
+                $sheet->setCellValue('D' . $row, $student->getAverageGrade());
                 $row++;
             }
 

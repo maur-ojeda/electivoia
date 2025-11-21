@@ -1,114 +1,589 @@
-{% extends 'student/base.html.twig' %}
+{% extends 'base.html.twig' %}
 
 {% block content %}
-	<h1 class="text-2xl font-bold mb-6">Cursos Electivos Disponibles</h1>
 
-	<!-- Filtros -->
-	<div class="mb-4 flex gap-4">
-		<a href="{{ path('student_courses') }}" class="px-3 py-1 bg-gray-200 rounded">Todos</a>
-		<a href="{{ path('student_courses') }}?available=1" class="px-3 py-1 bg-blue-200 rounded">Con cupo</a>
+
+	<div
+		class="rbt-page-banner-wrapper">
+		<!-- Start Banner BG Image  -->
+		<div class="rbt-banner-image"></div>
+		<!-- End Banner BG Image  -->
 	</div>
 
-	<!-- Enlace a "Mis cursos" -->
-	<a href="{{ path('student_enrollments') }}" class="inline-block mb-4 px-4 py-2 bg-gray-800 text-white rounded">
-		📚 Mis cursos inscritos
-	</a>
+	<!-- Start Card Style -->
+	<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
+		<div class="container">
+			<div class="row">
+				<div class="rbt-dashboard-content-wrapper col-sm-none col-md-block col-md-4">
+					<div class="tutor-bg-photo bg_image bg_image--23 h-100" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
+					<!-- Start Tutor Information  -->
+					<div class=" rbt-tutor-information">
+						<div class="rbt-tutor-information-left">
+							<div class="tutor-content">
 
-	<!-- Recomendaciones -->
-	<!-- Recomendaciones + Formulario de intereses -->
-	{% if student.interestProfile %}
-		<div class="mb-8">
-			<h2 class="text-xl font-semibold mb-3 text-blue-600">Recomendaciones personalizadas</h2>
-
-			<!-- Formulario de intereses -->
-			<form method="post" action="{{ path('student_update_interests') }}" class="mb-4 p-4 bg-gray-50 rounded">
-				<h3 class="font-medium mb-2">Ajusta tus intereses:</h3>
-				{% set interests = student.interestProfile.interests ?? {} %}
-				<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-					{% for category, label in {
-        'arte': 'Arte',
-        'ciencia': 'Ciencia',
-        'tecnologia': 'Tecnología',
-        'deporte': 'Deporte',
-        'musica': 'Música'
-      } %}
-						<div class="text-center">
-							<label class="block text-sm font-medium text-gray-700 mb-1">{{ label }}</label>
-							<input type="range" name="{{ category }}" min="0" max="5" value="{{ interests[category] ?? 0 }}" class="w-full" oninput="this.nextElementSibling.value = this.value">
-							<output class="text-xs text-gray-600 mt-1">{{ interests[category] ?? 0 }}</output>
+								<h6 class="title">Hola:
+								</h6>
+								<h3 class="title">{{app.user.fullName}}</h3>
+								<ul class="rbt-meta rbt-meta-white mt--5">
+									<li>
+										curso:
+										{{app.user.grade}}
+									</li>
+									<li></li>
+								</ul>
+							</div>
 						</div>
-					{% endfor %}
-				</div>
-				<button type="submit" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-					Guardar cambios
-				</button>
-			</form>
 
-			<!-- Lista de recomendaciones -->
-			{% if recommendations|length > 0 %}
-				<div class="space-y-3">
-					{% for item in recommendations %}
-						<div class="bg-blue-50 p-3 rounded border-l-4 border-blue-500">
-							<h3 class="font-bold">{{ item.course.name }}</h3>
-							<p class="text-sm text-gray-600">{{ item.course.description }}</p>
-							<p class="text-xs text-blue-700 mt-1">Recomendado por:
-								{{ item.reasons|join(', ') }}</p>
+					</div>
+					<!-- End Tutor Information  -->
+				</div>
+				<div class="rbt-dashboard-content-wrapper col-sm-12 col-md-8">
+					<div class="rbt-card rbt-hover">
+						<div class="rbt-card-body">
+							<h5 class="rbt-card-title">Mis intereses 🌟
+							</h5>
+							<div class="rbt-progress-style-1 mt--10">
+
+								<div class="d-sm-block d-md-none">
+									<h6 class="title">Hola:
+									</h6>
+									<h3 class="title">{{app.user.fullName}}</h3>
+								</div>
+
+
+								{% for interest_name, count in interests %}
+
+									{% set percentage = count * 20 %}
+
+									<div class="single-progress my-3">
+										<p class="small mb-0">{{ interest_name }}</p>
+										<div class="progress">
+											<div class="progress-bar wow fadeInLeft" data-wow-duration="0.5s" data-wow-delay=".3s" role="progressbar" style="width: {{ percentage }}%" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+
+											<span class="progress-number">{{ percentage }}%</span>
+										</div>
+									</div>
+								{% endfor %}
+							</div>
+							<div class="rbt-card-bottom">
+								<a class="rbt-btn btn-sm btn-gradient mt-5" href="#" data-bs-toggle="modal" data-bs-target="#interestModal">Ajustar intereses<i class="feather-arrow-right"></i>
+								</a>
+							</div>
 						</div>
-					{% endfor %}
-				</div>
-			{% else %}
-				<p class="text-gray-500 text-sm">No hay recomendaciones. Ajusta tus intereses arriba.</p>
-			{% endif %}
-		</div>
-	{% else %}
-		<div class="mb-8">
-			<p class="text-gray-600">Completa tu
-				<a href="{{ path('student_profile') }}" class="text-blue-600 hover:underline">perfil de intereses</a>
-				para recibir recomendaciones.</p>
-		</div>
-	{% endif %}
-
-
-	<!-- Lista de cursos -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-		{% for course in courses %}
-			<div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-				<div class="p-5">
-					<div class="flex justify-between items-start">
-						<h3 class="text-lg font-bold text-gray-900">{{ course.name }}</h3>
-						<span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded">
-							{{ course.schedule }}
-						</span>
 					</div>
-					<p class="mt-2 text-gray-600 text-sm">{{ course.description|raw }}</p>
-
-					<div class="mt-4 flex items-center justify-between">
-						<span class="text-sm font-medium text-gray-700">
-							Cupo:
-							{{ enrollmentCounts[course.id] ?? 0 }}
-							/
-							{{ course.maxCapacity }}
-						</span>
-						{% if enrollmentCounts[course.id] ?? 0 >= course.maxCapacity %}
-							<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-								Lleno
-							</span>
-						{% endif %}
-					</div>
-
-					<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="mt-4">
-						{% if course.id in enrolledCourseIds %}
-							<button type="button" class="w-full bg-gray-400 text-white font-medium py-2 px-4 rounded cursor-not-allowed">
-								Inscrito
-							</button>
-						{% else %}
-							<button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded" {% if enrollmentCounts[course.id] ?? 0 >= course.maxCapacity %} disabled {% endif %}>
-								Inscribirse
-							</button>
-						{% endif %}
-					</form>
 				</div>
 			</div>
-		{% endfor %}
+
+
+			<div class="container">
+
+
+				<button type="button" class="rbt-btn btn-gradient radius-round position-fixed bottom-0 end-0" data-bs-toggle="modal" data-bs-target="#chatbotModal" style="z-index: 1050;">
+					<i class="feather-message-circle"></i>
+				</button>
+
+
+				<a class="rbt-round-btn serach-btn d-none" href="{{ path('student_courses') }}">
+					<i class="feather-search"></i>
+					x
+				</a>
+
+				<div class="row my-4">
+					<form method="GET">
+						<div class="rbt-search-with-category">
+							<div class="filter-select rbt-modern-select search-by-category">
+								<select id="category" name="category">
+									<option value="">Todas las categorías</option>
+									{% for cat in allCategories %}
+										<option value="{{ cat.id }}" {% if cat.id == selectedCategory %} selected {% endif %}>
+											{{ cat.name }}
+										</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="search-field">
+								<input type="text" placeholder="Buscar en nombre o descripción..." id="search" name="q" value="{{ searchQuery }}">
+								<button class="rbt-round-btn serach-btn" type="submit">
+									<i class="feather-search"></i>
+								</button>
+							</div>
+						</div>
+					</form>
+				</div>
+
+				<!-- end search -->
+
+
+				{% if recommendations|length > 0 %}
+					<div class="col-12 mb-5">
+						<h4 class="rbt-card-title mb-4">🎯 Cursos recomendados para ti</h4>
+						<div class="row g-4">
+							{% for item in recommendations %}
+
+								{% set course = item.course %}
+								{% set category_map = {
+                    'Filosofía': '01',
+                    'Matemática': '02',
+                    'Educación física y salud': '03',
+                    'Historia, geografía y ciencias sociales': '04',
+                    'Ciencias': '05',
+                    'Lengua y literatura': '07',
+                    'Artes': '09'
+                } %}
+								{% set image_number = category_map[course.category.name]|default('default') %}
+
+
+								<div class="col-lg-3 col-md-6 col-12 p-2">
+									<div class="rbt-card variation-01 rbt-hover border border-primary">
+										<div class="rbt-card-img">
+											<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}" alt="Recomendado: {{ course.name }}">
+										</div>
+										<div class="rbt-card-body">
+
+											<div class="rbt-card-top">
+												<div class="rbt-card-top">
+													<div class="rbt-review">
+														<span class="rbt-badge-5 me-1 bg-color-primary-opacity ">{{ course.category.area }}</span>
+														<span class="rbt-badge-5 bg-color-secondary-opacity">{{ course.category.name }}</span>
+													</div>
+
+												</div>
+											</div>
+
+
+											<h5 class="">
+												{{ course.name }}
+											</h5>
+
+
+											<p class="small">{{ course.description }}</p>
+
+											<span class="rbt-badge-card">
+												<i class="feather-user"></i>
+												{{ course.teacher.fullName }}</span>
+
+											<span class="rbt-badge-card">
+												<i class="feather-hash"></i>
+												{{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}</span>
+
+
+											<small style="font-size:11px">
+												<i class="feather-star"></i>
+
+												Recomendado por:{{ item.reasons|join(', ') }}</small>
+
+
+											<div class="rbt-card-bottom">
+												<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="mt-4">
+													{% if course.id in enrolledCourseIds %}
+														<div class="rbt-btn btn-sm bg-secondary-opacity">
+															Inscrito
+														</div>
+
+													{% else %}
+														<button type="submit" class="rbt-btn btn-sm btn-gradient">
+															Inscribirse
+														</button>
+
+
+													{% endif %}
+												</form>
+
+												{% if course.id in enrolledCourseIds %}
+													<form method="post" action="{{ path('student_unenroll', {'id': course.id}) }}" style="display: inline;">
+														<button type="submit" class="rbt-btn btn-sm btn-gradient btn-gradient-2">Darse de baja</button>
+													</form>
+
+												{% endif %}
+											</div>
+										</div>
+									</div>
+								</div>
+							{% endfor %}
+						</div>
+					</div>
+				{% endif %}
+
+				<div
+					class="row g-5">
+
+					<!-- Start Single Course  -->
+					{% set recommendedCourseIds = recommendations|map(r => r.course.id)|keys %}
+					{% for course in courses %}
+
+						{% if course.id not in recommendedCourseIds %}
+
+
+							{% set category_map = {		'Filosofía': '01',
+														'Matemática': '02',
+														'Educación física y salud': '03',
+														'Historia, geografía y ciencias sociales': '04',
+														'Ciencias': '05',
+														'Lengua y literatura': '07',
+														'Artes': '09'
+													} %}
+							{% set image_number = category_map[course.category.name]|default('default') %}
+
+
+							<div class="col-lg-3 col-md-6 col-12 p-2">
+								<div class="rbt-card variation-01 rbt-hover ">
+									<div class="rbt-card-img">
+										<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}" alt="Recomendado: {{ course.name }}">
+									</div>
+									<div class="rbt-card-body">
+
+										<div class="rbt-card-top">
+											<div class="rbt-card-top">
+												<div class="rbt-review">
+													<span class="rbt-badge-5 me-1 bg-color-primary-opacity ">{{ course.category.area }}</span>
+													<span class="rbt-badge-5 bg-color-secondary-opacity">{{ course.category.name }}</span>
+												</div>
+
+											</div>
+										</div>
+
+
+										<h5 class="">
+											{{ course.name }}
+										</h5>
+
+
+										<p class="small">{{ course.description }}</p>
+
+										<span class="rbt-badge-card">
+											<i class="feather-user"></i>
+											{{ course.teacher.fullName }}</span>
+
+										<span class="rbt-badge-card">
+											<i class="feather-hash"></i>
+											{{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}</span>
+
+
+										<div class="rbt-card-bottom">
+											<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="mt-4">
+												{% if course.id in enrolledCourseIds %}
+													<div class="rbt-btn btn-sm bg-secondary-opacity">
+														Inscrito
+													</div>
+
+
+												{% else %}
+													<button type="submit" class="rbt-btn btn-sm btn-gradient">
+														Inscribirse
+													</button>
+
+
+												{% endif %}
+
+												{% if course.id in enrolledCourseIds %}
+													<form method="post" action="{{ path('student_unenroll', {'id': course.id}) }}" style="display: inline;">
+														<button type="submit" class="rbt-btn btn-sm btn-gradient btn-gradient-2" onclick="return confirm('¿Estás seguro de que quieres darte de baja de este curso?')">Darse de baja</button>
+													</form>
+
+												{% endif %}
+											</form>
+										</div>
+									</div>
+								</div>
+							</div>
+
+
+						{% endif %}
+					{% endfor %}
+
+					<!-- End Single Course  -->
+
+
+				</div>
+
+
+			</div>
+		</div>
 	</div>
+</div><!--    chatbotModal    --><div class="modal fade" tabindex="-1" id="chatbotModal" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="chatbotModalLabel">🤖 Asistente de Cursos Electivos</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body" style="height: 300px; overflow-y: auto; background-color: #f8f9fa; padding: 1rem;">
+				<div class="mb-3 p-2 bg-light rounded">
+					¡Hola! Soy tu asistente para dudas sobre cursos electivos. ¿En qué puedo ayudarte? 🌟
+				</div>
+			</div>
+			<div class="modal-footer">
+				<input type="text" class="form-control" id="chatbotInput" placeholder="Escribe tu pregunta..."/>
+				<button type="button" class="btn btn-primary" id="chatbotSend">Enviar</button>
+			</div>
+		</div>
+	</div>
+</div><!-- end  chatbotModal  --><!--    interestModal    --><div class="modal fade" tabindex="-1" id="interestModal" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Que es lo que más te gusta 🌟</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body">
+
+				<div class="container">
+					<div class="row mb-4 p-4">
+						<p class="small">Utiliza los deslizadores para indicar que te interesa (0 = Sin interés, 5 = Máximo interés) y actualiza tus recomendaciones.</p>
+					</div>
+					<form method="post" action="{{ path('student_profile') }}" id="interests-form">
+						{% set categories = [
+                            'Filosofía',
+                            'Historia, geografía y ciencias sociales',
+                            'Lengua y literatura',
+                            'Matemática',
+                            'Ciencias',
+                            'Artes',
+                            'Educación física y salud'
+                        ] %}
+						<div class="row g-5 p-4">
+							{% for category in categories %}
+								<div class="col-lg-6 col-md-6 col-12">
+									<div class="card rbt-hover-03 rbt-border-dashed">
+										<div class="card-body">
+											<label>{{ category }}</label>
+											<div>
+												<input type="range" name="interests[{{ category }}]" min="0" max="5" value="{{ interests[category] ?? 0 }}" class="form-range" oninput="document.getElementById('output-{{ loop.index }}').innerText = this.value">
+												<output class="">
+													<span id="output-{{ loop.index }}">{{ interests[category] ?? 0 }}</span>/5
+												</output>
+											</div>
+
+										</div>
+									</div>
+
+								</div>
+							{% endfor %}
+
+						</form>
+					</div>
+
+				</div>
+				<div class="modal-footer">
+
+
+					<button class="rbt-btn btn-gradient hover-icon-reverse" type="submit" form="interests-form">
+						<span class="icon-reverse-wrapper">
+							<span class="btn-text">Guardar cambios</span>
+							<span class="btn-icon">
+								<i class="feather-arrow-right"></i>
+							</span>
+							<span class="btn-icon">
+								<i class="feather-arrow-right"></i>
+							</span>
+						</span>
+					</button>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<!--  end  interestModal    -->
+
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+const categorySelect = document.getElementById('category');
+if (categorySelect) {
+categorySelect.addEventListener('change', function () {
+this.closest('form').submit();
+});
+}
+});
+	</script>
+
+
+	<script>
+		const faq = [
+{
+q: "¿Cómo me inscribo a un curso?",
+keywords: [
+"inscribir",
+"inscripción",
+"inscribirme",
+"ingresar",
+"unirme",
+"registrarme"
+],
+a: "Haz clic en 'Inscribirse' en el curso que te interese. Si está lleno, podrías ser aceptado si tienes mejor promedio que otros estudiantes inscritos."
+},
+{
+q: "¿Qué pasa si el curso está lleno?",
+keywords: [
+"lleno",
+"sin cupo",
+"no hay cupo",
+"no puedo inscribirme",
+"capacidad máxima"
+],
+a: "Si el curso está lleno, puedes intentar inscribirte igual. Si tu promedio es mayor que el del estudiante con menor promedio inscrito, serás reemplazado automáticamente."
+},
+{
+q: "¿Cómo cambio mis intereses?",
+keywords: [
+"cambiar intereses",
+"modificar intereses",
+"ajustar intereses",
+"editar intereses",
+"perfil de intereses"
+],
+a: "Haz clic en el botón 'Mis intereses' en la parte superior. Usa los deslizadores para indicar qué áreas te interesan más y guarda los cambios."
+},
+{
+q: "¿Por qué me recomiendan ciertos cursos?",
+keywords: [
+"por qué recomienda",
+"razón recomendación",
+"por qué este curso",
+"motivo recomendación",
+"por qué me sugiere"
+],
+a: "Basándonos en tus intereses y tu grado, el sistema sugiere cursos que coinciden con tus preferencias. Puedes ver la razón al hacer clic en '¿Por qué se recomienda?'."
+}, {
+q: "¿Puedo desinscribirme de un curso?",
+keywords: [
+"desinscribir",
+"salir del curso",
+"retirarme",
+"cancelar inscripción",
+"borrar inscripción"
+],
+a: "Sí, ve a 'Mis cursos inscritos', y haz clic en 'Desinscribirse'."
+}, {
+q: "¿Cuándo termina el periodo de inscripción?",
+keywords: [
+"fecha límite",
+"fin inscripción",
+"último día",
+"plazo inscripción",
+"cerrar inscripción"
+],
+a: "Cada curso tiene su propia fecha límite. La verás en la tarjeta del curso, debajo del nombre."
+}, {
+q: "¿Quién puede ver mis cursos?",
+keywords: [
+"quién ve",
+"privacidad",
+"otros ven",
+"visibilidad",
+"pueden ver mis cursos"
+],
+a: "Solo tú, tu profesor y tu apoderado (si lo tienes vinculado). Los administradores también pueden verlos para gestión."
+}, {
+q: "¿Qué significa 'Cupo: X/Y'?",
+keywords: [
+"cupo x/y",
+"cupo",
+"cupos",
+"capacidad",
+"inscritos",
+"plazas"
+],
+a: "X es el número de estudiantes inscritos. Y es el cupo máximo permitido. Si X = Y, el curso está lleno."
+}, {
+q: "¿Cómo sé si tengo cupo en un curso?",
+keywords: [
+"tengo cupo",
+"hay espacio",
+"puedo inscribirme",
+"está disponible",
+"no está lleno"
+],
+a: "Si ves el botón 'Inscribirse' y no está deshabilitado, aún hay cupo. Si está deshabilitado y dice 'Lleno', no hay espacio."
+}, {
+q: "¿Dónde puedo ver mis cursos inscritos?",
+keywords: [
+"mis cursos",
+"cursos inscritos",
+"mis inscripciones",
+"lista cursos",
+"ver cursos"
+],
+a: "Haz clic en 'Mis cursos inscritos' en la parte superior de la página."
+}
+];
+
+const chatBody = document.querySelector('#chatbotModal .modal-body');
+const chatInput = document.getElementById('chatbotInput');
+const sendBtn = document.getElementById('chatbotSend');
+
+function addMessage(text, isUser = false) {
+const div = document.createElement('div');
+div.className = `mb-2 p-2 rounded ${
+isUser ? 'bg-primary text-white ms-auto' : 'bg-light'
+}`;
+div.style.maxWidth = '70%';
+div.textContent = text;
+chatBody.appendChild(div);
+chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function sendMessage() {
+const message = chatInput.value.trim();
+if (! message) 
+return;
+
+
+
+addMessage(message, true);
+chatInput.value = '';
+
+setTimeout(() => {
+let response = "Lo siento, no entiendo esa pregunta. Puedes preguntar sobre inscripciones, cupos, intereses o cómo desinscribirte.";
+const lowerQ = message.toLowerCase();
+
+// Normalizar la pregunta del usuario (quitar signos de puntuación y convertir a minúsculas)
+const cleanQuestion = lowerQ.replace(/[^\w\s]/g, '');
+// Elimina signos como ?, !, ., etc.
+
+// Dividir la pregunta en palabras
+const userWords = cleanQuestion.split(/\s+/);
+
+// Buscar coincidencia con palabras clave
+let bestMatch = null;
+let maxMatches = 0;
+
+for (const item of faq) {
+let matches = 0;
+for (const keyword of item.keywords) {
+const keywordWords = keyword.toLowerCase().split(/\s+/);
+for (const kw of keywordWords) {
+if (userWords.includes(kw)) {
+matches++;
+}
+}
+}
+
+// Si encontramos más coincidencias, es una mejor respuesta
+if (matches > maxMatches) {
+maxMatches = matches;
+bestMatch = item;
+}
+}
+
+// Si hubo al menos una coincidencia, usamos esa respuesta
+if (bestMatch && maxMatches > 0) {
+response = bestMatch.a;
+}
+
+addMessage(response);
+}, 800);
+}
+
+sendBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') 
+sendMessage();
+
+
+
+});
+	</script>
+
+	<!-- End Card Style -->
 {% endblock %}

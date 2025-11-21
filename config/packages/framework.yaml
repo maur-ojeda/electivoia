@@ -3,7 +3,20 @@ framework:
     secret: '%env(APP_SECRET)%'
 
     # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    session:
+     # Habilita las sesiones
+        enabled: true # Asegura que esté explícitamente habilitado
+
+        # Tiempo máximo de vida de los datos de sesión en el servidor (30 minutos)
+        gc_maxlifetime: 1800
+
+        # Tiempo de vida de la cookie de sesión en el navegador (30 minutos)
+        # Si es 0, la cookie se borra al cerrar el navegador
+        cookie_lifetime: 1800
+
+        # Opcional: Configura la seguridad de la cookie (recomendado para producción)
+        cookie_secure: auto
+        cookie_samesite: lax
 
     #esi: true
     #fragments: true

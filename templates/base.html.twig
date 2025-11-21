@@ -7,62 +7,136 @@
 			{% block title %}Mi App Symfony
 			{% endblock %}
 		</title>
-
-		{# Lógica de detección automática de tema (Dark/Light) #}
-		<script>
-			// Función para aplicar o remover la clase 'dark' basada en la preferencia del sistema
-function detectTheme() {
-// Si no hay una preferencia guardada en localStorage, usamos la preferencia del sistema.
-// Si la preferencia del sistema es 'dark', o si se forzó 'dark' anteriormente, aplicamos la clase.
-if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-document.documentElement.classList.add('dark');
-} else {
-document.documentElement.classList.remove('dark');
-}
-}
-// Ejecutar la detección inmediatamente para evitar un destello de color (FOUC)
-detectTheme();
-		</script>
-
-		{# CSS compilado por Webpack Encore #}
-		{{ encore_entry_link_tags('app') }}
+		{% block stylesheets %}
+			<link rel="stylesheet" href="{{ asset('css/vendor/bootstrap.min.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/vendor/slick.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/vendor/slick-theme.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/sal.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/feather.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/fontawesome.min.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/euclid-circulara.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/swiper.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/magnify.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/odometer.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/animation.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/bootstrap-select.min.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/jquery-ui.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/magnigy-popup.min.css') }}">
+			<link rel="stylesheet" href="{{ asset('css/plugins/plyr.css') }}">
+			<link
+			rel="stylesheet" href="{{ asset('css/style.css') }}">
+			<!-- CDN de SweetAlert2 CSS (Opcional, para estilos predeterminados) -->
+			<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+		{% endblock %}
+		<style>
+			.rbt-page-banner-wrapper {
+				padding: 40px 0 280px !important;
+			}
+		</style>
 	</head>
-	<body
-		class="bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-300">
+	<body>
+		{% block header %}
+			{% include 'components/header.html.twig' %}
+		{% endblock %}
 
-		{# INICIO DE LA CONDICIÓN: Mostrar navbar solo si NO es la página de login #}
-		{% if app.request.pathInfo != '/login' %}
-			{# Navbar de ejemplo con Flowbite Dropdown #}
-			<nav class="bg-white dark:bg-gray-800 shadow p-4 border-b border-gray-200 dark:border-gray-700">
-				<div class="container mx-auto flex justify-between items-center">
-					<a href="#" class="font-bold text-xl text-gray-900 dark:text-white">Mi App</a>
+		{# Eliminamos los divs de mensajes flash #}
+		{# {% for message in app.flashes('success') %}
+		        <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-lg">{{ message }}</div>
+		    {% endfor %}
+		    {% for message in app.flashes('error') %}
+		        <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-lg">{{ message }}</div>
+		    {% endfor %}
+		    {% for message in app.flashes('warning') %}
+		        <div class="mb-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg">{{ message }}</div>
+		    {% endfor %} #}
 
-					<div class="relative inline-block text-left">
-						<button id="dropdownButton" data-dropdown-toggle="dropdownMenu" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none">
-							Menú
-							<svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-							</svg>
-						</button>
+		{% block content %}{% endblock %}
 
-						<div id="dropdownMenu" class="hidden origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none">
-							<div class="py-1">
-								<a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Opción 1</a>
-								<a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Opción 2</a>
-								<a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">Opción 3</a>
-							</div>
-						</div>
+		<div class="copyright-area copyright-style-1 ptb--20">
+			<div class="container">
+				<div class="row align-items-center">
+					<div class="col-12">
+						<p class="rbt-link-hover text-center text-lg-start">Desarrollado por
+							<a href="#">
+								<i class="feather-github"></i>
+								maur-ojeda</a>
+						</p>
 					</div>
 				</div>
-			</nav>
-		{% endif %}
-		{# FIN DE LA CONDICIÓN #}
+			</div>
+		</div>
 
-		{# Contenido principal #}
-		<!-- Ajustar el margen superior solo si el navbar está visible -->
-			<main class="container mx-auto p-4 {% if app.request.pathInfo != '/login' %}mt-4{% endif %}">{% block body %}{% endblock %} </main>
+		{% block javascripts %}
+			<script src="{{ asset('js/vendor/modernizr.min.js')}}"></script>
+			<script src="{{ asset('js/vendor/jquery.js') }}"></script>
+			<!-- Asegúrate que jQuery esté antes de SweetAlert si usas una versión antigua -->
+			<script src="{{ asset('js/vendor/bootstrap.min.js') }}"></script>
+			<script src="{{ asset('js/vendor/sal.js') }}"></script>
+			<script src="{{ asset('js/vendor/swiper.js') }}"></script>
+			<script src="{{ asset('js/vendor/magnify.min.js') }}"></script>
+			<script src="{{ asset('js/vendor/jquery-appear.js') }}"></script>
+			<script src="{{ asset('js/vendor/odometer.js') }}"></script>
+			<script src="{{ asset('js/vendor/backtotop.js') }}"></script>
+			<script src="{{ asset('js/vendor/isotop.js') }}"></script>
+			<script src="{{ asset('js/vendor/imageloaded.js') }}"></script>
+			<script src="{{ asset('js/vendor/wow.js') }}"></script>
+			<script src="{{ asset('js/vendor/waypoint.min.js') }}"></script>
+			<script src="{{ asset('js/vendor/easypie.js') }}"></script>
+			<script src="{{ asset('js/vendor/text-type.js') }}"></script>
+			<script src="{{ asset('js/vendor/jquery-one-page-nav.js') }}"></script>
+			<script src="{{ asset('js/vendor/bootstrap-select.min.js') }}"></script>
+			<script src="{{ asset('js/vendor/jquery-ui.js') }}"></script>
+			<script src="{{ asset('js/vendor/magnify-popup.min.js') }}"></script>
+			<script src="{{ asset('js/vendor/paralax-scroll.js') }}"></script>
+			<script src="{{ asset('js/vendor/paralax.min.js') }}"></script>
+			<script src="{{ asset('js/vendor/countdown.js') }}"></script>
+			<script src="{{ asset('js/vendor/plyr.js') }}"></script>
+			<script src="{{ asset('js/main.js') }}"></script>
 
-			{# JS compilado por Webpack Encore #}
-			{{ encore_entry_script_tags('app') }}
-		</body>
-	</html>
+			<!-- CDN de SweetAlert2 JS -->
+			<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+			<!-- Script para mostrar mensajes flash con SweetAlert -->
+			<script>
+				document.addEventListener('DOMContentLoaded', function (){
+{% for message in app.flashes('success') %}
+Swal.fire({
+title: 'Éxito',
+text: '{{ message|e('js') }}', // Escapar caracteres especiales para JS
+icon: 'success',
+confirmButtonText: 'Aceptar',
+timer: 3000, // Cierra automáticamente después de 3 segundos
+timerProgressBar: true,
+allowOutsideClick: false // Evita que se cierre al hacer clic fuera
+});{% endfor %}
+
+{% for message in app.flashes('error') %}
+Swal.fire({
+title: 'Error', text: '{{ message|e('js') }}', icon: 'error', confirmButtonText: 'Aceptar'
+// No se cierra automáticamente para errores
+});{% endfor %}
+
+{% for message in app.flashes('warning') %}
+Swal.fire({
+title: 'Advertencia',
+text: '{{ message|e('js') }}',
+icon: 'warning',
+confirmButtonText: 'Aceptar',
+timer: 5000, // Cierra automáticamente después de 5 segundos
+timerProgressBar: true
+});{% endfor %}
+
+{% for message in app.flashes('info') %} // Opcional: si usas flash tipo 'info'
+Swal.fire({
+title: 'Información',
+text: '{{ message|e('js') }}',
+icon: 'info',
+confirmButtonText: 'Aceptar',
+timer: 4000,
+timerProgressBar: true
+});{% endfor %}
+});
+			</script>
+		{% endblock %}
+	</body>
+</html>
