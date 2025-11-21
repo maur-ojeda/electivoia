@@ -15,6 +15,9 @@ use Symfony\Component\Validator\Constraints as Assert; // Importar la validació
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_RUT', fields: ['rut'])] // Cambiar la restricción de unicidad al campo rut
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+
+
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -125,6 +128,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
+  
+   
     // public function getEmail(): ?string // Comentar o eliminar este método
     // {
     //     return $this->email;
@@ -194,6 +199,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $data;
     }
+
+
+
 
     #[\Deprecated]
     public function eraseCredentials(): void
@@ -472,4 +480,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $avatarUrl;
     }
     // --- Fin del método de avatar ---
+
+
 }

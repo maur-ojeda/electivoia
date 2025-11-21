@@ -2,6 +2,9 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\Enrollment;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use App\Entity\Course;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
@@ -12,6 +15,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextEditorField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class CourseCrudController extends AbstractCrudController
@@ -26,7 +31,8 @@ class CourseCrudController extends AbstractCrudController
 
 
     public function __construct(
-        private RequestStack $requestStack
+        private RequestStack $requestStack,
+        private AdminUrlGenerator $adminUrlGenerator
     ) {}
 
     public static function getEntityFqcn(): string
@@ -66,5 +72,22 @@ class CourseCrudController extends AbstractCrudController
 
 
         ];
+    }
+
+    public function configureActions(Actions $actions): Actions
+    {
+        $viewEnrollments = Action::new('viewEnrollments', 'Ver Inscritos', 'fa fa-users')
+            ->linkToCrudAction('index', function (Course $course) {
+                return $this->adminUrlGenerator
+                    ->setController(EnrollmentCrudController::class)
+                    ->setAction(Action::INDEX)
+                    ->set('filters[course][comparison]', '=')
+                    ->set('filters[course][value]', $course->getId())
+                    ->generateUrl();
+            });
+
+        return $actions
+            ->add(Crud::PAGE_INDEX, $viewEnrollments)
+            ->reorder(Crud::PAGE_INDEX, ['viewEnrollments', Action::EDIT, Action::DELETE]);
     }
 }

@@ -7,6 +7,8 @@ use App\Entity\User;
 use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\InterestProfile;
+use App\Controller\Admin\UserCrudController;
+
 
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
@@ -43,12 +45,8 @@ class DashboardController extends AbstractDashboardController
 
         // --- Menú para Usuarios ---
         yield MenuItem::section('Usuarios');
-        yield MenuItem::linkToCrud('Todos los usuarios', 'fas fa-users', User::class);
-
-        // Nuevos ítems para profesores y alumnos
-        // Asegúrate de que la ruta 'admin_users_by_role' esté definida en tu UserListByRoleController
-        yield MenuItem::linkToUrl('Alumnos', 'fas fa-user-graduate', $this->generateUrl('admin_users_by_role', ['role' => 'ROLE_STUDENT']));
-        yield MenuItem::linkToUrl('Profesores', 'fas fa-chalkboard-teacher', $this->generateUrl('admin_users_by_role', ['role' => 'ROLE_TEACHER']));
+        yield MenuItem::linkToCrud('Usuarios', 'fas fa-users', User::class)
+            ->setController(UserCrudController::class);
 
         // --- Otros ítems ---
         yield MenuItem::section('Cursos');

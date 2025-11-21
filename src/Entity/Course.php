@@ -237,4 +237,9 @@ class Course
         $this->category = $category;
         return $this;
     }
+
+    public function __toString(): string
+    {
+        return $this->name ?? 'Curso sin nombre';
+    }
 }

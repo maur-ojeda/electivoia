@@ -5,16 +5,19 @@ namespace App\Controller\Admin;
 use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use Symfony\Component\Validator\Constraints\Regex;
+
 
 class UserCrudController extends AbstractCrudController
 {
@@ -35,6 +38,28 @@ class UserCrudController extends AbstractCrudController
     {
         return User::class;
     }
+
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInSingular('Usuario')
+            ->setEntityLabelInPlural('Usuarios')
+            ->setSearchFields(['fullName', 'rut'])
+            ->setDefaultSort(['fullName' => 'ASC']);
+    }
+
+    public function configureFilters(Filters $filters): Filters
+    {
+        return $filters
+            ->add('fullName')
+            ->add('rut')
+            ->add('grade')
+            ->add('gender')
+            ->add('active')
+            ->add(\App\Filter\RoleFilter::new('roles', 'Rol'));
+    }
+
+
 
     // 1. GENERAR CONTRASEÑA TEMPORAL (ahora basada en RUT) Y ASIGNARLA A LA PROPIEDAD NO MAPEADA 'plainPassword'.
     public function createEntity(string $entityFqcn): User
@@ -103,8 +128,12 @@ class UserCrudController extends AbstractCrudController
                 ->setChoices(self::CHILEAN_GRADES)
                 ->allowMultipleChoices(false)
                 ->renderAsNativeWidget(), // Muestra como <select> estándar
+            
+            NumberField::new('averageGrade', 'Promedio General')
+                ->setNumDecimals(1)
+                ->setHelp('Promedio de notas del estudiante (escala 1.0 - 7.0)'),
+            
             BooleanField::new('active', 'Activo'), // ← Campo para desactivar
-
 
         ];
 
