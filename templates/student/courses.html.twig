@@ -66,8 +66,14 @@
 								{% endfor %}
 							</div>
 							<div class="rbt-card-bottom">
-								<a class="rbt-btn btn-sm btn-gradient mt-5" href="#" data-bs-toggle="modal" data-bs-target="#interestModal">Ajustar intereses<i class="feather-arrow-right"></i>
+
+
+
+
+								<a class="rbt-btn btn-sm btn-gradient mt-5" href="#" data-bs-toggle="modal" data-bs-target="#interestModal">Ajustar intereses , dinos que te gusta<i class="feather-arrow-right"></i>
 								</a>
+
+
 							</div>
 						</div>
 					</div>
@@ -118,6 +124,9 @@
 					<div class="col-12 mb-5">
 						<h4 class="rbt-card-title mb-4">🎯 Cursos recomendados para ti</h4>
 						<div class="row g-4">
+
+
+
 							{% for item in recommendations %}
 
 								{% set course = item.course %}
@@ -292,15 +301,15 @@
 					{% endfor %}
 
 					<!-- End Single Course  -->
-
-
 				</div>
 
 
 			</div>
 		</div>
 	</div>
-</div><!--    chatbotModal    --><div class="modal fade" tabindex="-1" id="chatbotModal" aria-labelledby="exampleModalLabel" aria-hidden="true">
+</div><!--    chatbotModal    -->
+
+<div class="modal fade" tabindex="-1" id="chatbotModal" aria-labelledby="exampleModalLabel" aria-hidden="true">
 	<div class="modal-dialog">
 		<div class="modal-content">
 			<div class="modal-header">
@@ -318,21 +327,25 @@
 			</div>
 		</div>
 	</div>
-</div><!-- end  chatbotModal  --><!--    interestModal    --><div class="modal fade" tabindex="-1" id="interestModal" aria-labelledby="exampleModalLabel" aria-hidden="true">
-	<div class="modal-dialog modal-xl">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="exampleModalLabel">Que es lo que más te gusta 🌟</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-			</div>
-			<div class="modal-body">
+</div>
 
-				<div class="container">
-					<div class="row mb-4 p-4">
-						<p class="small">Utiliza los deslizadores para indicar que te interesa (0 = Sin interés, 5 = Máximo interés) y actualiza tus recomendaciones.</p>
-					</div>
-					<form method="post" action="{{ path('student_profile') }}" id="interests-form">
-						{% set categories = [
+
+
+<div class="modal fade" tabindex="-1" id="interestModal" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Que es lo que más te gusta 🌟</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="container">
+                    <div class="row mb-4 p-4">
+                        <p class="small">Utiliza los deslizadores para indicar que te interesa (0 = Sin interés, 5 = Máximo interés) y actualiza tus recomendaciones.</p>
+                    </div>
+                    <form method="post" action="{{ path('student_profile') }}" id="interests-form">
+                        {% set categories = [
                             'Filosofía',
                             'Historia, geografía y ciencias sociales',
                             'Lengua y literatura',
@@ -341,49 +354,51 @@
                             'Artes',
                             'Educación física y salud'
                         ] %}
-						<div class="row g-5 p-4">
-							{% for category in categories %}
-								<div class="col-lg-6 col-md-6 col-12">
-									<div class="card rbt-hover-03 rbt-border-dashed">
-										<div class="card-body">
-											<label>{{ category }}</label>
-											<div>
-												<input type="range" name="interests[{{ category }}]" min="0" max="5" value="{{ interests[category] ?? 0 }}" class="form-range" oninput="document.getElementById('output-{{ loop.index }}').innerText = this.value">
-												<output class="">
-													<span id="output-{{ loop.index }}">{{ interests[category] ?? 0 }}</span>/5
-												</output>
-											</div>
+                        <div class="row g-5 p-4">
+                            {% for category in categories %}
+                                <div class="col-lg-6 col-md-6 col-12">
+                                    <div class="card rbt-hover-03 rbt-border-dashed">
+                                        <div class="card-body">
+                                            <label>{{ category }}</label>
+                                            <div>
+                                                <input type="range" name="interests[{{ category }}]" min="0" max="5" value="{{ interests[category] ?? 0 }}" class="form-range" oninput="document.getElementById('output-{{ loop.index }}').innerText = this.value">
+                                                <output class="">
+                                                    <span id="output-{{ loop.index }}">{{ interests[category] ?? 0 }}</span>/5
+                                                </output>
+                                            </div>
 
-										</div>
-									</div>
+                                        </div>
+                                    </div>
 
-								</div>
-							{% endfor %}
+                                </div>
+                            {% endfor %}
 
-						</form>
-					</div>
+                        </div> 
+                    </form> 
 
-				</div>
-				<div class="modal-footer">
+                </div> 
+                <div class="modal-footer">
 
 
-					<button class="rbt-btn btn-gradient hover-icon-reverse" type="submit" form="interests-form">
-						<span class="icon-reverse-wrapper">
-							<span class="btn-text">Guardar cambios</span>
-							<span class="btn-icon">
-								<i class="feather-arrow-right"></i>
-							</span>
-							<span class="btn-icon">
-								<i class="feather-arrow-right"></i>
-							</span>
-						</span>
-					</button>
+                    <button class="rbt-btn btn-gradient hover-icon-reverse" type="submit" form="interests-form">
+                        <span class="icon-reverse-wrapper">
+                            <span class="btn-text">Guardar cambios</span>
+                            <span class="btn-icon">
+                                <i class="feather-arrow-right"></i>
+                            </span>
+                            <span class="btn-icon">
+                                <i class="feather-arrow-right"></i>
+                            </span>
+                        </span>
+                    </button>
 
-				</div>
-			</div>
-		</div>
-	</div>
-	<!--  end  interestModal    -->
+                </div>
+            </div> 
+        </div> 
+    </div> 
+</div> 
+
+
 
 
 	<script>

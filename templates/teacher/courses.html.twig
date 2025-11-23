@@ -78,13 +78,13 @@
 					{% for course in courses %}
 
 
-						{% set category_map = {				'Filosofía': '01',
+						{% set category_map = {			'Filosofía': '01',
 														'Matemática': '02',
 														'Educación física y salud': '03',
 														'Historia, geografía y ciencias sociales': '04',
 														'Ciencias': '05',
-														'Lengua y literatura': '07',
-														'Artes': '09'
+														'Lengua y literatura': '06',
+														'Artes': '07'
 													} %}
 						{% set image_number = category_map[course.category.name]|default('default') %}
 

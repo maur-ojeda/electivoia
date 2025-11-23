@@ -15,15 +15,34 @@ class RecommendationService
      */
     public function getForStudent(User $student): array
     {
+
+
         $interests = $student->getInterestProfile()?->getInterests() ?? [];
         if (empty($interests)) {
+            return [];
+        }
+
+        $studentGrade = $student->getGrade(); // Ej: "3M", "4M"
+        
+        // Si el estudiante no tiene grado asignado, no podemos recomendar cursos
+        if (!$studentGrade) {
             return [];
         }
 
         $courses = $this->em->getRepository(Course::class)->findBy(['isActive' => true]);
         $recommended = [];
 
+        
+
         foreach ($courses as $course) {
+            // Filtrar por grado del estudiante
+            $targetGrades = $course->getTargetGrades();
+            
+            // Saltar cursos que no tienen grados asignados (null) o que no incluyen el grado del estudiante
+            if (!$targetGrades || !in_array($studentGrade, $targetGrades)) {
+                continue;
+            }
+
             $score = 0;
             $description = strtolower($course->getDescription() ?? '');
 
@@ -57,10 +76,25 @@ class RecommendationService
     public function getForStudentWithReasons(User $student): array
     {
         $interests = $student->getInterestProfile()?->getInterests() ?? [];
+        $studentGrade = $student->getGrade(); // Ej: "3M", "4M"
+        
+        // Si el estudiante no tiene grado asignado, no podemos recomendar cursos
+        if (!$studentGrade) {
+            return [];
+        }
+
         $courses = $this->em->getRepository(Course::class)->findBy(['isActive' => true]);
         $results = [];
 
         foreach ($courses as $course) {
+            // Filtrar por grado del estudiante
+            $targetGrades = $course->getTargetGrades();
+            
+            // Saltar cursos que no tienen grados asignados (null) o que no incluyen el grado del estudiante
+            if (!$targetGrades || !in_array($studentGrade, $targetGrades)) {
+                continue;
+            }
+
             $reasons = [];
             $cat = $course->getCategory();
 

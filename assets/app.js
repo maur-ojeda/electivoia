@@ -8,7 +8,7 @@ import "./theme/js/vendor/swiper.js";
 import "./theme/js/vendor/magnify.min.js";
 import "./theme/js/vendor/jquery-appear.js";
 import "./theme/js/vendor/odometer.js";
-import "./theme/js/vendor/backtotop.js";
+// import "./theme/js/vendor/backtotop.js";
 import "./theme/js/vendor/isotop.js";
 import "./theme/js/vendor/imageloaded.js";
 import "./theme/js/vendor/wow.js";
