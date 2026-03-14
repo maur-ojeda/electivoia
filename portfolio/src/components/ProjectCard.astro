@@ -1,0 +1,143 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  tags: string[];
+  image?: string;
+  link?: string;
+  github?: string;
+}
+
+const { title, description, tags, image, link, github } = Astro.props;
+---
+
+<article class="project-card">
+  {image && (
+    <div class="project-image">
+      <img src={image} alt={title} />
+    </div>
+  )}
+  
+  <div class="project-content">
+    <h3 class="project-title">{title}</h3>
+    <p class="project-description">{description}</p>
+    
+    <div class="project-tags">
+      {tags.map((tag) => (
+        <span class="tag">{tag}</span>
+      ))}
+    </div>
+    
+    <div class="project-links">
+      {link && (
+        <a href={link} class="project-link" target="_blank" rel="noopener noreferrer">
+          View Project →
+        </a>
+      )}
+      {github && (
+        <a href={github} class="project-link secondary" target="_blank" rel="noopener noreferrer">
+          GitHub
+        </a>
+      )}
+    </div>
+  </div>
+</article>
+
+<style>
+  .project-card {
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  .project-image {
+    width: 100%;
+    height: 240px;
+    overflow: hidden;
+    background: var(--color-border);
+  }
+  
+  .project-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  .project-card:hover .project-image img {
+    transform: scale(1.05);
+  }
+  
+  .project-content {
+    padding: var(--spacing-lg);
+  }
+  
+  .project-title {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text);
+  }
+  
+  .project-description {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text-muted);
+  }
+  
+  .project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .tag {
+    font-size: 0.8125rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+  }
+  
+  .project-links {
+    display: flex;
+    gap: var(--spacing-sm);
+  }
+  
+  .project-link {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    display: inline-block;
+  }
+  
+  .project-link:not(.secondary) {
+    background: var(--color-accent);
+    color: white;
+  }
+  
+  .project-link:not(.secondary):hover {
+    background: var(--color-accent-hover);
+  }
+  
+  .project-link.secondary {
+    background: transparent;
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+  }
+  
+  .project-link.secondary:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+</style>

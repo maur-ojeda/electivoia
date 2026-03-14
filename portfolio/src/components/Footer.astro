@@ -1,0 +1,80 @@
+---
+const currentYear = new Date().getFullYear();
+
+const socialLinks = [
+  { name: 'GitHub', href: 'https://github.com/maur-ojeda', icon: 'github' },
+  { name: 'LinkedIn', href: 'https://linkedin.com/in/mauricio-ojeda', icon: 'linkedin' },
+  { name: 'Email', href: 'mailto:mauricio@example.com', icon: 'email' },
+];
+---
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-info">
+        <p class="footer-text">
+          © {currentYear} Mauricio Ojeda. Crafted with care.
+        </p>
+      </div>
+      
+      <div class="social-links">
+        {socialLinks.map((link) => (
+          <a 
+            href={link.href} 
+            class="social-link"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={link.name}
+          >
+            {link.name}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-top: var(--spacing-3xl);
+    padding: var(--spacing-xl) 0;
+    border-top: 1px solid var(--color-border);
+  }
+  
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+  
+  .footer-text {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+  
+  .social-links {
+    display: flex;
+    gap: var(--spacing-md);
+  }
+  
+  .social-link {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+  
+  .social-link:hover {
+    color: var(--color-accent);
+  }
+  
+  @media (max-width: 640px) {
+    .footer-content {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+</style>

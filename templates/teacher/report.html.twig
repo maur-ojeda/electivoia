@@ -1,0 +1,144 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reporte de Asistencia — {{ course.name }}{% endblock %}
+
+{% block content %}
+
+<div class="rbt-page-banner-wrapper">
+    <div class="rbt-banner-image"></div>
+</div>
+
+<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
+    <div class="container">
+
+        <div class="rbt-dashboard-content-wrapper">
+            <div class="tutor-bg-photo bg_image height-350" style="background-image: url({{ asset('build/images/banner/banner-01.png') }});"></div>
+            <div class="rbt-tutor-information">
+                <div class="rbt-tutor-information-left">
+                    <div class="thumbnail rbt-avatars size-lg">
+                        <img src="{{ app.user.avatarUrl }}"/>
+                    </div>
+                    <div class="tutor-content">
+                        <h5 class="title">Reporte de Asistencia</h5>
+                        <h3 class="title">{{ course.name }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-lg-3">
+                <div class="rbt-default-sidebar sticky-top rbt-shadow-box rbt-gradient-border">
+                    <div class="inner">
+                        <div class="content-item-content">
+                            <div class="rbt-default-sidebar-wrapper">
+                                <div class="section-title mb--20">
+                                    <h6 class="rbt-title-style-2">{{ course.name }}</h6>
+                                </div>
+                                <nav class="mainmenu-nav">
+                                    <ul class="dashboard-mainmenu rbt-default-sidebar-list">
+                                        {% if course.category %}
+                                            <li>
+                                                <i class="feather-tag"></i>
+                                                <span>{{ course.category.name }}</span>
+                                            </li>
+                                        {% endif %}
+                                        <li>
+                                            <i class="feather-users"></i>
+                                            <span>{{ reportData|length }} alumnos</span>
+                                        </li>
+                                        <li>
+                                            <i class="feather-calendar"></i>
+                                            <span>{{ totalSessions }} sesiones</span>
+                                        </li>
+                                        <li class="mt-3">
+                                            <a href="{{ path('teacher_report_export', {id: course.id}) }}" class="rbt-btn btn-xs bg-primary-opacity radius-round">
+                                                <i class="feather-download pl--0"></i>
+                                                Exportar Excel
+                                            </a>
+                                        </li>
+                                        <li class="mt-2">
+                                            <a href="{{ path('teacher_attendance', {id: course.id}) }}" class="rbt-btn btn-xs bg-primary-opacity radius-round">
+                                                <i class="feather-edit pl--0"></i>
+                                                Registrar Asistencia
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="rbt-dashboard-content bg-color-white rbt-shadow-box mb--60">
+                    <div class="content">
+                        <div class="section-title mb-4">
+                            <h4 class="rbt-title-style-3">Reporte por Alumno</h4>
+                            {% if totalSessions == 0 %}
+                                <p class="text-muted mt-2">Aún no hay sesiones registradas para este curso.</p>
+                            {% endif %}
+                        </div>
+
+                        {% if reportData|length > 0 and totalSessions > 0 %}
+                            <div class="rbt-dashboard-table table-responsive">
+                                <table class="rbt-table table table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-start">Alumno</th>
+                                            <th class="text-start">RUT</th>
+                                            <th class="text-start">Grado</th>
+                                            <th class="text-center">Presentes</th>
+                                            <th class="text-center">Ausentes</th>
+                                            <th class="text-center">Justificados</th>
+                                            <th class="text-center">% Asistencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in reportData %}
+                                            <tr class="border-t">
+                                                <th>{{ item.student.fullName }}</th>
+                                                <td>{{ item.student.rut }}</td>
+                                                <td>{{ item.student.grade }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success">{{ item.present }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-danger">{{ item.absent }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-warning text-dark">{{ item.justified }}</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    {% if item.percentage is not null %}
+                                                        <span class="badge {% if item.percentage >= 75 %}bg-success{% elseif item.percentage >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                                            {{ item.percentage }}%
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="text-muted small">—</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-3 small text-muted">
+                                * Ordenado de menor a mayor asistencia. El umbral mínimo recomendado es 75%.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <a href="{{ path('teacher_courses') }}" class="rbt-btn rbt-switch-btn btn-gradient btn-sm hover-transform-none">
+                    ← Volver a mis cursos
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

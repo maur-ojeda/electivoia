@@ -1,0 +1,227 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="About - Mauricio Ojeda" description="Learn more about Mauricio Ojeda, full-stack developer">
+  <Header />
+  
+  <main>
+    <section class="page-header">
+      <div class="container">
+        <h1 class="page-title">About Me</h1>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container content-container">
+        <div class="about-content">
+          <div class="about-text">
+            <h2>Hello! I'm Mauricio Ojeda</h2>
+            <p>
+              I'm a full-stack developer passionate about building elegant, efficient, 
+              and user-friendly web applications. With expertise in PHP, Symfony, and 
+              modern JavaScript, I specialize in creating robust backend systems and 
+              intuitive frontend experiences.
+            </p>
+            
+            <p>
+              My journey in software development has taught me that great code is not 
+              just about functionality—it's about maintainability, scalability, and 
+              solving real problems for real people.
+            </p>
+            
+            <h3>What I Do</h3>
+            <ul class="feature-list">
+              <li>Design and develop full-stack web applications</li>
+              <li>Build RESTful APIs and backend services</li>
+              <li>Create responsive, accessible user interfaces</li>
+              <li>Optimize database performance and queries</li>
+              <li>Implement secure authentication and authorization</li>
+              <li>Deploy and maintain production applications</li>
+            </ul>
+            
+            <h3>My Approach</h3>
+            <p>
+              I believe in writing clean, well-documented code that follows best practices. 
+              I'm committed to continuous learning and staying updated with the latest 
+              technologies and methodologies in web development.
+            </p>
+            
+            <p>
+              When I'm not coding, I enjoy exploring new technologies, contributing to 
+              open-source projects, and sharing knowledge with the developer community.
+            </p>
+          </div>
+          
+          <div class="about-sidebar">
+            <div class="info-card">
+              <h3>Experience</h3>
+              <div class="experience-item">
+                <h4>Full-stack Developer</h4>
+                <p class="experience-period">2023 - Present</p>
+                <p>Developing educational platforms and web applications</p>
+              </div>
+            </div>
+            
+            <div class="info-card">
+              <h3>Education</h3>
+              <div class="education-item">
+                <h4>Computer Science</h4>
+                <p>Self-taught developer with focus on web technologies</p>
+              </div>
+            </div>
+            
+            <div class="info-card">
+              <h3>Interests</h3>
+              <ul class="interests-list">
+                <li>Web Development</li>
+                <li>Database Design</li>
+                <li>System Architecture</li>
+                <li>Open Source</li>
+                <li>DevOps</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <Footer />
+</Layout>
+
+<style>
+  .page-header {
+    padding: var(--spacing-3xl) 0 var(--spacing-xl);
+    text-align: center;
+  }
+  
+  .page-title {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .section {
+    padding: var(--spacing-2xl) 0 var(--spacing-3xl);
+  }
+  
+  .content-container {
+    max-width: 1000px;
+  }
+  
+  .about-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-3xl);
+  }
+  
+  .about-text h2 {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+  }
+  
+  .about-text h3 {
+    font-size: 1.5rem;
+    margin-top: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+  }
+  
+  .about-text p {
+    margin-bottom: var(--spacing-md);
+    line-height: 1.8;
+  }
+  
+  .feature-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: var(--spacing-xl);
+  }
+  
+  .feature-list li {
+    padding: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+    position: relative;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+  
+  .feature-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  
+  .about-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  
+  .info-card {
+    padding: var(--spacing-lg);
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  
+  .info-card h3 {
+    font-size: 1.125rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+  }
+  
+  .info-card h4 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+    color: var(--color-text);
+  }
+  
+  .info-card p {
+    font-size: 0.9375rem;
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .experience-item,
+  .education-item {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .experience-item:last-child,
+  .education-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .experience-period {
+    font-size: 0.875rem;
+    color: var(--color-accent);
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .interests-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .interests-list li {
+    padding: 0.5rem 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .interests-list li:last-child {
+    border-bottom: none;
+  }
+  
+  @media (max-width: 768px) {
+    .about-content {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-xl);
+    }
+  }
+</style>

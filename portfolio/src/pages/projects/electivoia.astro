@@ -1,0 +1,458 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+---
+
+<Layout 
+  title="ElectivoIA - Educational Management Platform" 
+  description="AI-powered educational platform for managing courses, enrollments, and student recommendations"
+>
+  <Header />
+  
+  <main>
+    <!-- Project Hero -->
+    <section class="project-hero">
+      <div class="container">
+        <div class="breadcrumb">
+          <a href="/projects">Projects</a>
+          <span>/</span>
+          <span>ElectivoIA</span>
+        </div>
+        
+        <h1 class="project-title">ElectivoIA</h1>
+        <p class="project-tagline">
+          Educational Management Platform with AI-Powered Course Recommendations
+        </p>
+        
+        <div class="project-meta">
+          <div class="meta-item">
+            <span class="meta-label">Role</span>
+            <span class="meta-value">Full-stack Developer</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Year</span>
+            <span class="meta-value">2025</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Status</span>
+            <span class="meta-value">Production</span>
+          </div>
+        </div>
+        
+        <div class="project-links">
+          <a href="https://github.com/maur-ojeda/electivoia" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Overview -->
+    <section class="section">
+      <div class="container content-container">
+        <div class="content-section">
+          <h2>Overview</h2>
+          <p>
+            ElectivoIA is a comprehensive educational management platform designed to streamline 
+            course enrollment and student management in educational institutions. The platform 
+            features an intelligent recommendation system that suggests courses to students based 
+            on their interests and academic profile.
+          </p>
+        </div>
+
+        <div class="content-section">
+          <h2>The Challenge</h2>
+          <p>
+            Educational institutions often struggle with manual course enrollment processes, 
+            leading to inefficiencies and poor student-course matching. Students need a better 
+            way to discover courses that align with their interests, while teachers and 
+            administrators require tools to manage enrollments, track attendance, and generate reports.
+          </p>
+        </div>
+
+        <div class="content-section">
+          <h2>The Solution</h2>
+          <p>
+            I developed a full-featured web application with role-based access control for 
+            students, teachers, guardians, and administrators. The platform includes:
+          </p>
+          <ul class="feature-list">
+            <li><strong>Student Portal:</strong> Browse courses, receive personalized recommendations, enroll in classes, and track attendance</li>
+            <li><strong>Teacher Dashboard:</strong> Manage courses, view enrolled students, record attendance, and generate reports</li>
+            <li><strong>Guardian Access:</strong> Monitor student enrollments and attendance</li>
+            <li><strong>Admin Panel:</strong> Complete system management with user administration, course categories, and advanced reporting</li>
+          </ul>
+        </div>
+
+        <div class="content-section">
+          <h2>Technical Stack</h2>
+          <div class="tech-grid">
+            <div class="tech-category">
+              <h3>Backend</h3>
+              <ul>
+                <li>PHP 8.2+</li>
+                <li>Symfony 7.3</li>
+                <li>Doctrine ORM 3.5</li>
+                <li>EasyAdmin 4.26</li>
+              </ul>
+            </div>
+            <div class="tech-category">
+              <h3>Frontend</h3>
+              <ul>
+                <li>Twig Templates</li>
+                <li>JavaScript (ES6+)</li>
+                <li>Bootstrap 5</li>
+                <li>Webpack Encore</li>
+              </ul>
+            </div>
+            <div class="tech-category">
+              <h3>Database</h3>
+              <ul>
+                <li>MySQL</li>
+                <li>Complex Relationships</li>
+                <li>Query Optimization</li>
+              </ul>
+            </div>
+            <div class="tech-category">
+              <h3>DevOps</h3>
+              <ul>
+                <li>Ubuntu Server</li>
+                <li>PHP-FPM 8.3</li>
+                <li>Git & GitHub</li>
+                <li>Composer & NPM</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h2>Key Features</h2>
+          <div class="features-grid">
+            <div class="feature-card">
+              <h3>🎯 Smart Recommendations</h3>
+              <p>AI-powered course suggestions based on student interests and academic profile</p>
+            </div>
+            <div class="feature-card">
+              <h3>📚 Course Management</h3>
+              <p>Complete CRUD operations for courses with capacity control and enrollment deadlines</p>
+            </div>
+            <div class="feature-card">
+              <h3>✅ Attendance Tracking</h3>
+              <p>Digital attendance system with present, absent, and justified statuses</p>
+            </div>
+            <div class="feature-card">
+              <h3>📊 Advanced Reporting</h3>
+              <p>Generate detailed reports and export data to Excel for analysis</p>
+            </div>
+            <div class="feature-card">
+              <h3>👥 Multi-Role System</h3>
+              <p>Role-based access control for students, teachers, guardians, and admins</p>
+            </div>
+            <div class="feature-card">
+              <h3>🔐 Secure Authentication</h3>
+              <p>Symfony Security component with password hashing and session management</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h2>Architecture Highlights</h2>
+          <p>
+            The application follows a clean, layered architecture:
+          </p>
+          <ul class="feature-list">
+            <li><strong>Presentation Layer:</strong> Twig templates with Bootstrap for responsive UI</li>
+            <li><strong>Application Layer:</strong> Symfony controllers handling business logic</li>
+            <li><strong>Persistence Layer:</strong> Doctrine ORM with 6 main entities (User, Course, Enrollment, Attendance, InterestProfile, CourseCategory)</li>
+            <li><strong>Data Layer:</strong> MySQL database with optimized queries and proper indexing</li>
+          </ul>
+        </div>
+
+        <div class="content-section">
+          <h2>Challenges & Solutions</h2>
+          <div class="challenge-item">
+            <h3>Challenge: Complex Relationship Management</h3>
+            <p>
+              Managing multiple entity relationships (One-to-Many, Many-to-One, One-to-One, 
+              Many-to-Many including self-referencing for Guardian-Student relationships).
+            </p>
+            <p class="solution">
+              <strong>Solution:</strong> Leveraged Doctrine ORM's powerful relationship mapping 
+              with careful cascade operations and bidirectional associations to maintain data integrity.
+            </p>
+          </div>
+          
+          <div class="challenge-item">
+            <h3>Challenge: Real-time Enrollment Capacity</h3>
+            <p>
+              Preventing over-enrollment when multiple students try to enroll simultaneously.
+            </p>
+            <p class="solution">
+              <strong>Solution:</strong> Implemented database-level constraints and transaction 
+              management to ensure atomic operations and prevent race conditions.
+            </p>
+          </div>
+          
+          <div class="challenge-item">
+            <h3>Challenge: Performance with Large Datasets</h3>
+            <p>
+              Optimizing queries when dealing with thousands of enrollment and attendance records.
+            </p>
+            <p class="solution">
+              <strong>Solution:</strong> Used Doctrine's query builder for efficient queries, 
+              implemented pagination, and added strategic database indexes.
+            </p>
+          </div>
+        </div>
+
+        <div class="content-section">
+          <h2>Results & Impact</h2>
+          <ul class="feature-list">
+            <li>Successfully deployed to production on Ubuntu server</li>
+            <li>Streamlined enrollment process reducing administrative overhead</li>
+            <li>Improved student-course matching through intelligent recommendations</li>
+            <li>Provided real-time attendance tracking for better student monitoring</li>
+            <li>Enabled data-driven decision making through comprehensive reporting</li>
+          </ul>
+        </div>
+
+        <div class="content-section">
+          <h2>What I Learned</h2>
+          <p>
+            This project deepened my understanding of:
+          </p>
+          <ul class="feature-list">
+            <li>Advanced Symfony framework features and best practices</li>
+            <li>Complex database design and ORM relationship management</li>
+            <li>Role-based access control and security implementation</li>
+            <li>Full deployment pipeline from development to production</li>
+            <li>Performance optimization for database-heavy applications</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <Footer />
+</Layout>
+
+<style>
+  .project-hero {
+    padding: var(--spacing-3xl) 0 var(--spacing-2xl);
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .breadcrumb {
+    display: flex;
+    gap: var(--spacing-xs);
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .breadcrumb a {
+    color: var(--color-accent);
+  }
+  
+  .project-title {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .project-tagline {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xl);
+    max-width: 700px;
+  }
+  
+  .project-meta {
+    display: flex;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+  }
+  
+  .meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .meta-label {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .meta-value {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  
+  .project-links {
+    display: flex;
+    gap: var(--spacing-md);
+  }
+  
+  .btn {
+    display: inline-block;
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  
+  .btn-primary {
+    background: var(--color-accent);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: var(--color-accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .section {
+    padding: var(--spacing-3xl) 0;
+  }
+  
+  .content-container {
+    max-width: 800px;
+  }
+  
+  .content-section {
+    margin-bottom: var(--spacing-3xl);
+  }
+  
+  .content-section h2 {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+  }
+  
+  .content-section h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text);
+  }
+  
+  .content-section p {
+    margin-bottom: var(--spacing-md);
+    line-height: 1.8;
+  }
+  
+  .feature-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .feature-list li {
+    padding: var(--spacing-sm) 0;
+    padding-left: var(--spacing-lg);
+    position: relative;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+  
+  .feature-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+  }
+  
+  .tech-category {
+    padding: var(--spacing-md);
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+  
+  .tech-category h3 {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .tech-category ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .tech-category li {
+    padding: 0.375rem 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+  
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+  }
+  
+  .feature-card {
+    padding: var(--spacing-lg);
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+  
+  .feature-card h3 {
+    font-size: 1.125rem;
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .feature-card p {
+    font-size: 0.9375rem;
+    margin: 0;
+  }
+  
+  .challenge-item {
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg);
+    background: var(--color-card-bg);
+    border-left: 3px solid var(--color-accent);
+    border-radius: var(--radius-md);
+  }
+  
+  .challenge-item h3 {
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .challenge-item p {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .solution {
+    color: var(--color-text) !important;
+    background: var(--color-bg);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+  }
+  
+  @media (max-width: 768px) {
+    .tech-grid,
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

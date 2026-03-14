@@ -1,0 +1,293 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+
+const featuredProjects = [
+  {
+    title: 'ElectivoIA',
+    description: 'Educational management platform with AI-powered course recommendations. Built with Symfony, Doctrine ORM, and modern JavaScript.',
+    tags: ['PHP', 'Symfony', 'MySQL', 'JavaScript', 'Bootstrap'],
+    link: '/projects/electivoia',
+    github: 'https://github.com/maur-ojeda/electivoia',
+  },
+  // Puedes agregar más proyectos aquí
+];
+---
+
+<Layout title="Mauricio Ojeda - Full-stack Developer">
+  <Header />
+  
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1 class="hero-title">
+            Hi, I'm <span class="highlight">Mauricio Ojeda</span>
+          </h1>
+          <p class="hero-subtitle">
+            Full-stack developer crafting elegant solutions to complex problems.
+            Specialized in modern web applications with PHP, Symfony, and JavaScript.
+          </p>
+          <div class="hero-actions">
+            <a href="/projects" class="btn btn-primary">
+              View My Work
+            </a>
+            <a href="/contact" class="btn btn-secondary">
+              Get in Touch
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Projects -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Featured Projects</h2>
+          <p class="section-subtitle">
+            A selection of my recent work
+          </p>
+        </div>
+        
+        <div class="projects-grid">
+          {featuredProjects.map((project) => (
+            <ProjectCard {...project} />
+          ))}
+        </div>
+        
+        <div class="section-footer">
+          <a href="/projects" class="link-arrow">
+            View all projects →
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills Section -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Skills & Technologies</h2>
+        </div>
+        
+        <div class="skills-grid">
+          <div class="skill-category">
+            <h3 class="skill-category-title">Backend</h3>
+            <ul class="skill-list">
+              <li>PHP 8.2+</li>
+              <li>Symfony 7.x</li>
+              <li>Doctrine ORM</li>
+              <li>RESTful APIs</li>
+            </ul>
+          </div>
+          
+          <div class="skill-category">
+            <h3 class="skill-category-title">Frontend</h3>
+            <ul class="skill-list">
+              <li>JavaScript (ES6+)</li>
+              <li>HTML5 & CSS3</li>
+              <li>Bootstrap</li>
+              <li>Webpack</li>
+            </ul>
+          </div>
+          
+          <div class="skill-category">
+            <h3 class="skill-category-title">Database</h3>
+            <ul class="skill-list">
+              <li>MySQL</li>
+              <li>PostgreSQL</li>
+              <li>Database Design</li>
+              <li>Query Optimization</li>
+            </ul>
+          </div>
+          
+          <div class="skill-category">
+            <h3 class="skill-category-title">Tools & DevOps</h3>
+            <ul class="skill-list">
+              <li>Git & GitHub</li>
+              <li>Linux/Ubuntu</li>
+              <li>Composer & NPM</li>
+              <li>CI/CD</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <Footer />
+</Layout>
+
+<style>
+  /* Hero Section */
+  .hero {
+    padding: var(--spacing-3xl) 0;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+  }
+  
+  .hero-content {
+    max-width: 800px;
+  }
+  
+  .hero-title {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .highlight {
+    background: linear-gradient(135deg, var(--color-accent) 0%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-xl);
+    max-width: 600px;
+  }
+  
+  .hero-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+  }
+  
+  /* Buttons */
+  .btn {
+    display: inline-block;
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  
+  .btn-primary {
+    background: var(--color-accent);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: var(--color-accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+  }
+  
+  .btn-secondary:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+  
+  /* Section */
+  .section {
+    padding: var(--spacing-3xl) 0;
+  }
+  
+  .section-header {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+  }
+  
+  .section-title {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .section-subtitle {
+    font-size: 1.125rem;
+  }
+  
+  .section-footer {
+    text-align: center;
+    margin-top: var(--spacing-xl);
+  }
+  
+  .link-arrow {
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    transition: transform 0.2s ease;
+    display: inline-block;
+  }
+  
+  .link-arrow:hover {
+    transform: translateX(4px);
+  }
+  
+  /* Projects Grid */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-xl);
+  }
+  
+  @media (max-width: 768px) {
+    .projects-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* Skills Grid */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-xl);
+  }
+  
+  .skill-category {
+    padding: var(--spacing-lg);
+    background: var(--color-card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  
+  .skill-category-title {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text);
+  }
+  
+  .skill-list {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .skill-list li {
+    padding: 0.5rem 0;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .skill-list li:last-child {
+    border-bottom: none;
+  }
+  
+  @media (max-width: 640px) {
+    .hero {
+      padding: var(--spacing-2xl) 0;
+      min-height: auto;
+    }
+    
+    .hero-actions {
+      flex-direction: column;
+    }
+    
+    .btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>

@@ -1,35 +1,98 @@
 {# templates/guardian/dashboard.html.twig #}
 {% extends 'student/base.html.twig' %}
 
+{% block title %}Mis Pupilos — ElectivoIA{% endblock %}
+
 {% block content %}
-	<h1 class="text-2xl font-bold mb-6">Mis Pupilos</h1>
+<h1 class="text-2xl font-bold mb-6">Mis Pupilos</h1>
 
-	{% if pupils|length == 0 %}
-		<p class="text-gray-600">No tienes pupilos asignados.</p>
-	{% else %}
-		<div class="space-y-6">
-			{% for pupil in pupils %}
+{% if pupils|length == 0 %}
+    <p class="text-gray-600">No tienes pupilos asignados.</p>
+{% else %}
+    <div class="space-y-8">
+        {% for pupil in pupils %}
+            {% set enrollments = pupilEnrollments[pupil.id] ?? [] %}
+            {% set attendanceByPupil = pupilAttendance[pupil.id] ?? {} %}
 
-				<div class="bg-white p-4 rounded shadow">
-					<h2 class="font-bold text-lg">{{ pupil.email }}</h2>
-					<h3 class="mt-2 font-semibold">Cursos inscritos:</h3>
-					{% set enrollments = pupilEnrollments[pupil.id] ?? [] %}
-					{% if enrollments|length == 0 %}
-						<p class="text-gray-500 text-sm">Sin cursos inscritos.</p>
-					{% else %}
-						<ul class="list-disc list-inside text-sm text-gray-700 mt-1">
-							{% for enrollment in enrollments %}
-								<li>
-									{{ enrollment.course.name }}
-									{% if enrollment.course.schedule %}
-										<span class="text-gray-500">({{ enrollment.course.schedule }})</span>
-									{% endif %}
-								</li>
-							{% endfor %}
-						</ul>
-					{% endif %}
-				</div>
-			{% endfor %}
-		</div>
-	{% endif %}
+            <div class="bg-white p-5 rounded shadow">
+                <h2 class="font-bold text-lg mb-1">{{ pupil.fullName }}</h2>
+                <p class="text-sm text-gray-500 mb-3">{{ pupil.grade }} — Promedio: {{ pupil.averageGrade ?? 'N/A' }}</p>
+
+                {% if enrollments|length == 0 %}
+                    <p class="text-gray-500 text-sm">Sin cursos inscritos.</p>
+                {% else %}
+                    <div class="space-y-3">
+                        {% for enrollment in enrollments %}
+                            {% set courseId = enrollment.course.id %}
+                            {% set att = attendanceByPupil[courseId] ?? null %}
+
+                            <div class="border rounded p-3
+                                {% if att is null or att.total == 0 %}border-gray-200
+                                {% elseif att.percentage >= 75 %}border-green-300
+                                {% elseif att.percentage >= 50 %}border-yellow-300
+                                {% else %}border-red-300{% endif %}">
+
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="font-medium">{{ enrollment.course.name }}</p>
+                                        {% if enrollment.course.teacher %}
+                                            <p class="text-xs text-gray-500">Prof. {{ enrollment.course.teacher.fullName }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-right">
+                                        {% if att is not null and att.total > 0 %}
+                                            <span class="font-bold text-lg
+                                                {% if att.percentage >= 75 %}text-green-600
+                                                {% elseif att.percentage >= 50 %}text-yellow-600
+                                                {% else %}text-red-600{% endif %}">
+                                                {{ att.percentage }}%
+                                            </span>
+                                            <p class="text-xs text-gray-400">{{ att.attended }}/{{ att.total }} sesiones</p>
+                                        {% else %}
+                                            <span class="text-xs text-gray-400">Sin sesiones</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% if att is not null and att.records|length > 0 %}
+                                    <details class="mt-2">
+                                        <summary class="cursor-pointer text-xs text-blue-600 hover:underline">
+                                            Ver detalle ({{ att.total }} sesiones)
+                                        </summary>
+                                        <div class="mt-2 overflow-x-auto">
+                                            <table class="min-w-full text-xs border">
+                                                <thead class="bg-gray-50">
+                                                    <tr>
+                                                        <th class="px-2 py-1 text-left">Fecha</th>
+                                                        <th class="px-2 py-1 text-left">Estado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for record in att.records %}
+                                                        <tr class="border-t">
+                                                            <td class="px-2 py-1">{{ record.date|date('d/m/Y') }}</td>
+                                                            <td class="px-2 py-1">
+                                                                {% if record.status == 'present' %}
+                                                                    <span class="text-green-700">Presente</span>
+                                                                {% elseif record.status == 'absent' %}
+                                                                    <span class="text-red-700">Ausente</span>
+                                                                {% else %}
+                                                                    <span class="text-yellow-700">Justificado</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </details>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 {% endblock %}

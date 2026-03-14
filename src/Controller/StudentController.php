@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Attendance;
 use App\Entity\Course;
 use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
@@ -246,6 +247,42 @@ class StudentController extends AbstractController
         return $this->render('student/profile.html.twig', [
             'profile' => $profile,
             'interests' => $profile->getInterests() ?? [],
+        ]);
+    }
+
+    #[Route('/attendance', name: 'attendance')]
+    public function attendance(EntityManagerInterface $em): Response
+    {
+        $student = $this->getUser();
+        $enrollments = $em->getRepository(Enrollment::class)->findBy(['student' => $student]);
+
+        $attendanceData = [];
+        foreach ($enrollments as $enrollment) {
+            $course = $enrollment->getCourse();
+            $records = $em->getRepository(Attendance::class)->findBy(
+                ['student' => $student, 'course' => $course],
+                ['date' => 'DESC']
+            );
+
+            $total = count($records);
+            $present = count(array_filter($records, fn($a) => $a->getStatus() === 'present'));
+            $absent = count(array_filter($records, fn($a) => $a->getStatus() === 'absent'));
+            $justified = count(array_filter($records, fn($a) => $a->getStatus() === 'justified'));
+            $percentage = $total > 0 ? round(($present + $justified) / $total * 100) : null;
+
+            $attendanceData[] = [
+                'course' => $course,
+                'records' => $records,
+                'total' => $total,
+                'present' => $present,
+                'absent' => $absent,
+                'justified' => $justified,
+                'percentage' => $percentage,
+            ];
+        }
+
+        return $this->render('student/attendance.html.twig', [
+            'attendanceData' => $attendanceData,
         ]);
     }
 

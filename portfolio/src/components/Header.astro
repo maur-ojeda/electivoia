@@ -1,0 +1,123 @@
+---
+const navItems = [
+  { name: 'Home', href: '/' },
+  { name: 'Projects', href: '/projects' },
+  { name: 'About', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<header class="header">
+  <div class="container">
+    <nav class="nav">
+      <a href="/" class="logo">
+        <span class="logo-text">MO</span>
+      </a>
+      
+      <ul class="nav-links">
+        {navItems.map((item) => (
+          <li>
+            <a 
+              href={item.href} 
+              class:list={['nav-link', { active: currentPath === item.href }]}
+            >
+              {item.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+    backdrop-filter: blur(10px);
+    background: rgba(250, 250, 250, 0.8);
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    .header {
+      background: rgba(10, 10, 10, 0.8);
+    }
+  }
+  
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 4rem;
+  }
+  
+  .logo {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: transform 0.2s ease;
+  }
+  
+  .logo:hover {
+    transform: scale(1.05);
+  }
+  
+  .logo-text {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--color-accent);
+    color: white;
+    border-radius: var(--radius-sm);
+  }
+  
+  .nav-links {
+    display: flex;
+    gap: var(--spacing-lg);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .nav-link {
+    color: var(--color-text-muted);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: color 0.2s ease;
+    position: relative;
+  }
+  
+  .nav-link:hover {
+    color: var(--color-text);
+  }
+  
+  .nav-link.active {
+    color: var(--color-accent);
+  }
+  
+  .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -0.5rem;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-accent);
+    border-radius: 2px;
+  }
+  
+  @media (max-width: 640px) {
+    .nav-links {
+      gap: var(--spacing-sm);
+    }
+    
+    .nav-link {
+      font-size: 0.875rem;
+    }
+  }
+</style>

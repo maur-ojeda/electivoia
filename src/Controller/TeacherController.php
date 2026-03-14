@@ -179,6 +179,120 @@ class TeacherController extends AbstractController
         return $this->redirectToRoute('teacher_attendance', ['id' => $course->getId()]);
     }
 
+    #[Route('/report/{id}', name: 'report')]
+    public function report(Course $course, EntityManagerInterface $em): Response
+    {
+        $teacher = $this->getUser();
+        if ($course->getTeacher() !== $teacher) {
+            throw $this->createAccessDeniedException('No tienes permiso para ver este reporte.');
+        }
+
+        $enrollments = $em->getRepository(Enrollment::class)->findBy(['course' => $course]);
+
+        $allAttendances = $em->getRepository(Attendance::class)->findBy(
+            ['course' => $course],
+            ['date' => 'ASC']
+        );
+
+        $dates = [];
+        foreach ($allAttendances as $att) {
+            $dateStr = $att->getDate()->format('Y-m-d');
+            if (!in_array($dateStr, $dates)) {
+                $dates[] = $dateStr;
+            }
+        }
+
+        $reportData = [];
+        foreach ($enrollments as $enrollment) {
+            $student = $enrollment->getStudent();
+            $records = $em->getRepository(Attendance::class)->findBy(
+                ['student' => $student, 'course' => $course],
+                ['date' => 'ASC']
+            );
+
+            $total = count($records);
+            $present = count(array_filter($records, fn($a) => $a->getStatus() === 'present'));
+            $absent = count(array_filter($records, fn($a) => $a->getStatus() === 'absent'));
+            $justified = count(array_filter($records, fn($a) => $a->getStatus() === 'justified'));
+            $percentage = $total > 0 ? round(($present + $justified) / $total * 100) : null;
+
+            $reportData[] = [
+                'student' => $student,
+                'total' => $total,
+                'present' => $present,
+                'absent' => $absent,
+                'justified' => $justified,
+                'percentage' => $percentage,
+            ];
+        }
+
+        usort($reportData, fn($a, $b) => ($a['percentage'] ?? -1) <=> ($b['percentage'] ?? -1));
+
+        return $this->render('teacher/report.html.twig', [
+            'course' => $course,
+            'reportData' => $reportData,
+            'totalSessions' => count($dates),
+        ]);
+    }
+
+    #[Route('/report/{id}/export', name: 'report_export')]
+    public function exportReport(Course $course, EntityManagerInterface $em): StreamedResponse
+    {
+        $teacher = $this->getUser();
+        if ($course->getTeacher() !== $teacher) {
+            throw $this->createAccessDeniedException('No tienes permiso para exportar este reporte.');
+        }
+
+        $enrollments = $em->getRepository(Enrollment::class)->findBy(['course' => $course]);
+
+        $response = new StreamedResponse();
+        $response->setCallback(function () use ($course, $enrollments, $em) {
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setCellValue('A1', 'RUT');
+            $sheet->setCellValue('B1', 'Nombre');
+            $sheet->setCellValue('C1', 'Grado');
+            $sheet->setCellValue('D1', 'Promedio');
+            $sheet->setCellValue('E1', 'Sesiones totales');
+            $sheet->setCellValue('F1', 'Presentes');
+            $sheet->setCellValue('G1', 'Ausentes');
+            $sheet->setCellValue('H1', 'Justificados');
+            $sheet->setCellValue('I1', '% Asistencia');
+
+            $row = 2;
+            foreach ($enrollments as $enrollment) {
+                $student = $enrollment->getStudent();
+                $records = $em->getRepository(Attendance::class)->findBy(['student' => $student, 'course' => $course]);
+                $total = count($records);
+                $present = count(array_filter($records, fn($a) => $a->getStatus() === 'present'));
+                $absent = count(array_filter($records, fn($a) => $a->getStatus() === 'absent'));
+                $justified = count(array_filter($records, fn($a) => $a->getStatus() === 'justified'));
+                $percentage = $total > 0 ? round(($present + $justified) / $total * 100) : 0;
+
+                $sheet->setCellValue('A' . $row, $student->getRut());
+                $sheet->setCellValue('B' . $row, $student->getFullName());
+                $sheet->setCellValue('C' . $row, $student->getGrade());
+                $sheet->setCellValue('D' . $row, $student->getAverageGrade());
+                $sheet->setCellValue('E' . $row, $total);
+                $sheet->setCellValue('F' . $row, $present);
+                $sheet->setCellValue('G' . $row, $absent);
+                $sheet->setCellValue('H' . $row, $justified);
+                $sheet->setCellValue('I' . $row, $percentage . '%');
+                $row++;
+            }
+
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        });
+
+        $filename = 'reporte_asistencia_' . $course->getName() . '_' . date('Y-m-d') . '.xlsx';
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', 'attachment;filename="' . $filename . '"');
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
+    }
+
     #[Route('/export/course/{id}/students.xlsx', name: 'export_students')]
     public function exportStudents(Course $course, EntityManagerInterface $em): StreamedResponse
     {
