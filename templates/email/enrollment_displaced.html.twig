@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+        .header { background: #b45309; color: #fff; padding: 28px 32px; }
+        .header h1 { margin: 0; font-size: 22px; }
+        .body { padding: 32px; color: #333; }
+        .detail-box { background: #fffbeb; border-left: 4px solid #b45309; padding: 16px 20px; border-radius: 4px; margin: 20px 0; }
+        .detail-box p { margin: 6px 0; }
+        .footer { background: #f0f0f0; padding: 16px 32px; font-size: 12px; color: #888; }
+        .tip { background: #eff6ff; border-radius: 6px; padding: 14px 18px; margin-top: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>⚠️ Has sido desplazado de un curso</h1>
+        <p style="margin:6px 0 0; opacity:.85;">ElectivoIA — Sistema de Cursos Electivos</p>
+    </div>
+    <div class="body">
+        <p>Hola <strong>{{ student.fullName }}</strong>,</p>
+        <p>Te informamos que otro estudiante con mayor promedio de notas ha ocupado tu lugar en el siguiente curso:</p>
+
+        <div class="detail-box">
+            <p><strong>📚 Curso:</strong> {{ course.name }}</p>
+            {% if course.teacher %}
+                <p><strong>👨‍🏫 Profesor:</strong> {{ course.teacher.fullName }}</p>
+            {% endif %}
+            {% if course.category %}
+                <p><strong>🏷️ Categoría:</strong> {{ course.category.name }}</p>
+            {% endif %}
+        </div>
+
+        <p>Esto ocurre porque el sistema prioriza a estudiantes con mayor rendimiento académico cuando un curso está lleno.</p>
+
+        <div class="tip">
+            💡 <strong>¿Qué puedes hacer?</strong> Ingresa a la plataforma para explorar otros cursos disponibles o mejorar tu promedio para próximas inscripciones.
+        </div>
+
+        <p style="margin-top: 20px;">Si tienes dudas, consulta con tu profesor o el administrador del sistema.</p>
+    </div>
+    <div class="footer">
+        Este es un mensaje automático de ElectivoIA. Por favor no respondas a este email.
+    </div>
+</div>
+</body>
+</html>

@@ -18,27 +18,28 @@ class GeminiChatbotService
     ) {
     }
 
-    public function chat(string $userMessage, ?int $userId = null): array
+    public function chat(string $userMessage, array $history = []): array
     {
         try {
             // Obtener información de los cursos disponibles
             $coursesContext = $this->buildCoursesContext();
-            
+
             // Construir el prompt con contexto
             $systemPrompt = $this->buildSystemPrompt($coursesContext);
-            
+
+            // Construir el array de contenidos incluyendo historial
+            $contents = [['parts' => [['text' => $systemPrompt]]]];
+            foreach ($history as $turn) {
+                $contents[] = ['role' => 'user', 'parts' => [['text' => $turn['user']]]];
+                $contents[] = ['role' => 'model', 'parts' => [['text' => $turn['bot']]]];
+            }
+            $contents[] = ['role' => 'user', 'parts' => [['text' => $userMessage]]];
+
             // Llamar a la API de Gemini
             $response = $this->httpClient->request('POST', self::GEMINI_API_URL, [
                 'query' => ['key' => $this->geminiApiKey],
                 'json' => [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $systemPrompt],
-                                ['text' => "Usuario: " . $userMessage]
-                            ]
-                        ]
-                    ],
+                    'contents' => $contents,
                     'generationConfig' => [
                         'temperature' => 0.7,
                         'topK' => 40,

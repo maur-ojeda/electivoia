@@ -23,8 +23,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
-    // #[ORM\Column(length: 180)] // Comentar o eliminar este campo
-    // private ?string $email = null;
+    #[ORM\Column(length: 180, nullable: true, unique: true)]
+    private ?string $email = null;
 
     /**
      * @var list<string> The user roles
@@ -130,17 +130,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
   
    
-    // public function getEmail(): ?string // Comentar o eliminar este método
-    // {
-    //     return $this->email;
-    // }
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
 
-    // public function setEmail(string $email): static // Comentar o eliminar este método
-    // {
-    //     $this->email = $email;
-
-    //     return $this;
-    // }
+    public function setEmail(?string $email): static
+    {
+        $this->email = $email;
+        return $this;
+    }
 
     /**
      * A visual identifier that represents this user.

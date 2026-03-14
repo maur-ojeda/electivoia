@@ -5,6 +5,8 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     gemini_api_key: '%env(GEMINI_API_KEY)%'
+    mailer_from: '%env(default:default_mailer_from:MAILER_FROM)%'
+    default_mailer_from: 'noreply@electivoia.cl'
 
 services:
     # default configuration for services in *this* file
@@ -21,6 +23,10 @@ services:
     App\Service\GeminiChatbotService:
         arguments:
             $geminiApiKey: '%gemini_api_key%'
+
+    App\Service\NotificationService:
+        arguments:
+            $mailerFrom: '%mailer_from%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

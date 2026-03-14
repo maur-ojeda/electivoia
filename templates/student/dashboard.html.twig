@@ -1,0 +1,89 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mi Dashboard — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+	<h1 class="text-2xl font-bold">Hola, {{ student.fullName }} 👋</h1>
+	<p class="text-base-content/60">
+		{{ student.grade }}
+		{% if student.averageGrade %}· Promedio: <strong>{{ student.averageGrade|number_format(1) }}</strong>{% endif %}
+	</p>
+</div>
+
+{# ─── Stat widgets ─── #}
+<div class="stats shadow w-full mb-8 flex flex-col sm:flex-row">
+	<div class="stat">
+		<div class="stat-title">Cursos inscritos</div>
+		<div class="stat-value text-primary">{{ totalCourses }}</div>
+	</div>
+
+	<div class="stat">
+		<div class="stat-title">Asistencia promedio</div>
+		{% if avgAttendance is not null %}
+			<div class="stat-value {{ avgAttendance >= 75 ? 'text-success' : (avgAttendance >= 50 ? 'text-warning' : 'text-error') }}">
+				{{ avgAttendance }}%
+			</div>
+		{% else %}
+			<div class="stat-value text-base-content/30">—</div>
+		{% endif %}
+	</div>
+
+	<div class="stat">
+		<div class="stat-title">Áreas de interés</div>
+		<div class="stat-value text-secondary">
+			{{ student.interestProfile ? student.interestProfile.interests|length : 0 }}
+		</div>
+	</div>
+</div>
+
+{# ─── Quick links ─── #}
+<div class="flex flex-wrap gap-3 mb-8">
+	<a href="{{ path('student_courses') }}" class="btn btn-primary btn-sm">🔍 Explorar cursos</a>
+	<a href="{{ path('student_enrollments') }}" class="btn btn-outline btn-sm">📋 Mis cursos</a>
+	<a href="{{ path('student_attendance') }}" class="btn btn-outline btn-sm">📅 Mi asistencia</a>
+	<a href="{{ path('student_profile') }}" class="btn btn-outline btn-sm">⭐ Mis intereses</a>
+</div>
+
+{# ─── Course status ─── #}
+{% if courseStats|length > 0 %}
+	<h2 class="text-lg font-semibold mb-3">Estado de mis cursos</h2>
+	<div class="space-y-3">
+		{% for item in courseStats %}
+			<div class="card bg-base-100 shadow-sm border-l-4
+				{% if item.percentage is null %}border-base-300
+				{% elseif item.percentage >= 75 %}border-success
+				{% elseif item.percentage >= 50 %}border-warning
+				{% else %}border-error{% endif %}">
+				<div class="card-body p-4 flex-row justify-between items-center">
+					<div>
+						<p class="font-medium">{{ item.course.name }}</p>
+						{% if item.course.teacher %}
+							<p class="text-xs text-base-content/60">Prof. {{ item.course.teacher.fullName }}</p>
+						{% endif %}
+					</div>
+					<div class="text-right">
+						{% if item.percentage is not null %}
+							<p class="text-xl font-bold {{ item.percentage >= 75 ? 'text-success' : (item.percentage >= 50 ? 'text-warning' : 'text-error') }}">
+								{{ item.percentage }}%
+							</p>
+							<p class="text-xs text-base-content/40">{{ item.attended }}/{{ item.sessions }} sesiones</p>
+						{% else %}
+							<p class="text-xs text-base-content/40">Sin sesiones aún</p>
+						{% endif %}
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+{% else %}
+	<div class="card bg-base-100 shadow text-center py-10">
+		<div class="card-body">
+			<p class="text-base-content/60 mb-3">Aún no estás inscrito en ningún curso.</p>
+			<a href="{{ path('student_courses') }}" class="btn btn-primary btn-sm">
+				Explorar cursos disponibles
+			</a>
+		</div>
+	</div>
+{% endif %}
+{% endblock %}

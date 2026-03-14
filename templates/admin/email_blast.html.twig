@@ -1,0 +1,91 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Envío Masivo de Email — Admin{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+	<h1 class="text-2xl font-bold">Envío masivo de email</h1>
+	<p class="text-base-content/60 text-sm">Enviar anuncios a estudiantes activos con email registrado.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+	{# Sidebar: estadísticas #}
+	<div class="lg:col-span-1">
+		<div class="card bg-base-100 shadow sticky top-20">
+			<div class="card-body p-4">
+				<h3 class="font-semibold text-sm mb-3">Destinatarios disponibles</h3>
+				<ul class="space-y-2 text-sm">
+					<li class="flex justify-between items-center">
+						<span class="badge badge-ghost badge-sm">Todos</span>
+						<span class="font-bold">{{ totalWithEmail }}</span>
+					</li>
+					{% for grade, count in gradeStats %}
+						<li class="flex justify-between items-center">
+							<span class="badge badge-primary badge-sm">{{ grade }}</span>
+							<span class="font-bold">{{ count }}</span>
+						</li>
+					{% endfor %}
+				</ul>
+				<div class="divider my-3"></div>
+				<p class="text-xs text-base-content/50">Solo estudiantes activos con email registrado.</p>
+			</div>
+		</div>
+	</div>
+
+	{# Formulario #}
+	<div class="lg:col-span-3">
+		<div class="card bg-base-100 shadow">
+			<div class="card-body">
+				<h2 class="card-title text-base mb-4">Nuevo anuncio</h2>
+
+				<form method="post" class="space-y-5">
+
+					<div class="form-control">
+						<label class="label"><span class="label-text font-medium">Destinatarios</span></label>
+						<select name="grade" class="select select-bordered w-full">
+							<option value="">Todos los estudiantes</option>
+							{% for grade in grades %}
+								<option value="{{ grade }}">
+									Solo {{ grade == '3M' ? 'Tercer Medio' : 'Cuarto Medio' }}
+									({{ gradeStats[grade] }} con email)
+								</option>
+							{% endfor %}
+						</select>
+					</div>
+
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-medium">Asunto <span class="text-error">*</span></span>
+						</label>
+						<input type="text" name="subject" class="input input-bordered w-full"
+							required maxlength="150"
+							placeholder="Ej: ¡Comienza el período de inscripciones!">
+					</div>
+
+					<div class="form-control">
+						<label class="label">
+							<span class="label-text font-medium">Mensaje <span class="text-error">*</span></span>
+						</label>
+						<textarea name="body" class="textarea textarea-bordered w-full" rows="6" required
+							placeholder="Escribe el mensaje que recibirán los estudiantes…"></textarea>
+					</div>
+
+					<div class="flex gap-3 pt-2">
+						<button type="submit" class="btn btn-primary gap-2"
+							data-controller="confirm"
+							data-action="click->confirm#confirm"
+							data-confirm-message-value="¿Confirmas el envío del email masivo?">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+							Enviar emails
+						</button>
+						<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost">Cancelar</a>
+					</div>
+
+				</form>
+			</div>
+		</div>
+	</div>
+
+</div>
+{% endblock %}

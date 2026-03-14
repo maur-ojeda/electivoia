@@ -1,250 +1,131 @@
 {# templates/admin/reports/index.html.twig #}
 {% extends 'base.html.twig' %}
-{%
-block title %}Reportes Administrativos
-{% endblock %}
-{% block stylesheets %}
-	{{ parent() }}
-	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-{% endblock %}
+
+{% block title %}Reportes Administrativos{% endblock %}
+
 {% block content %}
 
-	<div
-		class="rbt-page-banner-wrapper">
-		<!-- Start Banner BG Image  -->
-		<div class="rbt-banner-image"></div>
-		<!-- End Banner BG Image  -->
-		<div
-			class="rbt-banner-content">
-			<!-- Start Banner Content Top  -->
-			<div class="rbt-banner-content-top">
-				<div class="container">
-					<div class="row">
-						<div class="col-lg-12 pt-5">
-							<!-- Start Breadcrumb Area  -->
+<div class="mb-6">
+	<h1 class="text-2xl font-bold">Reportes Administrativos</h1>
+</div>
 
-							<!-- End Breadcrumb Area  -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
-								<div class="title-wrapper pt-5"> <h3 class="h3 mb--0">Reportes Administrativos</h3>
-							</div>
-							<p class="description"></p>
-						</div>
-					</div>
-				</div>
-			</div>
-			<!-- End Banner Content Top  -->
+	{# Insights automáticos #}
+	<div class="card bg-base-100 shadow">
+		<div class="card-body">
+			<h2 class="card-title text-base">Insights Automáticos</h2>
+			<ul class="space-y-2 mt-2">
+				{% for insight in insights %}
+					<li class="text-sm p-2 bg-base-200 rounded">{{ insight }}</li>
+				{% endfor %}
+			</ul>
 		</div>
 	</div>
 
-	<div class="rbt-counterup-area rbt-section-overlayping-top rbt-section-gapBottom">
-		<div class="container">
-			<div
-				class="row g-5">
-				<!-- Start Single Event  -->
-				<div class="col-lg-6 col-md-6 col-12">
-					<div class="rbt-card event-grid-card variation-01 rbt-hover">
-						<div class="rbt-card-body">
-							<h4 class="rbt-card-title">Insights Automáticos</h4>
-
-							<div>
-								<ul class="list-group list-group-flush">
-									{% for insight in insights %}
-										<li class="list-group-item small">
-											{{ insight }}
-										</li>
-									{% endfor %}
-								</ul>
-							</div>
-						</div>
-					</div>
-				</div>
-				<!-- End Single Event  -->
-
-				<div class="col-lg-6 col-md-6 col-12">
-					<div class="rbt-card event-grid-card variation-01 rbt-hover">
-						<div class="rbt-card-body">
-							<h4 class="rbt-card-title">
-								Distribución de Cursos por Área
-							</h4>
-
-							<div class="card-body">
-								<canvas id="categoryChart" height="300"></canvas>
-							</div>
-
-							<div></div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div
-				class="row g-5 mt-2">
-				<!-- Gráfico: Ocupación por curso -->
-
-				<div class="col-lg-6 col-md-6 col-12">
-					<div class="rbt-card event-grid-card variation-01 rbt-hover">
-						<div class="rbt-card-body">
-							<h4 class="rbt-card-title">
-								Ocupación vs Cupo Máximo por Curso
-							</h4>
-
-							<div class="card-body">
-								<canvas id="courseChart" height="300"></canvas>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="col-lg-6 col-md-6 col-12">
-					<div class="rbt-card event-grid-card variation-01 rbt-hover">
-						<div class="rbt-card-body">
-							<h4 class="rbt-card-title">
-								Carga Académica por Profesor
-							</h4>
-
-							<div class="card-body">
-								<canvas id="teacherChart" height="300"></canvas>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Gráfico: Carga de profesores -->
-			</div>
+	{# Distribución por área #}
+	<div class="card bg-base-100 shadow">
+		<div class="card-body">
+			<h2 class="card-title text-base">Distribución de Cursos por Área</h2>
+			<canvas id="categoryChart" height="300"></canvas>
 		</div>
 	</div>
 
-	<div class="rbt-separator-mid">
-		<div class="container">
-			<hr class="rbt-separator m-0"/>
+	{# Ocupación por curso #}
+	<div class="card bg-base-100 shadow">
+		<div class="card-body">
+			<h2 class="card-title text-base">Ocupación vs Cupo Máximo por Curso</h2>
+			<canvas id="courseChart" height="300"></canvas>
 		</div>
 	</div>
 
-	<div class="container mt-4 mb-5">
-		<h5 class="mb-3">Exportaciones</h5>
-		<div class="d-flex gap-3">
-			<a href="{{ path('admin_export_attendance') }}" class="rbt-btn btn-sm btn-gradient">
-				<i class="feather-download"></i> Exportar todas las asistencias
-			</a>
+	{# Carga de profesores #}
+	<div class="card bg-base-100 shadow">
+		<div class="card-body">
+			<h2 class="card-title text-base">Carga Académica por Profesor</h2>
+			<canvas id="teacherChart" height="300"></canvas>
 		</div>
 	</div>
+
+</div>
+
+<div class="divider"></div>
+
+<div class="mb-6">
+	<h2 class="font-semibold text-lg mb-4">Exportaciones y Comunicaciones</h2>
+	<div class="flex gap-3 flex-wrap">
+		<a href="{{ path('admin_export_attendance') }}" class="btn btn-primary btn-sm gap-2">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+			Exportar asistencias
+		</a>
+		<a href="{{ path('admin_email_blast') }}" class="btn btn-outline btn-sm gap-2">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+			Envío masivo de email
+		</a>
+	</div>
+</div>
 
 {% endblock %}
+
 {% block javascripts %}
 	{{ parent() }}
-
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	<script>
-		// Gráfico 1: Ocupación por curso
 const ctx1 = document.getElementById('courseChart').getContext('2d');
 new Chart(ctx1, {
 type: 'bar',
 data: {
 labels: {{ course_labels | raw }},
-datasets: [
-{
+datasets: [{
 label: 'Inscripciones',
 data: {{ enrollment_data | raw }},
-backgroundColor: 'rgba(54, 162, 235, 0.6)',
-borderColor: 'rgba(54, 162, 235, 1)',
+backgroundColor: 'rgba(54,162,235,0.6)',
+borderColor: 'rgba(54,162,235,1)',
 borderWidth: 1
-}, {
+},{
 label: 'Cupo Máximo',
 data: {{ capacity_data | raw }},
 type: 'line',
 fill: false,
-borderColor: 'rgba(255, 99, 132, 1)',
+borderColor: 'rgba(255,99,132,1)',
 tension: 0.1,
 yAxisID: 'y1'
-}
-]
+}]
 },
 options: {
 responsive: true,
-plugins: {
-legend: {
-position: 'top'
-}
-},
+plugins: { legend: { position: 'top' } },
 scales: {
-y: {
-beginAtZero: true,
-title: {
-display: true,
-text: 'Número de estudiantes'
-}
-},
-y1: {
-position: 'right',
-beginAtZero: true,
-grid: {
-drawOnChartArea: false
-}
-}
+y: { beginAtZero: true, title: { display: true, text: 'Estudiantes' } },
+y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } }
 }
 }
 });
 
-// Gráfico 2: Cursos por categoría
 const ctx2 = document.getElementById('categoryChart').getContext('2d');
 new Chart(ctx2, {
 type: 'pie',
 data: {
 labels: {{ category_labels | raw }},
-datasets: [
-{
-data: {{ category_data | raw }},
-backgroundColor: [
-'#FF6384',
-'#36A2EB',
-'#FFCE56',
-'#4BC0C0',
-'#9966FF',
-'#FF9F40',
-'#FF6384'
-]
-}
-]
+datasets: [{ data: {{ category_data | raw }},
+backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40','#FF6384'] }]
 },
-options: {
-responsive: true,
-plugins: {
-legend: {
-position: 'bottom'
-}
-}
-}
+options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
 });
 
-// Gráfico 3: Carga de profesores
 const ctx3 = document.getElementById('teacherChart').getContext('2d');
 new Chart(ctx3, {
 type: 'bar',
 data: {
 labels: {{ teacher_names | raw }},
-datasets: [
-{
-label: 'Cursos Asignados',
-data: {{ teacher_courses | raw }},
-backgroundColor: 'rgba(75, 192, 192, 0.6)',
-borderColor: 'rgba(75, 192, 192, 1)',
-borderWidth: 1
-}
-]
+datasets: [{ label: 'Cursos Asignados', data: {{ teacher_courses | raw }},
+backgroundColor: 'rgba(75,192,192,0.6)', borderColor: 'rgba(75,192,192,1)', borderWidth: 1 }]
 },
 options: {
 indexAxis: 'y',
 responsive: true,
-scales: {
-x: {
-beginAtZero: true,
-title: {
-display: true,
-text: 'Cantidad de cursos'
-}
-}
-}
+scales: { x: { beginAtZero: true, title: { display: true, text: 'Cantidad de cursos' } } }
 }
 });
 	</script>
-
 {% endblock %}

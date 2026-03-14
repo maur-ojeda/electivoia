@@ -1,199 +1,100 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Mis Cursos - Profesor
-{% endblock %}
+{% block title %}Mis Cursos — ElectivoIA{% endblock %}
 
 {% block content %}
+{% set category_map = {
+	'Filosofía': '01',
+	'Matemática': '02',
+	'Educación física y salud': '03',
+	'Historia, geografía y ciencias sociales': '04',
+	'Ciencias': '05',
+	'Lengua y literatura': '07',
+	'Artes': '09'
+} %}
 
-
-	<div class="rbt-page-banner-wrapper">
-		<div class="rbt-banner-image"></div>
+<div class="flex items-center justify-between mb-6">
+	<div>
+		<h1 class="text-2xl font-bold">Mis Cursos</h1>
+		<p class="text-base-content/60 text-sm">{{ app.user.fullName }}</p>
 	</div>
-
-
-	<!-- Start Card Style -->
-	<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
-		<div class="container">
-
-			<!-- Start Dashboard Top  -->
-			<div class="rbt-dashboard-content-wrapper">
-				<div class="tutor-bg-photo bg_image height-350" style="background-image: url({{asset('build/images/banner/banner-01.png') }});"></div>
-				<!-- Start Tutor Information  -->
-
-
-				<div class="rbt-tutor-information">
-					<div class="rbt-tutor-information-left">
-						<div class="thumbnail rbt-avatars size-lg">
-							<img src={{app.user.avatarUrl}}/>
-
-						</div>
-						<div class="tutor-content">
-
-
-							<h5 class="title">Hola:
-							</h5>
-							<h3 class="title">{{app.user.fullName}}</h3>
-
-						</div>
-					</div>
-
-
-				</div>
-				<!-- End Tutor Information  -->
-			</div>
-			<!-- End Dashboard Top  -->
-
-			<div class="row my-4 align-items-center">
-				<div class="col-auto">
-					<a href="{{ path('teacher_course_new') }}" class="rbt-btn btn-gradient btn-sm">
-						<i class="feather-plus"></i> Nuevo curso
-					</a>
-				</div>
-			</div>
-
-			<div class="row my-2">
-				<form method="GET">
-					<div class="rbt-search-with-category">
-						<div class="filter-select rbt-modern-select search-by-category">
-							<select id="category" name="category" class="w-100">
-								<option value="">Todas las categorías</option>
-								{% for cat in allCategories %}
-									<option value="{{ cat.id }}" {% if cat.id == selectedCategory %} selected {% endif %}>
-										{{ cat.name }}
-									</option>
-								{% endfor %}
-							</select>
-						</div>
-						<div class="search-field">
-							<input type="text" name="q" placeholder="Buscar" value="{{ searchQuery }}">
-							<button class="rbt-round-btn serach-btn" type="submit">
-								<i class="feather-search"></i>
-							</button>
-						</div>
-					</div>
-				</form>
-			</div>
-
-
-			<div class="container">
-
-				<div
-					class="row g-5">
-
-					<!-- Start Single Course  -->
-
-					{% for course in courses %}
-
-
-						{% set category_map = {
-														'Filosofía': '01',
-														'Matemática': '02',
-														'Educación física y salud': '03',
-														'Historia, geografía y ciencias sociales': '04',
-														'Ciencias': '05',
-														'Lengua y literatura': '06',
-														'Artes': '07'
-													} %}
-						{% set image_number = course.category ? category_map[course.category.name]|default('01') : '01' %}
-
-						<div class="col-lg-4 col-md-6 col-12">
-							<div class="rbt-card variation-01 rbt-hover {% if not course.isActive %}opacity-75{% endif %}">
-								<div class="rbt-card-img">
-									<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}"
-										alt="{{ course.name }}">
-									{% if not course.isActive %}
-										<div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-											style="background: rgba(0,0,0,0.35);">
-											<span class="badge bg-danger fs-6">Inactivo</span>
-										</div>
-									{% endif %}
-								</div>
-
-								<div class="rbt-card-body">
-
-									<div class="rbt-card-top">
-										<div class="rbt-review">
-											{% if course.category %}
-												<span class="rbt-badge-5 me-1 bg-color-primary-opacity">{{ course.category.area }}</span>
-												<span class="rbt-badge-5 bg-color-secondary-opacity">{{ course.category.name }}</span>
-											{% else %}
-												<span class="rbt-badge-5 bg-color-secondary-opacity">Sin categoría</span>
-											{% endif %}
-										</div>
-									</div>
-
-									<h5>{{ course.name }}</h5>
-									<p class="small">{{ course.description|default('Sin descripción.')|slice(0, 100) }}{% if course.description|length > 100 %}…{% endif %}</p>
-
-									<ul class="rbt-meta">
-										<li class="text-muted small">
-											<i class="feather-users"></i>
-											{{ enrollmentsByCourse[course.id]|length }} / {{ course.maxCapacity }} alumnos
-										</li>
-										{% if course.enrollmentDeadline %}
-											<li class="text-muted small">
-												<i class="feather-clock"></i>
-												Cierra: {{ course.enrollmentDeadline|date('d/m/Y H:i') }}
-											</li>
-										{% endif %}
-									</ul>
-
-									{# Acciones principales #}
-									<div class="rbt-card-bottom d-flex flex-wrap gap-1 justify-content-end mt-2">
-										<a class="rbt-btn btn-xs btn-gradient"
-											href="{{ path('teacher_course_students', {id: course.id}) }}">
-											<i class="feather-users"></i> Alumnos
-										</a>
-										<a class="rbt-btn btn-xs bg-primary-opacity"
-											href="{{ path('teacher_report', {id: course.id}) }}">
-											<i class="feather-bar-chart-2"></i> Reporte
-										</a>
-										<a class="rbt-btn btn-xs bg-primary-opacity"
-											href="{{ path('teacher_course_edit', {id: course.id}) }}">
-											<i class="feather-edit-2"></i> Editar
-										</a>
-									</div>
-
-									{# Activar / Desactivar #}
-									<div class="mt-2 text-end">
-										<form method="post"
-											action="{{ path('teacher_course_toggle_active', {id: course.id}) }}"
-											class="d-inline"
-											onsubmit="return confirm('¿Confirmas {{ course.isActive ? 'desactivar' : 'activar' }} este curso?')">
-											<button type="submit"
-												class="rbt-btn btn-xs {{ course.isActive ? 'btn-danger-opacity' : 'btn-success-opacity' }}">
-												<i class="feather-{{ course.isActive ? 'eye-off' : 'eye' }}"></i>
-												{{ course.isActive ? 'Desactivar' : 'Activar' }}
-											</button>
-										</form>
-									</div>
-
-								</div>
-							</div>
-						</div>
-
-
-					{% endfor %}
-
-					<!-- End Single Course  -->
-
-
-				</div>
-
-
-			</div>
-		</div>
-	</div>
+	<a href="{{ path('teacher_course_new') }}" class="btn btn-primary btn-sm gap-1">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+		Nuevo curso
+	</a>
 </div>
 
-<script>
+{# Search bar #}
+<form method="GET" class="mb-6">
+	<div class="flex gap-3 flex-wrap">
+		<select name="category" class="select select-bordered select-sm" onchange="this.form.submit()">
+			<option value="">Todas las categorías</option>
+			{% for cat in allCategories %}
+				<option value="{{ cat.id }}" {% if cat.id == selectedCategory %}selected{% endif %}>
+					{{ cat.name }}
+				</option>
+			{% endfor %}
+		</select>
+		<div class="join flex-1">
+			<input type="text" name="q" value="{{ searchQuery }}" placeholder="Buscar curso…" class="input input-bordered input-sm join-item flex-1">
+			<button type="submit" class="btn btn-sm btn-neutral join-item">Buscar</button>
+		</div>
+	</div>
+</form>
 
-	document.addEventListener('DOMContentLoaded', function () {
-const categorySelect = document.getElementById('category');
-if (categorySelect) {
-categorySelect.addEventListener('change', function () {
-this.closest('form').submit();
-});
-}
-});
-</script>{% endblock %}
+{% if courses|length == 0 %}
+	<div class="text-center py-16 text-base-content/50">
+		<p>No tienes cursos aún.</p>
+		<a href="{{ path('teacher_course_new') }}" class="btn btn-primary btn-sm mt-4">Crear mi primer curso</a>
+	</div>
+{% else %}
+	<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+		{% for course in courses %}
+			{% set img = course.category ? category_map[course.category.name]|default('01') : '01' %}
+			<div class="card bg-base-100 shadow hover:shadow-md transition-shadow {% if not course.isActive %}opacity-70{% endif %}">
+				<figure class="h-36 overflow-hidden relative">
+					<img src="{{ asset('build/images/course/' ~ img ~ '.png') }}" alt="{{ course.name }}" class="object-cover w-full h-full">
+					{% if not course.isActive %}
+						<div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+							<span class="badge badge-error">Inactivo</span>
+						</div>
+					{% endif %}
+				</figure>
+				<div class="card-body p-4">
+					<div class="flex gap-1 flex-wrap mb-1">
+						{% if course.category %}
+							<span class="badge badge-ghost badge-xs">{{ course.category.area }}</span>
+							<span class="badge badge-outline badge-xs">{{ course.category.name }}</span>
+						{% else %}
+							<span class="badge badge-ghost badge-xs">Sin categoría</span>
+						{% endif %}
+					</div>
+					<h3 class="card-title text-sm font-bold leading-tight">{{ course.name }}</h3>
+					<p class="text-xs text-base-content/60 line-clamp-2">{{ course.description|default('Sin descripción.') }}</p>
+					<p class="text-xs text-base-content/70 mt-1">
+						{{ enrollmentsByCourse[course.id]|length }} / {{ course.maxCapacity }} alumnos
+						{% if course.enrollmentDeadline %}
+							· Cierre: {{ course.enrollmentDeadline|date('d/m/Y') }}
+						{% endif %}
+					</p>
+					<div class="card-actions mt-3 flex-col gap-2">
+						<div class="flex gap-1 w-full">
+							<a href="{{ path('teacher_course_students', {id: course.id}) }}" class="btn btn-xs btn-ghost flex-1">Alumnos</a>
+							<a href="{{ path('teacher_report', {id: course.id}) }}" class="btn btn-xs btn-ghost flex-1">Reporte</a>
+							<a href="{{ path('teacher_course_edit', {id: course.id}) }}" class="btn btn-xs btn-ghost flex-1">Editar</a>
+						</div>
+						<form method="post" action="{{ path('teacher_course_toggle_active', {id: course.id}) }}" class="w-full"
+							data-controller="confirm"
+							data-action="submit->confirm#confirm"
+							data-confirm-message-value="{{ course.isActive ? 'Desactivar' : 'Activar' }} '{{ course.name }}'?">
+							<button type="submit" class="btn btn-xs w-full {{ course.isActive ? 'btn-error btn-outline' : 'btn-success btn-outline' }}">
+								{{ course.isActive ? 'Desactivar' : 'Activar' }}
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+{% endif %}
+{% endblock %}

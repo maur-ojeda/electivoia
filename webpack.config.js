@@ -1,13 +1,13 @@
 const Encore = require("@symfony/webpack-encore");
+const path = require("path");
 
 Encore
-    // carpeta donde se generan los assets compilados
-    .autoProvidejQuery()
     .setOutputPath("public/build/")
     .setPublicPath("/build")
     .addEntry("app", "./assets/app.js")
     .splitEntryChunks()
     .enableSingleRuntimeChunk()
+    .enableStimulusBridge("./assets/controllers.json")
 
     // limpieza automática de la carpeta build
     .cleanupOutputBeforeBuild()
@@ -36,6 +36,16 @@ Encore
 const config = Encore.getWebpackConfig();
 config.watchOptions = {
     ignored: /public\/build/,
+};
+
+// Alias for symfony/stimulus-bundle PHP package JS loader
+config.resolve = config.resolve || {};
+config.resolve.alias = {
+    ...(config.resolve.alias || {}),
+    '@symfony/stimulus-bundle': path.resolve(
+        __dirname,
+        'vendor/symfony/stimulus-bundle/assets/dist/loader.js'
+    ),
 };
 
 module.exports = config;

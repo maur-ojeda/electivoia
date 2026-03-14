@@ -16,6 +16,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
 use Symfony\Component\Validator\Constraints\Regex;
 
 
@@ -121,8 +122,9 @@ class UserCrudController extends AbstractCrudController
             ])->allowMultipleChoices(false)->renderAsBadges(),
 
 
-            // Eliminado: EmailField::new('email'),
-
+            EmailField::new('email', 'Email')
+                ->setRequired(false)
+                ->setHelp('Opcional. Se usará para notificaciones de inscripción.'),
 
             ChoiceField::new('grade', 'Curso/Grado')
                 ->setChoices(self::CHILEAN_GRADES)

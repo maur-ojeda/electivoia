@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+@source "../templates";
+
+/* Configuración del tema DaisyUI */
+@plugin "daisyui" {
+    themes: light --default;
+    darkTheme: false;
+}

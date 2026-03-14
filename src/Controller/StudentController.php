@@ -8,6 +8,7 @@ use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
 use App\Service\EnrollmentService;
 use App\Entity\InterestProfile;
+use App\Service\NotificationService;
 use App\Service\RecommendationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,14 +21,50 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_STUDENT')]
 class StudentController extends AbstractController
 {
-    private $enrollmentService;
-
-    public function __construct(EnrollmentService $enrollmentService)
-    {
-        $this->enrollmentService = $enrollmentService;
-    }
+    public function __construct(
+        private EnrollmentService $enrollmentService,
+        private NotificationService $notificationService
+    ) {}
 
     //---------------
+
+    #[Route('/dashboard', name: 'dashboard')]
+    public function dashboard(EntityManagerInterface $em): Response
+    {
+        $student = $this->getUser();
+        $enrollments = $em->getRepository(Enrollment::class)->findBy(['student' => $student]);
+
+        $totalCourses = count($enrollments);
+        $totalSessions = 0;
+        $totalAttended = 0;
+        $courseStats = [];
+
+        foreach ($enrollments as $enrollment) {
+            $course = $enrollment->getCourse();
+            $records = $em->getRepository(Attendance::class)->findBy(['student' => $student, 'course' => $course]);
+            $sessions = count($records);
+            $attended = count(array_filter($records, fn($a) => in_array($a->getStatus(), ['present', 'justified'])));
+
+            $totalSessions += $sessions;
+            $totalAttended += $attended;
+
+            $courseStats[] = [
+                'course' => $course,
+                'sessions' => $sessions,
+                'attended' => $attended,
+                'percentage' => $sessions > 0 ? round($attended / $sessions * 100) : null,
+            ];
+        }
+
+        $avgAttendance = $totalSessions > 0 ? round($totalAttended / $totalSessions * 100) : null;
+
+        return $this->render('student/dashboard.html.twig', [
+            'student' => $student,
+            'totalCourses' => $totalCourses,
+            'avgAttendance' => $avgAttendance,
+            'courseStats' => $courseStats,
+        ]);
+    }
 
     #[Route('/courses', name: 'courses')]
     public function courses(
@@ -172,6 +209,7 @@ class StudentController extends AbstractController
             $enrollment->setEnrolledAt(new \DateTime());
             $em->persist($enrollment);
             $em->flush();
+            $this->notificationService->sendEnrollmentConfirmation($student, $course);
             $this->addFlash('success', '¡Inscripción exitosa!');
         } else {
             $studentGrade = $student->getAverageGrade();
@@ -201,7 +239,9 @@ class StudentController extends AbstractController
                     $newEnrollment->setEnrolledAt(new \DateTime());
                     $em->persist($newEnrollment);
                     $em->flush();
-                    $this->addFlash('success', "¡Inscripción exitosa! Reemplazaste a {$lowestStudent->getEmail()}.");
+                    $this->notificationService->sendEnrollmentConfirmation($student, $course);
+                    $this->notificationService->sendEnrollmentDisplaced($lowestStudent, $student, $course);
+                    $this->addFlash('success', "¡Inscripción exitosa! Reemplazaste a {$lowestStudent->getFullName()}.");
                 } else {
                     $this->addFlash('error', 'No hay cupo y tu promedio no es suficiente.');
                 }
