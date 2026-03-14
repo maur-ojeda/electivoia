@@ -13,8 +13,7 @@
 
 	<!-- Start Card Style -->
 	<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
-		<div
-			class="container">
+		<div class="container">
 
 			<!-- Start Dashboard Top  -->
 			<div class="rbt-dashboard-content-wrapper">
@@ -44,7 +43,15 @@
 			</div>
 			<!-- End Dashboard Top  -->
 
-			<div class="row my-4">
+			<div class="row my-4 align-items-center">
+				<div class="col-auto">
+					<a href="{{ path('teacher_course_new') }}" class="rbt-btn btn-gradient btn-sm">
+						<i class="feather-plus"></i> Nuevo curso
+					</a>
+				</div>
+			</div>
+
+			<div class="row my-2">
 				<form method="GET">
 					<div class="rbt-search-with-category">
 						<div class="filter-select rbt-modern-select search-by-category">
@@ -78,7 +85,8 @@
 					{% for course in courses %}
 
 
-						{% set category_map = {			'Filosofía': '01',
+						{% set category_map = {
+														'Filosofía': '01',
 														'Matemática': '02',
 														'Educación física y salud': '03',
 														'Historia, geografía y ciencias sociales': '04',
@@ -86,49 +94,80 @@
 														'Lengua y literatura': '06',
 														'Artes': '07'
 													} %}
-						{% set image_number = category_map[course.category.name]|default('default') %}
+						{% set image_number = course.category ? category_map[course.category.name]|default('01') : '01' %}
 
 						<div class="col-lg-4 col-md-6 col-12">
-							<div class="rbt-card variation-01 rbt-hover">
+							<div class="rbt-card variation-01 rbt-hover {% if not course.isActive %}opacity-75{% endif %}">
 								<div class="rbt-card-img">
-									<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}" alt="Imagen del curso de {{ course.category.name }}">
+									<img src="{{ asset('build/images/course/' ~ image_number ~ '.png') }}"
+										alt="{{ course.name }}">
+									{% if not course.isActive %}
+										<div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+											style="background: rgba(0,0,0,0.35);">
+											<span class="badge bg-danger fs-6">Inactivo</span>
+										</div>
+									{% endif %}
 								</div>
-
 
 								<div class="rbt-card-body">
 
-
 									<div class="rbt-card-top">
 										<div class="rbt-review">
-											<span class="rbt-badge-5 me-1 bg-color-primary-opacity ">{{ course.category.area }}</span>
-											<span class="rbt-badge-5 bg-color-secondary-opacity">{{ course.category.name }}</span>
+											{% if course.category %}
+												<span class="rbt-badge-5 me-1 bg-color-primary-opacity">{{ course.category.area }}</span>
+												<span class="rbt-badge-5 bg-color-secondary-opacity">{{ course.category.name }}</span>
+											{% else %}
+												<span class="rbt-badge-5 bg-color-secondary-opacity">Sin categoría</span>
+											{% endif %}
 										</div>
-
 									</div>
 
+									<h5>{{ course.name }}</h5>
+									<p class="small">{{ course.description|default('Sin descripción.')|slice(0, 100) }}{% if course.description|length > 100 %}…{% endif %}</p>
 
-									<h5 class="">
-										{{ course.name }}
-									</h5>
-									<p class="small">{{ course.description }}</p>
 									<ul class="rbt-meta">
-
 										<li class="text-muted small">
 											<i class="feather-users"></i>
-											Estudiantes
-											{{ enrollmentsByCourse[course.id]|length }}
-											/
-											{{ course.maxCapacity }}
+											{{ enrollmentsByCourse[course.id]|length }} / {{ course.maxCapacity }} alumnos
 										</li>
-
-
+										{% if course.enrollmentDeadline %}
+											<li class="text-muted small">
+												<i class="feather-clock"></i>
+												Cierra: {{ course.enrollmentDeadline|date('d/m/Y H:i') }}
+											</li>
+										{% endif %}
 									</ul>
 
-
-									<div class="rbt-card-bottom text-end">
-										<a class="rbt-btn btn-sm btn-gradient" href="{{ path('teacher_attendance', {id: course.id}) }}">Listado</a>
-										<a class="rbt-btn btn-sm bg-primary-opacity" href="{{ path('teacher_report', {id: course.id}) }}">Reporte</a>
+									{# Acciones principales #}
+									<div class="rbt-card-bottom d-flex flex-wrap gap-1 justify-content-end mt-2">
+										<a class="rbt-btn btn-xs btn-gradient"
+											href="{{ path('teacher_course_students', {id: course.id}) }}">
+											<i class="feather-users"></i> Alumnos
+										</a>
+										<a class="rbt-btn btn-xs bg-primary-opacity"
+											href="{{ path('teacher_report', {id: course.id}) }}">
+											<i class="feather-bar-chart-2"></i> Reporte
+										</a>
+										<a class="rbt-btn btn-xs bg-primary-opacity"
+											href="{{ path('teacher_course_edit', {id: course.id}) }}">
+											<i class="feather-edit-2"></i> Editar
+										</a>
 									</div>
+
+									{# Activar / Desactivar #}
+									<div class="mt-2 text-end">
+										<form method="post"
+											action="{{ path('teacher_course_toggle_active', {id: course.id}) }}"
+											class="d-inline"
+											onsubmit="return confirm('¿Confirmas {{ course.isActive ? 'desactivar' : 'activar' }} este curso?')">
+											<button type="submit"
+												class="rbt-btn btn-xs {{ course.isActive ? 'btn-danger-opacity' : 'btn-success-opacity' }}">
+												<i class="feather-{{ course.isActive ? 'eye-off' : 'eye' }}"></i>
+												{{ course.isActive ? 'Desactivar' : 'Activar' }}
+											</button>
+										</form>
+									</div>
+
 								</div>
 							</div>
 						</div>

@@ -1,0 +1,132 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ formTitle }} — ElectivoIA{% endblock %}
+
+{% block content %}
+
+<div class="rbt-page-banner-wrapper">
+    <div class="rbt-banner-image"></div>
+</div>
+
+<div class="rbt-dashboard-area rbt-section-overlayping-top rbt-section-gapBottom">
+    <div class="container">
+
+        <div class="rbt-dashboard-content-wrapper">
+            <div class="tutor-bg-photo bg_image height-350"
+                style="background-image: url({{ asset('build/images/banner/banner-01.png') }});"></div>
+            <div class="rbt-tutor-information">
+                <div class="rbt-tutor-information-left">
+                    <div class="thumbnail rbt-avatars size-lg">
+                        <img src="{{ app.user.avatarUrl }}"/>
+                    </div>
+                    <div class="tutor-content">
+                        <h5 class="title">{{ app.user.fullName }}</h5>
+                        <h3 class="title">{{ formTitle }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-5">
+            <div class="col-lg-8 offset-lg-2">
+                <div class="rbt-dashboard-content bg-color-white rbt-shadow-box">
+                    <div class="content p-4">
+
+                        {% if errors is not empty %}
+                            <div class="alert alert-danger mb-4">
+                                <ul class="mb-0">
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                        <form method="post">
+
+                            {# Nombre #}
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Nombre del curso <span class="text-danger">*</span></label>
+                                <input type="text" name="name" class="form-control rbt-input"
+                                    value="{{ data.name ?? '' }}" required maxlength="255"
+                                    placeholder="Ej: Introducción a la Filosofía">
+                            </div>
+
+                            {# Descripción #}
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Descripción</label>
+                                <textarea name="description" class="form-control rbt-input" rows="3"
+                                    placeholder="Describe brevemente el contenido del curso...">{{ data.description ?? '' }}</textarea>
+                            </div>
+
+                            {# Capacidad máxima #}
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Capacidad máxima <span class="text-danger">*</span></label>
+                                <input type="number" name="maxCapacity" class="form-control rbt-input"
+                                    value="{{ data.maxCapacity ?? '' }}" required min="1" max="200"
+                                    placeholder="Ej: 30">
+                                {% if course is not null and course.currentEnrollment > 0 %}
+                                    <small class="text-muted">Actualmente hay {{ course.currentEnrollment }} alumnos inscritos. No puede quedar menor que ese número.</small>
+                                {% endif %}
+                            </div>
+
+                            {# Grados objetivo #}
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Grados objetivo <span class="text-danger">*</span></label>
+                                <div class="d-flex gap-4">
+                                    {% for grade in ['3M', '4M'] %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                name="targetGrades[]" value="{{ grade }}"
+                                                id="grade_{{ grade }}"
+                                                {% if grade in (data.targetGrades ?? []) %}checked{% endif %}>
+                                            <label class="form-check-label" for="grade_{{ grade }}">
+                                                {{ grade == '3M' ? 'Tercer Medio' : 'Cuarto Medio' }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            {# Fecha límite de inscripción #}
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Fecha límite de inscripción</label>
+                                <input type="datetime-local" name="enrollmentDeadline" class="form-control rbt-input"
+                                    value="{{ data.enrollmentDeadline ?? '' }}">
+                                <small class="text-muted">Opcional. Después de esta fecha no se aceptarán nuevas inscripciones.</small>
+                            </div>
+
+                            {# Categoría #}
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Categoría</label>
+                                <select name="category" class="form-select rbt-input">
+                                    <option value="">Sin categoría</option>
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.id }}"
+                                            {% if (data.category ?? null) == cat.id %}selected{% endif %}>
+                                            {{ cat.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            {# Botones #}
+                            <div class="d-flex gap-3 mt-5">
+                                <button type="submit" class="rbt-btn btn-gradient">
+                                    {{ submitLabel }}
+                                </button>
+                                <a href="{{ path('teacher_courses') }}" class="rbt-btn bg-primary-opacity">
+                                    Cancelar
+                                </a>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

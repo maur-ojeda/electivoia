@@ -9,9 +9,10 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpFoundation\Request;
 use App\Entity\Course;
+use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
 use App\Entity\Attendance;
-use App\Entity\User; // Importar User
+use App\Entity\User;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -291,6 +292,176 @@ class TeacherController extends AbstractController
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
+    }
+
+    // ── HDU-S2-01: Crear curso ────────────────────────────────────────────────
+
+    #[Route('/courses/new', name: 'course_new')]
+    public function courseNew(Request $request, EntityManagerInterface $em): Response
+    {
+        $categories = $em->getRepository(CourseCategory::class)->findAll();
+        $errors = [];
+        $data = [];
+
+        if ($request->isMethod('POST')) {
+            $data = $request->request->all();
+            $name = trim($data['name'] ?? '');
+            $maxCapacity = (int) ($data['maxCapacity'] ?? 0);
+            $targetGrades = $data['targetGrades'] ?? [];
+            $description = trim($data['description'] ?? '');
+            $deadlineRaw = trim($data['enrollmentDeadline'] ?? '');
+            $categoryId = $data['category'] ?? null;
+
+            if ($name === '') {
+                $errors[] = 'El nombre del curso es obligatorio.';
+            }
+            if ($maxCapacity < 1) {
+                $errors[] = 'La capacidad máxima debe ser al menos 1.';
+            }
+            if (empty($targetGrades)) {
+                $errors[] = 'Debes seleccionar al menos un grado objetivo.';
+            }
+
+            if (empty($errors)) {
+                $course = new Course();
+                $course->setName($name);
+                $course->setDescription($description ?: null);
+                $course->setMaxCapacity($maxCapacity);
+                $course->setTargetGrades($targetGrades);
+                $course->setTeacher($this->getUser());
+                $course->setIsActive(true);
+
+                if ($deadlineRaw !== '') {
+                    $course->setEnrollmentDeadline(new \DateTimeImmutable($deadlineRaw));
+                }
+                if ($categoryId) {
+                    $category = $em->getRepository(CourseCategory::class)->find($categoryId);
+                    $course->setCategory($category);
+                }
+
+                $em->persist($course);
+                $em->flush();
+                $this->addFlash('success', 'Curso creado correctamente.');
+                return $this->redirectToRoute('teacher_courses');
+            }
+        }
+
+        return $this->render('teacher/course_form.html.twig', [
+            'course' => null,
+            'categories' => $categories,
+            'errors' => $errors,
+            'data' => $data,
+            'formTitle' => 'Crear nuevo curso',
+            'submitLabel' => 'Crear curso',
+        ]);
+    }
+
+    // ── HDU-S2-02: Editar curso ───────────────────────────────────────────────
+
+    #[Route('/courses/{id}/edit', name: 'course_edit')]
+    public function courseEdit(Course $course, Request $request, EntityManagerInterface $em): Response
+    {
+        $teacher = $this->getUser();
+        if ($course->getTeacher() !== $teacher) {
+            throw $this->createAccessDeniedException('No tienes permiso para editar este curso.');
+        }
+
+        $categories = $em->getRepository(CourseCategory::class)->findAll();
+        $errors = [];
+        $data = [];
+
+        if ($request->isMethod('POST')) {
+            $data = $request->request->all();
+            $name = trim($data['name'] ?? '');
+            $maxCapacity = (int) ($data['maxCapacity'] ?? 0);
+            $targetGrades = $data['targetGrades'] ?? [];
+            $description = trim($data['description'] ?? '');
+            $deadlineRaw = trim($data['enrollmentDeadline'] ?? '');
+            $categoryId = $data['category'] ?? null;
+
+            if ($name === '') {
+                $errors[] = 'El nombre del curso es obligatorio.';
+            }
+            if ($maxCapacity < 1) {
+                $errors[] = 'La capacidad máxima debe ser al menos 1.';
+            }
+            if ($maxCapacity < $course->getCurrentEnrollment()) {
+                $errors[] = 'No puedes reducir la capacidad por debajo de los alumnos ya inscritos (' . $course->getCurrentEnrollment() . ').';
+            }
+            if (empty($targetGrades)) {
+                $errors[] = 'Debes seleccionar al menos un grado objetivo.';
+            }
+
+            if (empty($errors)) {
+                $course->setName($name);
+                $course->setDescription($description ?: null);
+                $course->setMaxCapacity($maxCapacity);
+                $course->setTargetGrades($targetGrades);
+                $course->setEnrollmentDeadline($deadlineRaw !== '' ? new \DateTimeImmutable($deadlineRaw) : null);
+
+                $category = $categoryId ? $em->getRepository(CourseCategory::class)->find($categoryId) : null;
+                $course->setCategory($category);
+
+                $em->flush();
+                $this->addFlash('success', 'Curso actualizado correctamente.');
+                return $this->redirectToRoute('teacher_courses');
+            }
+        } else {
+            $data = [
+                'name' => $course->getName(),
+                'description' => $course->getDescription(),
+                'maxCapacity' => $course->getMaxCapacity(),
+                'targetGrades' => $course->getTargetGrades() ?? [],
+                'enrollmentDeadline' => $course->getEnrollmentDeadline()?->format('Y-m-d\TH:i'),
+                'category' => $course->getCategory()?->getId(),
+            ];
+        }
+
+        return $this->render('teacher/course_form.html.twig', [
+            'course' => $course,
+            'categories' => $categories,
+            'errors' => $errors,
+            'data' => $data,
+            'formTitle' => 'Editar curso',
+            'submitLabel' => 'Guardar cambios',
+        ]);
+    }
+
+    // ── HDU-S2-03: Activar / desactivar curso ────────────────────────────────
+
+    #[Route('/courses/{id}/toggle-active', name: 'course_toggle_active', methods: ['POST'])]
+    public function courseToggleActive(Course $course, EntityManagerInterface $em): Response
+    {
+        if ($course->getTeacher() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $course->setIsActive(!$course->isActive());
+        $em->flush();
+
+        $msg = $course->isActive() ? 'Curso activado — ya aparece en el catálogo.' : 'Curso desactivado — ya no aparece en el catálogo.';
+        $this->addFlash('success', $msg);
+        return $this->redirectToRoute('teacher_courses');
+    }
+
+    // ── HDU-S2-04: Lista de inscritos ─────────────────────────────────────────
+
+    #[Route('/courses/{id}/students', name: 'course_students')]
+    public function courseStudents(Course $course, EntityManagerInterface $em): Response
+    {
+        if ($course->getTeacher() !== $this->getUser()) {
+            throw $this->createAccessDeniedException('No tienes permiso para ver este listado.');
+        }
+
+        $enrollments = $em->getRepository(Enrollment::class)->findBy(
+            ['course' => $course],
+            ['enrolledAt' => 'ASC']
+        );
+
+        return $this->render('teacher/course_students.html.twig', [
+            'course' => $course,
+            'enrollments' => $enrollments,
+        ]);
     }
 
     #[Route('/export/course/{id}/students.xlsx', name: 'export_students')]
