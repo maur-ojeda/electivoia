@@ -1,0 +1,109 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscripción Masiva — Admin{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+	<h1 class="text-2xl font-bold">Inscripción Masiva</h1>
+	<p class="text-base-content/60 text-sm">Inscribe a todos los estudiantes de un grado en un curso de una sola vez.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+	{# Ayuda #}
+	<div class="lg:col-span-1">
+		<div class="card bg-base-100 shadow sticky top-20">
+			<div class="card-body p-4">
+				<h3 class="font-semibold mb-3">¿Cómo funciona?</h3>
+				<ul class="space-y-2 text-sm text-base-content/70">
+					<li>1. Selecciona el curso destino</li>
+					<li>2. Selecciona el grado (3M o 4M)</li>
+					<li>3. Se inscriben todos los estudiantes activos de ese grado</li>
+				</ul>
+				<div class="divider my-3"></div>
+				<div class="text-xs space-y-1 text-base-content/60">
+					<p>• Se omiten alumnos ya inscritos</p>
+					<p>• Se respeta el cupo máximo del curso</p>
+					<p>• Se respeta la fecha límite de inscripción</p>
+					<p>• Solo cursos activos aparecen en la lista</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{# Formulario y resultado #}
+	<div class="lg:col-span-2 space-y-6">
+
+		{% if result is not null %}
+			<div class="card bg-base-100 shadow border-l-4 {{ result.rejected == 0 ? 'border-success' : 'border-warning' }}">
+				<div class="card-body p-4">
+					<h3 class="font-semibold mb-1">
+						Resultado: {{ result.grade }} → {{ result.course.name }}
+					</h3>
+					<div class="stats shadow w-full mt-3">
+						<div class="stat py-3 px-4">
+							<div class="stat-title text-xs">Inscritos</div>
+							<div class="stat-value text-success text-2xl">{{ result.enrolled }}</div>
+						</div>
+						<div class="stat py-3 px-4">
+							<div class="stat-title text-xs">Ya inscritos</div>
+							<div class="stat-value text-info text-2xl">{{ result.skipped }}</div>
+						</div>
+						<div class="stat py-3 px-4">
+							<div class="stat-title text-xs">Sin cupo</div>
+							<div class="stat-value text-error text-2xl">{{ result.rejected }}</div>
+						</div>
+					</div>
+					{% if result.rejected > 0 %}
+						<p class="text-xs text-warning mt-3">
+							⚠ {{ result.rejected }} estudiante(s) no pudieron inscribirse por falta de cupo. Considera aumentar la capacidad del curso.
+						</p>
+					{% endif %}
+				</div>
+			</div>
+		{% endif %}
+
+		<div class="card bg-base-100 shadow">
+			<div class="card-body">
+				<h2 class="card-title text-base mb-4">Seleccionar curso y grado</h2>
+				<form method="post" class="space-y-4">
+					<div class="form-control">
+						<label class="label"><span class="label-text font-medium">Curso destino <span class="text-error">*</span></span></label>
+						<select name="course_id" class="select select-bordered w-full" required>
+							<option value="">— Seleccionar curso —</option>
+							{% for course in courses %}
+								<option value="{{ course.id }}">
+									{{ course.name }}
+									{% if course.category %}({{ course.category.name }}){% endif %}
+									— {{ course.maxCapacity }} cupos
+								</option>
+							{% endfor %}
+						</select>
+					</div>
+
+					<div class="form-control">
+						<label class="label"><span class="label-text font-medium">Grado <span class="text-error">*</span></span></label>
+						<select name="grade" class="select select-bordered w-full" required>
+							<option value="">— Seleccionar grado —</option>
+							{% for grade in grades %}
+								<option value="{{ grade }}">{{ grade == '3M' ? 'Tercer Medio (3M)' : 'Cuarto Medio (4M)' }}</option>
+							{% endfor %}
+						</select>
+					</div>
+
+					<div class="flex gap-3 pt-2">
+						<button type="submit" class="btn btn-primary"
+							data-controller="confirm"
+							data-action="click->confirm#confirm"
+							data-confirm-message-value="¿Confirmas la inscripción masiva? Esta acción inscribirá a todos los estudiantes del grado seleccionado.">
+							Inscribir masivamente
+						</button>
+						<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost">Cancelar</a>
+					</div>
+				</form>
+			</div>
+		</div>
+
+	</div>
+</div>
+{% endblock %}

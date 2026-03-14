@@ -3,10 +3,14 @@
 namespace App\Controller;
 
 use App\Entity\Course;
+use App\Entity\Enrollment;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -107,19 +111,120 @@ class AdminReportController extends AbstractController
 
         return $this->render('admin_report/index.html.twig', [
             'courses' => $courses,
-            // Datos para gráficos
             'course_labels' => json_encode($courseLabels),
             'enrollment_data' => json_encode($enrollmentData),
             'capacity_data' => json_encode($capacityData),
-
             'category_labels' => json_encode($categoryLabels),
             'category_data' => json_encode($categoryCounts),
-
             'teacher_names' => json_encode($teacherNames),
             'teacher_courses' => json_encode($teacherCourses),
-
-            // Insights
             'insights' => $insights,
         ]);
+    }
+
+    #[Route('/comparative', name: 'comparative')]
+    public function comparative(): Response
+    {
+        $matrix = $this->buildComparativeMatrix();
+
+        return $this->render('admin_report/comparative.html.twig', [
+            'matrix'     => $matrix['matrix'],
+            'grades'     => $matrix['grades'],
+            'categories' => $matrix['categories'],
+            'totals'     => $matrix['totals'],
+        ]);
+    }
+
+    #[Route('/comparative/export', name: 'comparative_export')]
+    public function comparativeExport(): StreamedResponse
+    {
+        $matrix = $this->buildComparativeMatrix();
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Reporte Comparativo');
+
+        // Header row
+        $col = 2;
+        foreach ($matrix['categories'] as $cat) {
+            $sheet->setCellValueByColumnAndRow($col, 1, $cat);
+            $col++;
+        }
+        $sheet->setCellValueByColumnAndRow($col, 1, 'TOTAL');
+
+        // Data rows
+        $row = 2;
+        foreach ($matrix['grades'] as $grade) {
+            $sheet->setCellValueByColumnAndRow(1, $row, $grade);
+            $col = 2;
+            $rowTotal = 0;
+            foreach ($matrix['categories'] as $cat) {
+                $val = $matrix['matrix'][$grade][$cat] ?? 0;
+                $sheet->setCellValueByColumnAndRow($col, $row, $val);
+                $rowTotal += $val;
+                $col++;
+            }
+            $sheet->setCellValueByColumnAndRow($col, $row, $rowTotal);
+            $row++;
+        }
+
+        // Totals row
+        $sheet->setCellValueByColumnAndRow(1, $row, 'TOTAL');
+        $col = 2;
+        foreach ($matrix['categories'] as $cat) {
+            $sheet->setCellValueByColumnAndRow($col, $row, $matrix['totals'][$cat] ?? 0);
+            $col++;
+        }
+
+        $response = new StreamedResponse(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        });
+
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', 'attachment; filename="reporte_comparativo.xlsx"');
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
+    }
+
+    private function buildComparativeMatrix(): array
+    {
+        $grades = ['3M', '4M'];
+
+        // Get all categories that have active courses
+        $categoryRows = $this->em->getRepository(Course::class)
+            ->createQueryBuilder('c')
+            ->select('DISTINCT cat.name as catName')
+            ->join('c.category', 'cat')
+            ->where('c.isActive = true')
+            ->orderBy('cat.name', 'ASC')
+            ->getQuery()
+            ->getScalarResult();
+        $categories = array_column($categoryRows, 'catName');
+
+        // Enrollments grouped by grade + category
+        $rows = $this->em->getRepository(Enrollment::class)
+            ->createQueryBuilder('e')
+            ->select('u.grade, cat.name as catName, COUNT(e.id) as cnt')
+            ->join('e.student', 'u')
+            ->join('e.course', 'c')
+            ->join('c.category', 'cat')
+            ->where('c.isActive = true')
+            ->andWhere('u.grade IN (:grades)')
+            ->setParameter('grades', $grades)
+            ->groupBy('u.grade, cat.name')
+            ->getQuery()
+            ->getScalarResult();
+
+        $matrix = [];
+        $totals = [];
+
+        foreach ($rows as $row) {
+            $matrix[$row['grade']][$row['catName']] = (int) $row['cnt'];
+            $totals[$row['catName']] = ($totals[$row['catName']] ?? 0) + (int) $row['cnt'];
+        }
+
+        return compact('matrix', 'grades', 'categories', 'totals');
     }
 }

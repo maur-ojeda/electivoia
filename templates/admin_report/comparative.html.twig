@@ -1,0 +1,111 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Reporte Comparativo — Admin{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+	<div>
+		<h1 class="text-2xl font-bold">Reporte Comparativo</h1>
+		<p class="text-base-content/60 text-sm">Inscripciones por grado y categoría de curso.</p>
+	</div>
+	<div class="flex gap-2">
+		<a href="{{ path('admin_reports_comparative_export') }}" class="btn btn-outline btn-sm gap-2">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+			</svg>
+			Exportar Excel
+		</a>
+		<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost btn-sm">← Reportes</a>
+	</div>
+</div>
+
+{% if categories|length == 0 %}
+	<div class="card bg-base-100 shadow text-center py-12">
+		<div class="card-body">
+			<p class="text-base-content/60">No hay inscripciones en cursos activos aún.</p>
+		</div>
+	</div>
+{% else %}
+	<div class="card bg-base-100 shadow">
+		<div class="card-body p-0 overflow-x-auto">
+			<table class="table">
+				<thead>
+					<tr class="bg-base-200">
+						<th class="font-bold">Grado</th>
+						{% for cat in categories %}
+							<th class="text-center font-medium text-sm">{{ cat }}</th>
+						{% endfor %}
+						<th class="text-center font-bold">Total</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for grade in grades %}
+						{% set rowTotal = 0 %}
+						<tr class="hover">
+							<td class="font-bold">
+								{{ grade == '3M' ? 'Tercer Medio' : 'Cuarto Medio' }}
+								<span class="badge badge-ghost badge-sm ml-1">{{ grade }}</span>
+							</td>
+							{% for cat in categories %}
+								{% set val = matrix[grade][cat] ?? 0 %}
+								{% set rowTotal = rowTotal + val %}
+								<td class="text-center">
+									{% if val > 0 %}
+										<span class="badge badge-primary badge-sm">{{ val }}</span>
+									{% else %}
+										<span class="text-base-content/30">—</span>
+									{% endif %}
+								</td>
+							{% endfor %}
+							<td class="text-center font-bold">
+								<span class="badge badge-neutral">{{ rowTotal }}</span>
+							</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+				<tfoot>
+					<tr class="bg-base-200 font-bold">
+						<td>Total</td>
+						{% set grandTotal = 0 %}
+						{% for cat in categories %}
+							{% set colTotal = totals[cat] ?? 0 %}
+							{% set grandTotal = grandTotal + colTotal %}
+							<td class="text-center">
+								<span class="badge badge-outline">{{ colTotal }}</span>
+							</td>
+						{% endfor %}
+						<td class="text-center">
+							<span class="badge badge-neutral badge-lg">{{ grandTotal }}</span>
+						</td>
+					</tr>
+				</tfoot>
+			</table>
+		</div>
+	</div>
+
+	{# Visual bars per category #}
+	{% set grandTotal = 0 %}
+	{% for cat in categories %}{% set grandTotal = grandTotal + (totals[cat] ?? 0) %}{% endfor %}
+
+	{% if grandTotal > 0 %}
+		<div class="card bg-base-100 shadow mt-6">
+			<div class="card-body">
+				<h3 class="font-semibold mb-4">Distribución por categoría</h3>
+				<div class="space-y-3">
+					{% for cat in categories %}
+						{% set total = totals[cat] ?? 0 %}
+						{% set pct = grandTotal > 0 ? (total / grandTotal * 100)|round : 0 %}
+						<div>
+							<div class="flex justify-between text-sm mb-1">
+								<span class="font-medium">{{ cat }}</span>
+								<span class="text-base-content/60">{{ total }} inscripciones ({{ pct }}%)</span>
+							</div>
+							<progress class="progress progress-primary w-full" value="{{ pct }}" max="100"></progress>
+						</div>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
+	{% endif %}
+{% endif %}
+{% endblock %}

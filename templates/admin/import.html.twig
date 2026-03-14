@@ -1,0 +1,110 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Importar Estudiantes — Admin{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+	<h1 class="text-2xl font-bold">Importar Estudiantes desde CSV</h1>
+	<p class="text-base-content/60 text-sm">Crea cuentas masivamente desde un archivo CSV al inicio del año escolar.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+	{# Instrucciones #}
+	<div class="lg:col-span-1">
+		<div class="card bg-base-100 shadow sticky top-20">
+			<div class="card-body p-4">
+				<h3 class="font-semibold mb-3">Formato del CSV</h3>
+				<p class="text-xs text-base-content/60 mb-3">
+					Primera fila = encabezado (ignorado). Separador: coma <code>,</code> o punto y coma <code>;</code>.
+				</p>
+				<div class="overflow-x-auto">
+					<table class="table table-xs">
+						<thead>
+							<tr>
+								<th>Col</th>
+								<th>Campo</th>
+								<th>Req.</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr><td>1</td><td>RUT</td><td><span class="badge badge-error badge-xs">Sí</span></td></tr>
+							<tr><td>2</td><td>Nombre completo</td><td><span class="badge badge-error badge-xs">Sí</span></td></tr>
+							<tr><td>3</td><td>Grado (3M / 4M)</td><td><span class="badge badge-error badge-xs">Sí</span></td></tr>
+							<tr><td>4</td><td>Promedio (ej: 5.8)</td><td><span class="badge badge-ghost badge-xs">No</span></td></tr>
+							<tr><td>5</td><td>Email</td><td><span class="badge badge-ghost badge-xs">No</span></td></tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="divider my-2"></div>
+				<div class="text-xs space-y-1 text-base-content/60">
+					<p>• RUT formato: <code>12345678-9</code></p>
+					<p>• Contraseña inicial = dígitos del RUT (sin guión)</p>
+					<p>• Duplicados (mismo RUT) se omiten sin error</p>
+					<p>• Rol asignado automáticamente: <code>ROLE_STUDENT</code></p>
+				</div>
+				<div class="mt-4">
+					<p class="text-xs font-medium mb-1">Ejemplo de fila:</p>
+					<code class="text-xs bg-base-200 p-2 rounded block">12345678-9,Juan Pérez,3M,6.2,juan@mail.com</code>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{# Formulario y resultado #}
+	<div class="lg:col-span-2 space-y-6">
+
+		{% if result is not null %}
+			<div class="card bg-base-100 shadow border-l-4 {{ result.errors|length == 0 ? 'border-success' : 'border-warning' }}">
+				<div class="card-body p-4">
+					<h3 class="font-semibold mb-3">Resultado de la importación</h3>
+					<div class="stats shadow w-full">
+						<div class="stat py-3 px-4">
+							<div class="stat-title text-xs">Creados</div>
+							<div class="stat-value text-success text-2xl">{{ result.created }}</div>
+						</div>
+						<div class="stat py-3 px-4">
+							<div class="stat-title text-xs">Duplicados</div>
+							<div class="stat-value text-warning text-2xl">{{ result.duplicates }}</div>
+						</div>
+						<div class="stat py-3 px-4">
+							<div class="stat-title text-xs">Errores</div>
+							<div class="stat-value text-error text-2xl">{{ result.errors|length }}</div>
+						</div>
+					</div>
+
+					{% if result.errors|length > 0 %}
+						<div class="mt-4">
+							<p class="text-sm font-medium text-error mb-2">Líneas con error:</p>
+							<ul class="space-y-1">
+								{% for error in result.errors %}
+									<li class="text-xs text-base-content/70 bg-base-200 rounded px-3 py-1">{{ error }}</li>
+								{% endfor %}
+							</ul>
+						</div>
+					{% endif %}
+				</div>
+			</div>
+		{% endif %}
+
+		<div class="card bg-base-100 shadow">
+			<div class="card-body">
+				<h2 class="card-title text-base mb-4">Subir archivo CSV</h2>
+				<form method="post" enctype="multipart/form-data" class="space-y-4">
+					<div class="form-control">
+						<label class="label"><span class="label-text font-medium">Archivo CSV <span class="text-error">*</span></span></label>
+						<input type="file" name="csv_file" accept=".csv" class="file-input file-input-bordered w-full" required>
+					</div>
+					<div class="flex gap-3 pt-2">
+						<button type="submit" class="btn btn-primary">
+							Importar estudiantes
+						</button>
+						<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost">Cancelar</a>
+					</div>
+				</form>
+			</div>
+		</div>
+
+	</div>
+</div>
+{% endblock %}
