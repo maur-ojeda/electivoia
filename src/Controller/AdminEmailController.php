@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Service\NotificationService;
+use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,6 +16,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminEmailController extends AbstractController
 {
+    public function __construct(private TenantContext $tenantContext) {}
+
     #[Route('/blast', name: 'blast')]
     public function blast(Request $request, EntityManagerInterface $em, NotificationService $notificationService): Response
     {
@@ -43,6 +46,11 @@ class AdminEmailController extends AbstractController
                     ->where('u.active = true')
                     ->andWhere('u.email IS NOT NULL');
 
+                if ($this->tenantContext->hasSchool()) {
+                    $qb->andWhere('u.school = :_school')
+                       ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+                }
+
                 if ($selectedGrade) {
                     $qb->andWhere('u.grade = :grade')->setParameter('grade', $selectedGrade);
                 }
@@ -64,28 +72,33 @@ class AdminEmailController extends AbstractController
             }
         }
 
-        // Preview: contar destinatarios por grado
+        // Preview: contar destinatarios por grado (filtrado por tenant)
         $gradeStats = [];
         foreach ($grades as $grade) {
-            $count = $em->createQueryBuilder()
+            $qb = $em->createQueryBuilder()
                 ->select('COUNT(u.id)')
                 ->from(User::class, 'u')
                 ->where('u.grade = :grade')
                 ->andWhere('u.active = true')
                 ->andWhere('u.email IS NOT NULL')
-                ->setParameter('grade', $grade)
-                ->getQuery()
-                ->getSingleScalarResult();
-            $gradeStats[$grade] = (int) $count;
+                ->setParameter('grade', $grade);
+            if ($this->tenantContext->hasSchool()) {
+                $qb->andWhere('u.school = :_school')
+                   ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+            }
+            $gradeStats[$grade] = (int) $qb->getQuery()->getSingleScalarResult();
         }
 
-        $totalWithEmail = $em->createQueryBuilder()
+        $totalQb = $em->createQueryBuilder()
             ->select('COUNT(u.id)')
             ->from(User::class, 'u')
             ->where('u.active = true')
-            ->andWhere('u.email IS NOT NULL')
-            ->getQuery()
-            ->getSingleScalarResult();
+            ->andWhere('u.email IS NOT NULL');
+        if ($this->tenantContext->hasSchool()) {
+            $totalQb->andWhere('u.school = :_school')
+                    ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+        $totalWithEmail = $totalQb->getQuery()->getSingleScalarResult();
 
         return $this->render('admin/email_blast.html.twig', [
             'grades' => $grades,

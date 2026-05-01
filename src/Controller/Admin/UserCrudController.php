@@ -3,9 +3,16 @@
 namespace App\Controller\Admin;
 
 use App\Entity\User;
+use App\Service\TenantContext;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
+use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
@@ -13,7 +20,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
@@ -32,8 +38,41 @@ class UserCrudController extends AbstractCrudController
 
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
-        private RequestStack $requestStack // 💡 FIX: Inyectamos RequestStack para acceder al formulario
+        private RequestStack $requestStack,
+        private TenantContext $tenantContext
     ) {}
+
+    public function createIndexQueryBuilder(SearchDto $searchDto, EntityDto $entityDto, FieldCollection $fields, FilterCollection $filters): QueryBuilder
+    {
+        $qb = parent::createIndexQueryBuilder($searchDto, $entityDto, $fields, $filters);
+
+        if ($this->tenantContext->hasSchool() && !$this->isGranted('ROLE_SUPER_ADMIN')) {
+            $qb->andWhere('entity.school = :_tenant_school')
+                ->setParameter('_tenant_school', $this->tenantContext->getCurrentSchool());
+        }
+
+        return $qb;
+    }
+
+    public function persistEntity(EntityManagerInterface $entityManager, $entity): void
+    {
+        if ($entity instanceof User && $entity->getSchool() === null && $this->tenantContext->hasSchool()) {
+            $entity->setSchool($this->tenantContext->getCurrentSchool());
+        }
+
+        $this->hashPasswordIfRequired($entity);
+        parent::persistEntity($entityManager, $entity);
+
+        // Flash message con la contraseña generada para el admin
+        if ($entity instanceof User && $this->getContext()->getCrud()->getCurrentPage() === Crud::PAGE_NEW) {
+            $rut = $entity->getRut();
+            if ($rut) {
+                $digits = preg_replace('/[^0-9]/', '', $rut);
+                $plainPassword = substr($digits, 0, 6);
+                $this->addFlash('success', "Usuario creado exitosamente. Contraseña generada: <code>{$plainPassword}</code>");
+            }
+        }
+    }
 
     public static function getEntityFqcn(): string
     {
@@ -70,22 +109,22 @@ class UserCrudController extends AbstractCrudController
 
         // --- Nueva Lógica: Contraseña basada en RUT ---
         $rut = $user->getRut();
+        $plainPassword = ''; // Fallback: será vacío en createEntity() porque se ejecuta antes del POST
+
         if ($rut) {
             // Extraer solo los dígitos antes del guión
             $digits = preg_replace('/[^0-9]/', '', $rut);
             // Tomar los primeros 6 dígitos
             $plainPassword = substr($digits, 0, 6);
         } else {
-            // Fallback: Si no hay RUT (aunque debería haberlo en este punto si se completa el formulario),
-            // generamos una contraseña temporal aleatoria como antes.
-            // Opcional: Lanzar una excepción o manejar este caso de otra manera.
-            // Para este ejemplo, generamos una corta y clara.
-            $plainPassword = 'rut_temp'; // Esto se sobrescribirá si se ingresa RUT y se envía de nuevo.
+            // createEntity() se ejecuta ANTES de llenar el formulario, así que RUT está vacío.
+            // La contraseña real se calculará en hashPasswordIfRequired() al hacer POST.
+            $plainPassword = '';
         }
         // --- Fin Nueva Lógica ---
 
-        // Establecer la contraseña en la propiedad 'plainPassword' del objeto User
-        $user->plainPassword = $plainPassword;
+        // NO asignamos plainPassword aquí porque la propiedad no existe en la entidad.
+        // hashPasswordIfRequired() manejará esto al hacer el POST.
 
         return $user;
     }
@@ -201,13 +240,6 @@ class UserCrudController extends AbstractCrudController
         }
 
         return $fields;
-    }
-
-    // 2. HASHEAR LA CONTRASEÑA ANTES DE GUARDAR (CREACIÓN)
-    public function persistEntity(EntityManagerInterface $entityManager, $entity): void
-    {
-        $this->hashPasswordIfRequired($entity);
-        parent::persistEntity($entityManager, $entity);
     }
 
     // 3. HASHEAR LA CONTRASEÑA ANTES DE ACTUALIZAR (EDICIÓN)

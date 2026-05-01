@@ -5,7 +5,9 @@ namespace App\Controller;
 use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\User;
+use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Query\ResultSetMappingBuilder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,10 +18,21 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminBulkEnrollController extends AbstractController
 {
+    public function __construct(private TenantContext $tenantContext) {}
+
     #[Route('/bulk', name: 'bulk', methods: ['GET', 'POST'])]
     public function bulk(Request $request, EntityManagerInterface $em): Response
     {
-        $courses = $em->getRepository(Course::class)->findBy(['isActive' => true], ['name' => 'ASC']);
+        $courseQb = $em->getRepository(Course::class)->createQueryBuilder('c')
+            ->where('c.isActive = true')
+            ->orderBy('c.name', 'ASC');
+
+        if ($this->tenantContext->hasSchool()) {
+            $courseQb->andWhere('c.school = :_school')
+                ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+
+        $courses = $courseQb->getQuery()->getResult();
         $grades  = ['3M', '4M'];
         $result  = null;
 
@@ -46,15 +59,26 @@ class AdminBulkEnrollController extends AbstractController
             }
 
             // Students of the selected grade
-            $students = $em->getRepository(User::class)
-                ->createQueryBuilder('u')
-                ->where('u.grade = :grade')
-                ->andWhere('u.active = true')
-                ->andWhere('u.roles LIKE :role')
-                ->setParameter('grade', $grade)
-                ->setParameter('role', '%ROLE_STUDENT%')
-                ->getQuery()
-                ->getResult();
+            // NOTE: u.roles is a JSON column in PostgreSQL — LIKE on raw JSON is not supported.
+            // We cast to TEXT so the LIKE operator works correctly.
+            // Doctrine DQL does not support CAST(), so we use a native SQL query with
+            // ResultSetMappingBuilder to hydrate proper User entities.
+            $rsm = new ResultSetMappingBuilder($em);
+            $rsm->addRootEntityFromClassMetadata(User::class, 'u');
+
+            $sql = 'SELECT u.* FROM "user" u'
+                . ' WHERE u.grade = :grade'
+                . ' AND u.active = true'
+                . ' AND CAST(u.roles AS TEXT) LIKE :role';
+
+            $params = ['grade' => $grade, 'role' => '%ROLE_STUDENT%'];
+
+            if ($this->tenantContext->hasSchool()) {
+                $sql .= ' AND u.school_id = :schoolId';
+                $params['schoolId'] = $this->tenantContext->getCurrentSchool()->getId();
+            }
+
+            $students = $em->createNativeQuery($sql, $rsm)->setParameters($params)->getResult();
 
             $enrolled  = 0;
             $skipped   = 0; // already enrolled

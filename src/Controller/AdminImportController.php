@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,6 +16,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminImportController extends AbstractController
 {
+    public function __construct(private TenantContext $tenantContext) {}
+
     #[Route('/import', name: 'import', methods: ['GET', 'POST'])]
     public function import(
         Request $request,
@@ -108,6 +111,10 @@ class AdminImportController extends AbstractController
 
                 $hashed = $hasher->hashPassword($user, $passwordRaw);
                 $user->setPassword($hashed);
+
+                if ($this->tenantContext->hasSchool()) {
+                    $user->setSchool($this->tenantContext->getCurrentSchool());
+                }
 
                 $em->persist($user);
                 $created++;
