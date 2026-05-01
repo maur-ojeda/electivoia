@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Service\ExportService;
+use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -13,8 +15,6 @@ use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
 use App\Entity\Attendance;
 use App\Entity\User;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\ExpressionLanguage\Expression;
 
@@ -23,6 +23,11 @@ use Symfony\Component\ExpressionLanguage\Expression;
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN")'))]
 class TeacherController extends AbstractController
 {
+    public function __construct(
+        private TenantContext $tenantContext,
+        private ExportService $exportService,
+    ) {}
+
     #[Route('/courses', name: 'courses')]
     public function courses(Request $request, EntityManagerInterface $em): Response
     {
@@ -39,6 +44,11 @@ class TeacherController extends AbstractController
             ->where('c.teacher = :teacher')
             ->andWhere('c.isActive = true')
             ->setParameter('teacher', $teacher);
+
+        if ($this->tenantContext->hasSchool()) {
+            $countQb->andWhere('c.school = :_school')
+                ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
 
         // Aplicar mismos filtros a la subconsulta
         if ($selectedCategory) {
@@ -67,6 +77,11 @@ class TeacherController extends AbstractController
             ->where('c.teacher = :teacher')
             ->andWhere('c.isActive = true')
             ->setParameter('teacher', $teacher);
+
+        if ($this->tenantContext->hasSchool()) {
+            $qb->andWhere('c.school = :_school')
+                ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
 
         if ($selectedCategory) {
             $qb->andWhere('c.category = :categoryId')
@@ -311,6 +326,7 @@ class TeacherController extends AbstractController
             $description = trim($data['description'] ?? '');
             $deadlineRaw = trim($data['enrollmentDeadline'] ?? '');
             $categoryId = $data['category'] ?? null;
+            $schedule = trim($data['schedule'] ?? '');
 
             if ($name === '') {
                 $errors[] = 'El nombre del curso es obligatorio.';
@@ -330,6 +346,11 @@ class TeacherController extends AbstractController
                 $course->setTargetGrades($targetGrades);
                 $course->setTeacher($this->getUser());
                 $course->setIsActive(true);
+                $course->setSchedule($schedule ?: null);
+
+                if ($this->tenantContext->hasSchool()) {
+                    $course->setSchool($this->tenantContext->getCurrentSchool());
+                }
 
                 if ($deadlineRaw !== '') {
                     $course->setEnrollmentDeadline(new \DateTimeImmutable($deadlineRaw));
@@ -378,6 +399,7 @@ class TeacherController extends AbstractController
             $description = trim($data['description'] ?? '');
             $deadlineRaw = trim($data['enrollmentDeadline'] ?? '');
             $categoryId = $data['category'] ?? null;
+            $schedule = trim($data['schedule'] ?? '');
 
             if ($name === '') {
                 $errors[] = 'El nombre del curso es obligatorio.';
@@ -398,6 +420,7 @@ class TeacherController extends AbstractController
                 $course->setMaxCapacity($maxCapacity);
                 $course->setTargetGrades($targetGrades);
                 $course->setEnrollmentDeadline($deadlineRaw !== '' ? new \DateTimeImmutable($deadlineRaw) : null);
+                $course->setSchedule($schedule ?: null);
 
                 $category = $categoryId ? $em->getRepository(CourseCategory::class)->find($categoryId) : null;
                 $course->setCategory($category);
@@ -414,6 +437,7 @@ class TeacherController extends AbstractController
                 'targetGrades' => $course->getTargetGrades() ?? [],
                 'enrollmentDeadline' => $course->getEnrollmentDeadline()?->format('Y-m-d\TH:i'),
                 'category' => $course->getCategory()?->getId(),
+                'schedule' => $course->getSchedule(),
             ];
         }
 
@@ -465,43 +489,15 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/export/course/{id}/students.xlsx', name: 'export_students')]
-    public function exportStudents(Course $course, EntityManagerInterface $em): StreamedResponse
+    public function exportStudents(Course $course): StreamedResponse
     {
-        // Verificar que el curso pertenezca al profesor
         if ($course->getTeacher() !== $this->getUser()) {
             throw $this->createAccessDeniedException('No tienes permiso para exportar este curso.');
         }
 
-        $response = new StreamedResponse();
-        $response->setCallback(function () use ($course, $em) {
-            $enrollments = $em->getRepository(Enrollment::class)->findBy(['course' => $course]);
-
-            $spreadsheet = new Spreadsheet();
-            $sheet = $spreadsheet->getActiveSheet();
-            $sheet->setCellValue('A1', 'Alumno');
-            $sheet->setCellValue('B1', 'RUT');
-            $sheet->setCellValue('C1', 'CURSO');
-            $sheet->setCellValue('D1', 'PROMEDIO');
-
-            $row = 2;
-            foreach ($enrollments as $enrollment) {
-                $student = $enrollment->getStudent();
-                $sheet->setCellValue('A' . $row, $student->getFullName());
-                $sheet->setCellValue('B' . $row, $student->getRut());
-                $sheet->setCellValue('C' . $row, $student->getGrade());
-                $sheet->setCellValue('D' . $row, $student->getAverageGrade());
-                $row++;
-            }
-
-            $writer = new Xlsx($spreadsheet);
-            $writer->save('php://output');
-        });
-
+        $data = $this->exportService->getStudentExportData($course);
         $filename = 'alumnos_' . $course->getName() . '.xlsx';
-        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="' . $filename . '"');
-        $response->headers->set('Cache-Control', 'max-age=0');
 
-        return $response;
+        return $this->exportService->generateStudentExcel($data, $filename);
     }
 }

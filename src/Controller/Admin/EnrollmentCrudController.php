@@ -2,7 +2,6 @@
 
 namespace App\Controller\Admin;
 
-use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,10 +18,18 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Routing\RouterInterface;
 
 class EnrollmentCrudController extends AbstractCrudController
 {
-    public function __construct(private TenantContext $tenantContext) {}
+    public function __construct(
+        private TenantContext $tenantContext,
+        private AdminUrlGenerator $adminUrlGenerator,
+        private RequestStack $requestStack,
+        private RouterInterface $router,
+    ) {}
 
     public function persistEntity(EntityManagerInterface $entityManager, $entity): void
     {
@@ -95,6 +102,20 @@ class EnrollmentCrudController extends AbstractCrudController
 
     public function configureActions(Actions $actions): Actions
     {
+        $courseId = $this->getCourseFilterId();
+
+        if ($courseId !== null) {
+            $exportPdf = Action::new('exportEnrollmentsPdf', 'Exportar PDF', 'fa fa-file-pdf')
+                ->linkToUrl(fn () => $this->generateExportUrl($courseId, 'pdf'));
+
+            $exportExcel = Action::new('exportEnrollmentsExcel', 'Exportar Excel', 'fa fa-file-excel')
+                ->linkToUrl(fn () => $this->generateExportUrl($courseId, 'xlsx'));
+
+            $actions = $actions
+                ->add(Crud::PAGE_INDEX, $exportPdf)
+                ->add(Crud::PAGE_INDEX, $exportExcel);
+        }
+
         return $actions
             ->remove(Crud::PAGE_INDEX, Action::EDIT)
             ->add(Crud::PAGE_INDEX, Action::DETAIL)
@@ -104,5 +125,32 @@ class EnrollmentCrudController extends AbstractCrudController
             ->update(Crud::PAGE_DETAIL, Action::DELETE, function (Action $action) {
                 return $action->setLabel('Dar de baja')->setIcon('fa fa-user-times');
             });
+    }
+
+    private function getCourseFilterId(): ?int
+    {
+        $request = $this->requestStack->getCurrentRequest();
+        $filters = $request->query->all('filters');
+
+        return isset($filters['course']['value']) ? (int) $filters['course']['value'] : null;
+    }
+
+    private function generateExportUrl(int $courseId, string $format): string
+    {
+        return $this->router->generate('admin_export_students', [
+            'id' => $courseId,
+            '_format' => $format,
+        ]);
+    }
+
+    public function exportEnrollments(): \Symfony\Component\HttpFoundation\Response
+    {
+        $courseId = $this->getCourseFilterId();
+
+        if ($courseId === null) {
+            throw $this->createNotFoundException('Seleccioná un curso para exportar.');
+        }
+
+        return $this->redirect($this->generateExportUrl($courseId, $this->requestStack->getCurrentRequest()->query->get('format', 'xlsx')));
     }
 }
