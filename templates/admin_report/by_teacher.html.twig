@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Cursos por Profesor — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+	<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<h1 class="text-2xl font-bold">Cursos por Profesor</h1>
+</div>
+
+{% if byTeacher|length == 0 %}
+	<div class="text-center py-16 text-base-content/50">No hay cursos registrados.</div>
+{% else %}
+	<div class="space-y-6">
+		{% for item in byTeacher %}
+			{% set teacher = item.teacher %}
+			<div class="card bg-base-100 shadow">
+				<div class="card-body">
+					<div class="flex items-center justify-between flex-wrap gap-2">
+						<div>
+							<h2 class="text-lg font-bold">
+								{{ teacher ? teacher.fullName : 'Sin profesor asignado' }}
+							</h2>
+							{% if teacher and teacher.email %}
+								<p class="text-xs text-base-content/60">{{ teacher.email }}</p>
+							{% endif %}
+						</div>
+						<div class="flex gap-4 text-sm">
+							<div class="stat p-0">
+								<div class="stat-title text-xs">Cursos</div>
+								<div class="stat-value text-lg">{{ item.courses|length }}</div>
+							</div>
+							<div class="stat p-0">
+								<div class="stat-title text-xs">Total inscritos</div>
+								<div class="stat-value text-lg">{{ item.totalEnrolled }}</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="overflow-x-auto mt-4">
+						<table class="table table-sm">
+							<thead>
+								<tr>
+									<th>Curso</th>
+									<th>Horario</th>
+									<th>Grados</th>
+									<th>Inscritos / Cupo</th>
+									<th>Estado</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for course in item.courses %}
+									<tr>
+										<td class="font-medium">{{ course.name }}</td>
+										<td class="text-xs text-base-content/60">{{ course.schedule ?? '—' }}</td>
+										<td>
+											{% for grade in (course.targetGrades ?? []) %}
+												<span class="badge badge-ghost badge-xs">{{ grade }}</span>
+											{% endfor %}
+										</td>
+										<td>
+											<progress class="progress progress-primary w-20"
+												value="{{ course.enrollments|length }}"
+												max="{{ course.maxCapacity }}"></progress>
+											<span class="text-xs ml-1">{{ course.enrollments|length }}/{{ course.maxCapacity }}</span>
+										</td>
+										<td>
+											{% if course.isActive %}
+												<span class="badge badge-success badge-sm">Activo</span>
+											{% else %}
+												<span class="badge badge-ghost badge-sm">Inactivo</span>
+											{% endif %}
+										</td>
+									</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		{% endfor %}
+	</div>
+{% endif %}
+{% endblock %}

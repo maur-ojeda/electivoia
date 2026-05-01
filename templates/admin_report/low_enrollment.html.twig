@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Alertas Baja Inscripción — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+	<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<div>
+		<h1 class="text-2xl font-bold">Alertas: Baja Inscripción</h1>
+		<p class="text-sm text-base-content/60">Cursos activos con menos del {{ threshold }}% de su cupo ocupado.</p>
+	</div>
+</div>
+
+{% if alerts|length == 0 %}
+	<div class="alert alert-success">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+		</svg>
+		Todos los cursos superan el {{ threshold }}% de ocupación. ¡Bien!
+	</div>
+{% else %}
+	<div class="alert alert-warning mb-6">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.693-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+		</svg>
+		<span>{{ alerts|length }} curso(s) requieren atención.</span>
+	</div>
+
+	<div class="overflow-x-auto">
+		<table class="table table-zebra">
+			<thead>
+				<tr>
+					<th>Curso</th>
+					<th>Profesor</th>
+					<th>Horario</th>
+					<th>Inscritos / Cupo</th>
+					<th>Ocupación</th>
+					<th>Fecha límite</th>
+					<th>Acciones</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for alert in alerts %}
+					<tr>
+						<td class="font-medium">{{ alert.course.name }}</td>
+						<td class="text-sm">{{ alert.course.teacher ? alert.course.teacher.fullName : '—' }}</td>
+						<td class="text-sm text-base-content/60">{{ alert.course.schedule ?? '—' }}</td>
+						<td>
+							<progress class="progress progress-warning w-20"
+								value="{{ alert.enrolled }}" max="{{ alert.capacity }}"></progress>
+							<span class="text-xs ml-1">{{ alert.enrolled }}/{{ alert.capacity }}</span>
+						</td>
+						<td>
+							<span class="badge badge-warning">{{ alert.pct }}%</span>
+						</td>
+						<td class="text-xs">
+							{{ alert.course.enrollmentDeadline ? alert.course.enrollmentDeadline|date('d/m/Y') : 'Sin límite' }}
+						</td>
+						<td>
+							<a href="{{ path('admin_enrollments_bulk') }}" class="btn btn-xs btn-outline">Inscripción masiva</a>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+
+	<div class="mt-6 p-4 bg-base-200 rounded-lg text-sm text-base-content/70">
+		<strong>Sugerencias:</strong> Comunica estos cursos mediante el
+		<a href="{{ path('admin_email_blast') }}" class="link">envío masivo de email</a>,
+		extiende la fecha límite de inscripción, o considera reducir el cupo mínimo requerido.
+	</div>
+{% endif %}
+{% endblock %}

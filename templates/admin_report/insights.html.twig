@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Insights IA — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+	<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<div>
+		<h1 class="text-2xl font-bold">Insights Generados por IA</h1>
+		<p class="text-sm text-base-content/60">Análisis del estado actual de inscripciones, generado con Gemini.</p>
+	</div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+	{# Stats Summary #}
+	<div class="lg:col-span-1 space-y-4">
+		<div class="stats stats-vertical shadow w-full">
+			<div class="stat">
+				<div class="stat-title">Cursos activos</div>
+				<div class="stat-value text-primary">{{ stats.total_courses }}</div>
+			</div>
+			<div class="stat">
+				<div class="stat-title">Total inscripciones</div>
+				<div class="stat-value text-secondary">{{ stats.total_enrolled }}</div>
+			</div>
+			<div class="stat">
+				<div class="stat-title">Ocupación promedio</div>
+				<div class="stat-value {{ stats.avg_occupancy >= 70 ? 'text-success' : (stats.avg_occupancy >= 40 ? 'text-warning' : 'text-error') }}">
+					{{ stats.avg_occupancy }}%
+				</div>
+			</div>
+		</div>
+
+		<div class="card bg-base-100 shadow">
+			<div class="card-body">
+				<h2 class="card-title text-sm">Inscripciones por área</h2>
+				<ul class="space-y-1 mt-2">
+					{% for cat, count in stats.by_category %}
+						<li class="flex justify-between text-sm">
+							<span class="truncate text-base-content/80">{{ cat }}</span>
+							<span class="font-bold ml-2">{{ count }}</span>
+						</li>
+					{% endfor %}
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	{# AI Insights #}
+	<div class="lg:col-span-2">
+		<div class="card bg-base-100 shadow">
+			<div class="card-body">
+				<div class="flex items-center gap-2 mb-4">
+					<span class="badge badge-accent">IA</span>
+					<h2 class="card-title text-base">Análisis en lenguaje natural</h2>
+				</div>
+				<ul class="space-y-3">
+					{% for insight in aiInsights %}
+						<li class="flex gap-3 p-3 bg-base-200 rounded-lg text-sm leading-relaxed">
+							<span class="text-accent mt-0.5">✦</span>
+							<span>{{ insight|replace({'- ': ''})|trim }}</span>
+						</li>
+					{% endfor %}
+				</ul>
+				<p class="text-xs text-base-content/40 mt-4">Generado automáticamente · Actualizar para ver el análisis más reciente.</p>
+				<div class="card-actions mt-2">
+					<a href="{{ path('admin_reports_insights') }}" class="btn btn-accent btn-sm">Regenerar análisis</a>
+					<a href="{{ path('admin_reports_low_enrollment') }}" class="btn btn-warning btn-sm btn-outline">Ver alertas</a>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</div>
+{% endblock %}

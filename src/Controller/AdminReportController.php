@@ -5,6 +5,8 @@ namespace App\Controller;
 use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\User;
+use App\Service\GeminiInsightsService;
+use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -18,13 +20,31 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminReportController extends AbstractController
 {
-    public function __construct(private EntityManagerInterface $em) {}
+    public function __construct(
+        private EntityManagerInterface $em,
+        private GeminiInsightsService $insightsService,
+        private TenantContext $tenantContext
+    ) {}
+
+    private function activeCourseQb(): \Doctrine\ORM\QueryBuilder
+    {
+        $qb = $this->em->getRepository(Course::class)
+            ->createQueryBuilder('c')
+            ->where('c.isActive = true');
+
+        if ($this->tenantContext->hasSchool()) {
+            $qb->andWhere('c.school = :_school')
+               ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+
+        return $qb;
+    }
 
     #[Route('', name: 'index')]
     public function index(): Response
     {
         // --- Datos para gráfico: Ocupación por curso ---
-        $courses = $this->em->getRepository(Course::class)->findBy(['isActive' => true]);
+        $courses = $this->activeCourseQb()->getQuery()->getResult();
 
         $courseLabels = [];
         $enrollmentData = [];
@@ -40,8 +60,7 @@ class AdminReportController extends AbstractController
         }
 
         // --- Datos para gráfico: Cursos por categoría ---
-        $categoryData = $this->em->getRepository(Course::class)
-            ->createQueryBuilder('c')
+        $categoryData = $this->activeCourseQb()
             ->select('cat.name as category, COUNT(c.id) as count')
             ->join('c.category', 'cat')
             ->groupBy('cat.name')
@@ -52,16 +71,21 @@ class AdminReportController extends AbstractController
         $categoryCounts = array_column($categoryData, 'count');
 
         // --- Datos para gráfico: Carga de profesores ---
-        $teacherLoadData = $this->em->getRepository(User::class)
+        $teacherQb = $this->em->getRepository(User::class)
             ->createQueryBuilder('u')
             ->select('u.fullName as teacherName, COUNT(c.id) as courseCount')
             ->join('u.coursesAsTeacher', 'c')
             ->where('c.isActive = :active')
             ->setParameter('active', true)
             ->groupBy('u.id')
-            ->orderBy('courseCount', 'DESC')
-            ->getQuery()
-            ->getScalarResult();
+            ->orderBy('courseCount', 'DESC');
+
+        if ($this->tenantContext->hasSchool()) {
+            $teacherQb->andWhere('c.school = :_school')
+                      ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+
+        $teacherLoadData = $teacherQb->getQuery()->getScalarResult();
 
         $teacherNames = array_column($teacherLoadData, 'teacherName');
         $teacherCourses = array_column($teacherLoadData, 'courseCount');
@@ -82,14 +106,11 @@ class AdminReportController extends AbstractController
         $highDemandRatio = $totalCourses > 0 ? ($highDemandCount / $totalCourses) * 100 : 0;
 
         // Insight específico por área
-        $scienceCourses = $this->em->getRepository(Course::class)
-            ->createQueryBuilder('c')
+        $scienceQb = $this->activeCourseQb()
             ->join('c.category', 'cat')
-            ->where('cat.name = :area AND c.isActive = :active')
-            ->setParameter('area', 'Ciencias')
-            ->setParameter('active', true)
-            ->getQuery()
-            ->getResult();
+            ->andWhere('cat.name = :area')
+            ->setParameter('area', 'Ciencias');
+        $scienceCourses = $scienceQb->getQuery()->getResult();
 
         $scienceEnrollments = 0;
         $scienceCapacity = 0;
@@ -188,23 +209,129 @@ class AdminReportController extends AbstractController
         return $response;
     }
 
+    // ── HU-29: Cursos por profesor ───────────────────────────────────────────
+
+    #[Route('/by-teacher', name: 'by_teacher')]
+    public function byTeacher(): Response
+    {
+        $qb = $this->em->getRepository(Course::class)
+            ->createQueryBuilder('c')
+            ->orderBy('c.name', 'ASC');
+
+        if ($this->tenantContext->hasSchool()) {
+            $qb->andWhere('c.school = :_school')
+               ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+
+        $courses = $qb->getQuery()->getResult();
+
+        $byTeacher = [];
+        foreach ($courses as $course) {
+            $teacher = $course->getTeacher();
+            $teacherId = $teacher?->getId() ?? 0;
+            if (!isset($byTeacher[$teacherId])) {
+                $byTeacher[$teacherId] = [
+                    'teacher' => $teacher,
+                    'courses' => [],
+                    'totalEnrolled' => 0,
+                ];
+            }
+            $enrolled = $this->em->getRepository(Enrollment::class)->count(['course' => $course]);
+            $byTeacher[$teacherId]['courses'][] = $course;
+            $byTeacher[$teacherId]['totalEnrolled'] += $enrolled;
+        }
+
+        uasort($byTeacher, fn($a, $b) => count($b['courses']) <=> count($a['courses']));
+
+        return $this->render('admin_report/by_teacher.html.twig', [
+            'byTeacher' => $byTeacher,
+        ]);
+    }
+
+    // ── HU-20: Alertas de baja inscripción ──────────────────────────────────
+
+    #[Route('/low-enrollment', name: 'low_enrollment')]
+    public function lowEnrollment(): Response
+    {
+        $threshold = 0.30;
+        $courses = $this->activeCourseQb()->getQuery()->getResult();
+
+        $alerts = [];
+        foreach ($courses as $course) {
+            $enrolled = $this->em->getRepository(Enrollment::class)->count(['course' => $course]);
+            $capacity = $course->getMaxCapacity();
+            $pct = $capacity > 0 ? $enrolled / $capacity : 0;
+
+            if ($pct < $threshold) {
+                $alerts[] = [
+                    'course'    => $course,
+                    'enrolled'  => $enrolled,
+                    'capacity'  => $capacity,
+                    'pct'       => round($pct * 100),
+                ];
+            }
+        }
+
+        usort($alerts, fn($a, $b) => $a['pct'] <=> $b['pct']);
+
+        return $this->render('admin_report/low_enrollment.html.twig', [
+            'alerts'    => $alerts,
+            'threshold' => (int) ($threshold * 100),
+        ]);
+    }
+
+    // ── HU-33: Insights IA ──────────────────────────────────────────────────
+
+    #[Route('/insights', name: 'insights')]
+    public function insights(): Response
+    {
+        $courses = $this->activeCourseQb()->getQuery()->getResult();
+
+        $stats = [];
+        $totalEnrolled = 0;
+        $totalCapacity = 0;
+        $byCategory = [];
+
+        foreach ($courses as $course) {
+            $enrolled = $this->em->getRepository(Enrollment::class)->count(['course' => $course]);
+            $catName = $course->getCategory()?->getName() ?? 'Sin categoría';
+            $totalEnrolled += $enrolled;
+            $totalCapacity += $course->getMaxCapacity();
+            $byCategory[$catName] = ($byCategory[$catName] ?? 0) + $enrolled;
+        }
+
+        arsort($byCategory);
+
+        $stats = [
+            'total_courses'   => count($courses),
+            'total_enrolled'  => $totalEnrolled,
+            'total_capacity'  => $totalCapacity,
+            'avg_occupancy'   => $totalCapacity > 0 ? round($totalEnrolled / $totalCapacity * 100, 1) : 0,
+            'by_category'     => $byCategory,
+        ];
+
+        $aiInsights = $this->insightsService->generateInsights($stats);
+
+        return $this->render('admin_report/insights.html.twig', [
+            'stats'      => $stats,
+            'aiInsights' => $aiInsights,
+        ]);
+    }
+
     private function buildComparativeMatrix(): array
     {
         $grades = ['3M', '4M'];
 
-        // Get all categories that have active courses
-        $categoryRows = $this->em->getRepository(Course::class)
-            ->createQueryBuilder('c')
+        // Get all categories that have active courses (filtered by tenant)
+        $catQb = $this->activeCourseQb()
             ->select('DISTINCT cat.name as catName')
             ->join('c.category', 'cat')
-            ->where('c.isActive = true')
-            ->orderBy('cat.name', 'ASC')
-            ->getQuery()
-            ->getScalarResult();
+            ->orderBy('cat.name', 'ASC');
+        $categoryRows = $catQb->getQuery()->getScalarResult();
         $categories = array_column($categoryRows, 'catName');
 
-        // Enrollments grouped by grade + category
-        $rows = $this->em->getRepository(Enrollment::class)
+        // Enrollments grouped by grade + category (filtered by tenant)
+        $enrollQb = $this->em->getRepository(Enrollment::class)
             ->createQueryBuilder('e')
             ->select('u.grade, cat.name as catName, COUNT(e.id) as cnt')
             ->join('e.student', 'u')
@@ -213,9 +340,14 @@ class AdminReportController extends AbstractController
             ->where('c.isActive = true')
             ->andWhere('u.grade IN (:grades)')
             ->setParameter('grades', $grades)
-            ->groupBy('u.grade, cat.name')
-            ->getQuery()
-            ->getScalarResult();
+            ->groupBy('u.grade, cat.name');
+
+        if ($this->tenantContext->hasSchool()) {
+            $enrollQb->andWhere('c.school = :_school')
+                     ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+
+        $rows = $enrollQb->getQuery()->getScalarResult();
 
         $matrix = [];
         $totals = [];
