@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Registrar Colegio — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+	<a href="{{ path('super_admin_dashboard') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<div>
+		<h1 class="text-2xl font-bold">Registrar Nuevo Colegio</h1>
+		<p class="text-sm text-base-content/60">Se creará el colegio y su administrador inicial. Se enviará un email de bienvenida.</p>
+	</div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
+
+	{# School data #}
+	<form method="post" id="onboard-form">
+		<div class="card bg-base-100 shadow">
+			<div class="card-body">
+				<h2 class="card-title text-base mb-4">🏫 Datos del Colegio</h2>
+
+				<div class="form-control mb-3">
+					<label class="label"><span class="label-text font-medium">Nombre del colegio *</span></label>
+					<input type="text" name="schoolName" class="input input-bordered" required
+						placeholder="Colegio San Ignacio"
+						oninput="autoSlug(this.value)">
+				</div>
+
+				<div class="form-control mb-3">
+					<label class="label">
+						<span class="label-text font-medium">Slug *</span>
+						<span class="label-text-alt text-base-content/50">Identificador URL único</span>
+					</label>
+					<input type="text" name="slug" id="slug-field" class="input input-bordered input-sm font-mono" required
+						placeholder="san-ignacio">
+				</div>
+
+				<div class="form-control mb-3">
+					<label class="label">
+						<span class="label-text font-medium">RBD</span>
+						<span class="label-text-alt text-base-content/50">Opcional</span>
+					</label>
+					<input type="text" name="rbd" class="input input-bordered input-sm" placeholder="12345-6">
+				</div>
+
+				<div class="form-control mb-4">
+					<label class="label"><span class="label-text font-medium">Plan</span></label>
+					<select name="plan" class="select select-bordered">
+						<option value="free">Free</option>
+						<option value="basic">Basic</option>
+						<option value="premium">Premium</option>
+					</select>
+				</div>
+			</div>
+		</div>
+
+		<div class="card bg-base-100 shadow mt-4">
+			<div class="card-body">
+				<h2 class="card-title text-base mb-4">👤 Administrador Inicial</h2>
+
+				<div class="form-control mb-3">
+					<label class="label"><span class="label-text font-medium">Nombre completo *</span></label>
+					<input type="text" name="adminFullName" class="input input-bordered" required placeholder="Juan Pérez González">
+				</div>
+
+				<div class="form-control mb-3">
+					<label class="label"><span class="label-text font-medium">RUT *</span></label>
+					<input type="text" name="adminRut" class="input input-bordered" required placeholder="12345678K">
+				</div>
+
+				<div class="form-control mb-4">
+					<label class="label"><span class="label-text font-medium">Email *</span></label>
+					<input type="email" name="adminEmail" class="input input-bordered" required placeholder="admin@colegio.cl">
+					<label class="label">
+						<span class="label-text-alt text-base-content/50">Se enviará el email de bienvenida con la contraseña temporal.</span>
+					</label>
+				</div>
+			</div>
+		</div>
+
+		<div class="mt-4">
+			<button type="submit" class="btn btn-primary w-full">
+				Crear colegio y enviar bienvenida
+			</button>
+		</div>
+	</form>
+
+	{# Info panel #}
+	<div class="space-y-4">
+		<div class="card bg-base-200">
+			<div class="card-body">
+				<h3 class="font-semibold mb-2">¿Qué ocurre al crear el colegio?</h3>
+				<ul class="space-y-2 text-sm text-base-content/70">
+					<li>✅ Se registra el colegio con el slug único</li>
+					<li>✅ Se crea el usuario administrador vinculado al colegio</li>
+					<li>✅ Se genera una contraseña segura aleatoria</li>
+					<li>✅ Se envía un email de bienvenida con las credenciales</li>
+					<li>✅ Si no hay categorías de cursos, se crean las 7 por defecto del currículo chileno</li>
+				</ul>
+			</div>
+		</div>
+
+		<div class="card bg-info/10 border border-info/30">
+			<div class="card-body text-sm">
+				<p class="font-semibold text-info mb-1">📋 Próximos pasos</p>
+				<p class="text-base-content/70">El administrador del colegio deberá:</p>
+				<ol class="list-decimal list-inside mt-2 space-y-1 text-base-content/60">
+					<li>Iniciar sesión con las credenciales recibidas</li>
+					<li>Importar los estudiantes desde CSV</li>
+					<li>Crear los cursos electivos</li>
+					<li>Configurar el período de inscripción</li>
+				</ol>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+function autoSlug(val) {
+	const slug = val
+		.toLowerCase()
+		.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9\s-]/g, '')
+		.trim()
+		.replace(/\s+/g, '-');
+	document.getElementById('slug-field').value = slug;
+}
+</script>
+{% endblock %}

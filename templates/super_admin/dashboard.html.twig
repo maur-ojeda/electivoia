@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Super Admin — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+	<div>
+		<h1 class="text-2xl font-bold">Panel Super Admin</h1>
+		<p class="text-sm text-base-content/60">Gestión global de colegios en la plataforma</p>
+	</div>
+	<a href="{{ path('super_admin_onboard') }}" class="btn btn-primary">
+		+ Nuevo colegio
+	</a>
+</div>
+
+{# Global stats #}
+<div class="stats shadow mb-8 w-full">
+	<div class="stat">
+		<div class="stat-title">Colegios activos</div>
+		<div class="stat-value text-primary">{{ totalSchools }}</div>
+	</div>
+	<div class="stat">
+		<div class="stat-title">Usuarios totales</div>
+		<div class="stat-value text-secondary">{{ totalUsers }}</div>
+	</div>
+</div>
+
+{# School table #}
+{% if schoolStats|length == 0 %}
+	<div class="text-center py-16 text-base-content/50">
+		<p>No hay colegios registrados.</p>
+		<a href="{{ path('super_admin_onboard') }}" class="btn btn-primary mt-4">Registrar primer colegio</a>
+	</div>
+{% else %}
+	<div class="overflow-x-auto">
+		<table class="table table-zebra">
+			<thead>
+				<tr>
+					<th>Colegio</th>
+					<th>Slug</th>
+					<th>RBD</th>
+					<th>Plan</th>
+					<th>Usuarios</th>
+					<th>Estado</th>
+					<th>Período inscripción</th>
+					<th>Creado</th>
+					<th>Acciones</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for row in schoolStats %}
+					{% set school = row.school %}
+					<tr>
+						<td class="font-medium">{{ school.name }}</td>
+						<td class="text-xs text-base-content/60">{{ school.slug }}</td>
+						<td class="text-xs">{{ school.rbd ?? '—' }}</td>
+						<td>
+							<span class="badge badge-sm {{ school.plan == 'premium' ? 'badge-accent' : (school.plan == 'basic' ? 'badge-primary' : 'badge-ghost') }}">
+								{{ school.plan }}
+							</span>
+						</td>
+						<td>{{ row.users }}</td>
+						<td>
+							{% if school.active %}
+								<span class="badge badge-success badge-sm">Activo</span>
+							{% else %}
+								<span class="badge badge-ghost badge-sm">Inactivo</span>
+							{% endif %}
+						</td>
+						<td class="text-xs">
+							{% if school.enrollmentOpen %}
+								<span class="text-success font-medium">Abierto</span>
+							{% else %}
+								<span class="text-warning font-medium">Cerrado</span>
+							{% endif %}
+							{% if school.enrollmentEnd %}
+								<br><span class="text-base-content/50">hasta {{ school.enrollmentEnd|date('d/m/Y') }}</span>
+							{% endif %}
+						</td>
+						<td class="text-xs text-base-content/60">{{ school.createdAt|date('d/m/Y') }}</td>
+						<td>
+							<a href="{{ path('admin', {'menuIndex': 99}) }}" class="btn btn-xs btn-ghost">Editar</a>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+{% endif %}
+{% endblock %}
