@@ -56,6 +56,12 @@ class Course
     #[ORM\ManyToOne(targetEntity: CourseCategory::class)]
     private ?CourseCategory $category = null;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $schedule = null;
+
+    #[ORM\ManyToOne(targetEntity: School::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?School $school = null;
 
 
 
@@ -237,6 +243,12 @@ class Course
         $this->category = $category;
         return $this;
     }
+
+    public function getSchedule(): ?string { return $this->schedule; }
+    public function setSchedule(?string $schedule): static { $this->schedule = $schedule; return $this; }
+
+    public function getSchool(): ?School { return $this->school; }
+    public function setSchool(?School $school): static { $this->school = $school; return $this; }
 
     public function __toString(): string
     {

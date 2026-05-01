@@ -102,6 +102,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 20, nullable: true)] // Puedes ajustar la longitud si es necesario
     private ?string $gender = null;
 
+    #[ORM\ManyToOne(targetEntity: School::class)]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?School $school = null;
+
     public function isActive(): bool
     {
         return $this->active;
@@ -444,6 +448,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
         return $this;
     }
+
+    public function getSchool(): ?School { return $this->school; }
+    public function setSchool(?School $school): static { $this->school = $school; return $this; }
 
     // --- Método para generar la URL del avatar ---
     public function getAvatarUrl(?int $size = 200): string
