@@ -230,8 +230,8 @@ class UserCrudController extends AbstractCrudController
                     ->setFormTypeOptions([
                         'by_reference' => false,
                         'query_builder' => fn ($repo) => $repo->createQueryBuilder('u')
-                            ->where('u.roles LIKE :role')
-                            ->setParameter('role', '%ROLE_STUDENT%')
+                            ->where('json_array_contains(u.roles, :role) = true')
+                            ->setParameter('role', 'ROLE_STUDENT')
                             ->orderBy('u.fullName', 'ASC'),
                     ])
                     ->setHelp('Solo muestra usuarios con rol Estudiante.')

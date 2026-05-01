@@ -316,7 +316,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __toString(): string
     {
-        return $this->getRut() ?? 'Usuario sin RUT'; // Cambiar a RUT
+        return $this->fullName ?? $this->rut ?? 'Sin nombre';
     }
 
     public function getGrade(): ?string

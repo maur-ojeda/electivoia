@@ -22,6 +22,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\EntityFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\RequestStack;
+use App\Entity\User;
 use Symfony\Component\Routing\RouterInterface;
 
 class EnrollmentCrudController extends AbstractCrudController
@@ -88,14 +89,26 @@ class EnrollmentCrudController extends AbstractCrudController
     public function configureFields(string $pageName): iterable
     {
         return [
-            // Para la página de listado (index), mostramos el nombre completo como texto.
-            TextField::new('student.fullName', 'Alumno')->onlyOnIndex(),
-            TextField::new('student.grade', 'Curso')->onlyOnIndex(),
+            // Index: columnas de solo lectura para mostrar datos legibles
+            TextField::new('student.fullName', 'Nombre Alumno')->onlyOnIndex(),
             TextField::new('student.rut', 'RUT del Alumno')->onlyOnIndex(),
-            // Para los formularios (new/edit), usamos el campo de asociación para poder seleccionar un alumno.
-            AssociationField::new('student', 'Alumno')->onlyOnForms(),
+            TextField::new('course.name', 'Curso')->onlyOnIndex(),
 
-            AssociationField::new('course', 'Curso Inscrito'),
+            // Forms: campos de asociación para seleccionar entidades
+            AssociationField::new('student', 'Alumno')
+                ->onlyOnForms()
+                ->setFormTypeOption('query_builder', fn ($repo) => $repo->createQueryBuilder('u')
+                    ->where('json_array_contains(u.roles, :role) = true')
+                    ->setParameter('role', 'ROLE_STUDENT')
+                    ->orderBy('u.fullName', 'ASC'))
+                ->setFormTypeOption('choice_label', function (?User $user) {
+                    if ($user === null) {
+                        return '';
+                    }
+                    return sprintf('%s (%s)', $user->getFullName() ?? 'Sin nombre', $user->getRut() ?? 'Sin RUT');
+                }),
+            AssociationField::new('course', 'Curso Inscrito')->onlyOnForms(),
+
             DateTimeField::new('enrolledAt', 'Fecha de Inscripción')
                 ->setFormat('dd/MM/yyyy HH:mm')
                 ->onlyOnIndex(),
