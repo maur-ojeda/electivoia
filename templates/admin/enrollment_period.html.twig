@@ -1,0 +1,77 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Período de Inscripción — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+	<a href="{{ path('admin_dashboard') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<div>
+		<h1 class="text-2xl font-bold">Período de Inscripción</h1>
+		<p class="text-sm text-base-content/60">{{ school.name }}</p>
+	</div>
+</div>
+
+{# Estado actual #}
+{% set now = "now"|date("Y-m-d H:i:s") %}
+<div class="alert {% if school.enrollmentOpen %}alert-success{% else %}alert-warning{% endif %} mb-6">
+	<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+		{% if school.enrollmentOpen %}
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+		{% else %}
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.693-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+		{% endif %}
+	</svg>
+	<span>
+		{% if school.enrollmentOpen %}
+			Las inscripciones están <strong>abiertas</strong>.
+		{% else %}
+			Las inscripciones están <strong>cerradas</strong>.
+		{% endif %}
+		{% if school.enrollmentStart %}
+			Apertura: {{ school.enrollmentStart|date('d/m/Y H:i') }}.
+		{% endif %}
+		{% if school.enrollmentEnd %}
+			Cierre: {{ school.enrollmentEnd|date('d/m/Y H:i') }}.
+		{% endif %}
+	</span>
+</div>
+
+<div class="card bg-base-100 shadow max-w-lg">
+	<div class="card-body">
+		<h2 class="card-title text-base mb-4">Configurar ventana de inscripciones</h2>
+		<form method="post">
+			<div class="form-control mb-4">
+				<label class="label">
+					<span class="label-text font-medium">Inicio inscripciones</span>
+					<span class="label-text-alt text-base-content/50">Opcional — deja vacío para sin restricción</span>
+				</label>
+				<input
+					type="datetime-local"
+					name="enrollmentStart"
+					class="input input-bordered"
+					value="{{ school.enrollmentStart ? school.enrollmentStart|date('Y-m-d\\TH:i') : '' }}"
+				>
+			</div>
+			<div class="form-control mb-6">
+				<label class="label">
+					<span class="label-text font-medium">Cierre inscripciones</span>
+					<span class="label-text-alt text-base-content/50">Opcional — deja vacío para sin restricción</span>
+				</label>
+				<input
+					type="datetime-local"
+					name="enrollmentEnd"
+					class="input input-bordered"
+					value="{{ school.enrollmentEnd ? school.enrollmentEnd|date('Y-m-d\\TH:i') : '' }}"
+				>
+			</div>
+			<div class="card-actions">
+				<button type="submit" class="btn btn-primary">Guardar período</button>
+				<button type="button" class="btn btn-ghost btn-sm"
+					onclick="document.querySelector('[name=enrollmentStart]').value='';document.querySelector('[name=enrollmentEnd]').value=''">
+					Limpiar fechas
+				</button>
+			</div>
+		</form>
+	</div>
+</div>
+{% endblock %}

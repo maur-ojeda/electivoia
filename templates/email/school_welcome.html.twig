@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+        .header { background: #6b21a8; color: #fff; padding: 28px 32px; }
+        .header h1 { margin: 0; font-size: 22px; }
+        .body { padding: 32px; color: #333; }
+        .credential-box { background: #f9f5ff; border-left: 4px solid #6b21a8; padding: 16px 20px; border-radius: 4px; margin: 20px 0; font-family: monospace; }
+        .credential-box p { margin: 6px 0; font-size: 15px; }
+        .cta { display: inline-block; background: #6b21a8; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-weight: bold; margin: 16px 0; }
+        .footer { background: #f0f0f0; padding: 16px 32px; font-size: 12px; color: #888; }
+        .warning { color: #b45309; font-size: 13px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏫 Bienvenido a ElectivoIA</h1>
+        <p style="margin:6px 0 0; opacity:.85;">Tu colegio ya está activo en la plataforma</p>
+    </div>
+    <div class="body">
+        <p>Hola <strong>{{ admin.fullName }}</strong>,</p>
+        <p>
+            El colegio <strong>{{ school.name }}</strong> ha sido registrado en ElectivoIA.
+            Como administrador del colegio, puedes gestionar usuarios, cursos, inscripciones y reportes.
+        </p>
+
+        <p><strong>Tus credenciales de acceso:</strong></p>
+        <div class="credential-box">
+            <p>👤 <strong>RUT:</strong> {{ admin.rut }}</p>
+            <p>🔑 <strong>Contraseña temporal:</strong> {{ plainPassword }}</p>
+        </div>
+        <p class="warning">⚠️ Cambia tu contraseña al ingresar por primera vez.</p>
+
+        <p>Accede a la plataforma:</p>
+        <a href="{{ app.request.schemeAndHttpHost }}/login" class="cta">Ingresar a ElectivoIA →</a>
+
+        <p style="margin-top:24px; color:#666; font-size:14px;">
+            <strong>Próximos pasos sugeridos:</strong><br>
+            1. Importa tus estudiantes desde <em>Admin → Importar CSV</em><br>
+            2. Crea los cursos electivos de tu colegio<br>
+            3. Define el período de inscripción en <em>Admin → Inscripciones</em>
+        </p>
+    </div>
+    <div class="footer">
+        Este es un mensaje automático de ElectivoIA. Por favor no respondas a este email.
+    </div>
+</div>
+</body>
+</html>
