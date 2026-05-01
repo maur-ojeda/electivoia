@@ -18,6 +18,8 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
+use EasyCorp\Bundle\EasyAdminBundle\Filter\EntityFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\RouterInterface;
@@ -98,6 +100,13 @@ class EnrollmentCrudController extends AbstractCrudController
                 ->setFormat('dd/MM/yyyy HH:mm')
                 ->onlyOnIndex(),
         ];
+    }
+
+    public function configureFilters(Filters $filters): Filters
+    {
+        return $filters
+            ->add(EntityFilter::new('course', 'Curso'))
+            ->add(EntityFilter::new('student', 'Alumno'));
     }
 
     public function configureActions(Actions $actions): Actions
