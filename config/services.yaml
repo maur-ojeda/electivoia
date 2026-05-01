@@ -19,8 +19,12 @@ services:
     App\:
         resource: '../src/'
 
-    # Gemini Chatbot Service
+    # Gemini Services
     App\Service\GeminiChatbotService:
+        arguments:
+            $geminiApiKey: '%gemini_api_key%'
+
+    App\Service\GeminiInsightsService:
         arguments:
             $geminiApiKey: '%gemini_api_key%'
 
