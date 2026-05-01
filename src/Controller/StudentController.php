@@ -10,6 +10,7 @@ use App\Service\EnrollmentService;
 use App\Entity\InterestProfile;
 use App\Service\NotificationService;
 use App\Service\RecommendationService;
+use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,7 +24,8 @@ class StudentController extends AbstractController
 {
     public function __construct(
         private EnrollmentService $enrollmentService,
-        private NotificationService $notificationService
+        private NotificationService $notificationService,
+        private TenantContext $tenantContext
     ) {}
 
     //---------------
@@ -86,6 +88,11 @@ class StudentController extends AbstractController
             ->leftJoin('c.teacher', 't')
             ->addSelect('t');
 
+        if ($this->tenantContext->hasSchool()) {
+            $qb->andWhere('c.school = :_school')
+                ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+
         // Filtro por disponibilidad
         if ($showAvailableOnly) {
             $qb
@@ -100,9 +107,9 @@ class StudentController extends AbstractController
                 ->setParameter('categoryId', $selectedCategory);
         }
 
-        // Filtro por búsqueda (nombre o descripción)
+        // Filtro por búsqueda (nombre, descripción u horario)
         if ($searchQuery !== '') {
-            $qb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search')
+            $qb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search OR LOWER(c.schedule) LIKE :search')
                 ->setParameter('search', '%' . strtolower($searchQuery) . '%');
         }
 
@@ -153,6 +160,9 @@ class StudentController extends AbstractController
         }
 
 
+        $currentSchool = $this->tenantContext->getCurrentSchool();
+        $enrollmentOpen = $currentSchool === null || $currentSchool->isEnrollmentOpen();
+
         return $this->render('student/courses.html.twig', [
             'student' => $student,
             'courses' => $courses,
@@ -165,6 +175,8 @@ class StudentController extends AbstractController
             'selectedCategory' => $selectedCategory,
             'searchQuery' => $searchQuery,
             'enrollmentsByCourse' => $enrollmentsByCourse,
+            'enrollmentOpen' => $enrollmentOpen,
+            'school' => $currentSchool,
         ]);
     }
 
@@ -186,6 +198,13 @@ class StudentController extends AbstractController
     {
         $student = $this->getUser();
         $now = new \DateTimeImmutable();
+
+        // HU-16: Check school-wide enrollment period
+        $school = $this->tenantContext->getCurrentSchool();
+        if ($school !== null && !$school->isEnrollmentOpen()) {
+            $this->addFlash('error', 'El período de inscripción del colegio está cerrado.');
+            return $this->redirectToRoute('student_courses');
+        }
 
         if ($course->getEnrollmentDeadline() && $now > $course->getEnrollmentDeadline()) {
             $this->addFlash('error', 'La inscripción para este curso ya está cerrada.');
@@ -331,6 +350,20 @@ class StudentController extends AbstractController
     public function unenroll(Course $course, EntityManagerInterface $em): Response
     {
         $student = $this->getUser();
+
+        // HU-16: Check school-wide enrollment period
+        $school = $this->tenantContext->getCurrentSchool();
+        if ($school !== null && !$school->isEnrollmentOpen()) {
+            $this->addFlash('error', 'El período de inscripción del colegio está cerrado.');
+            return $this->redirectToRoute('student_courses');
+        }
+
+        // HU-4: Check enrollment deadline
+        if ($course->getEnrollmentDeadline() && new \DateTimeImmutable() > $course->getEnrollmentDeadline()) {
+            $this->addFlash('error', 'La fecha límite de inscripción ya pasó. No es posible darse de baja.');
+            return $this->redirectToRoute('student_courses');
+        }
+
         $enrollment = $em->getRepository(Enrollment::class)->findOneBy([
             'student' => $student,
             'course' => $course

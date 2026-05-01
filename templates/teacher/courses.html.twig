@@ -71,6 +71,9 @@
 					</div>
 					<h3 class="card-title text-sm font-bold leading-tight">{{ course.name }}</h3>
 					<p class="text-xs text-base-content/60 line-clamp-2">{{ course.description|default('Sin descripción.') }}</p>
+					{% if course.schedule %}
+						<p class="text-xs text-base-content/60 mt-1">🕐 {{ course.schedule }}</p>
+					{% endif %}
 					<p class="text-xs text-base-content/70 mt-1">
 						{{ enrollmentsByCourse[course.id]|length }} / {{ course.maxCapacity }} alumnos
 						{% if course.enrollmentDeadline %}

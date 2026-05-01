@@ -35,9 +35,38 @@
 	</button>
 </div>
 
+{# ─── HU-16: Enrollment period banner ─── #}
+{% if not enrollmentOpen %}
+	<div class="alert alert-warning mb-6">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.693-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+		</svg>
+		<div>
+			<p class="font-semibold">El período de inscripción está cerrado.</p>
+			{% if school and school.enrollmentStart and school.enrollmentStart > date() %}
+				<p class="text-sm">Las inscripciones abren el {{ school.enrollmentStart|date('d/m/Y') }} a las {{ school.enrollmentStart|date('H:i') }}.</p>
+			{% elseif school and school.enrollmentEnd %}
+				<p class="text-sm">El plazo cerró el {{ school.enrollmentEnd|date('d/m/Y') }} a las {{ school.enrollmentEnd|date('H:i') }}.</p>
+			{% endif %}
+		</div>
+	</div>
+{% elseif school and school.enrollmentEnd %}
+	<div class="alert alert-info mb-4 py-2">
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+		</svg>
+		<span class="text-sm">Inscripciones abiertas hasta el <strong>{{ school.enrollmentEnd|date('d/m/Y') }}</strong> a las {{ school.enrollmentEnd|date('H:i') }}.</span>
+	</div>
+{% endif %}
+
 {# ─── Search bar ─── #}
 <form method="GET" class="mb-8">
-	<div class="flex gap-3 flex-wrap">
+	<div class="flex gap-3 flex-wrap items-end">
+		<label class="flex items-center gap-2 cursor-pointer">
+			<input type="checkbox" name="available" value="1" class="checkbox checkbox-primary checkbox-sm"
+				{% if showAvailableOnly %}checked{% endif %} onchange="this.form.submit()">
+			<span class="label-text text-sm">Solo con cupos</span>
+		</label>
 		<select name="category" class="select select-bordered w-full max-w-xs" onchange="this.form.submit()">
 			<option value="">Todas las áreas</option>
 			{% for cat in allCategories %}
@@ -51,7 +80,7 @@
 				type="text"
 				name="q"
 				value="{{ searchQuery }}"
-				placeholder="Buscar por nombre o descripción…"
+				placeholder="Buscar por nombre, descripción u horario…"
 				class="input input-bordered join-item flex-1"
 			>
 			<button type="submit" class="btn btn-primary join-item">
@@ -89,6 +118,9 @@
 							<span class="font-medium">{{ course.teacher.fullName }}</span>
 							· {{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}
 						</p>
+						{% if course.schedule %}
+							<p class="text-xs text-base-content/50 mt-0.5">🕐 {{ course.schedule }}</p>
+						{% endif %}
 						<p class="text-xs text-warning mt-1">★ {{ item.reasons|join(', ') }}</p>
 						<div class="card-actions mt-3">
 							{% if course.id in enrolledCourseIds %}
@@ -140,6 +172,9 @@
 						<span class="font-medium">{{ course.teacher.fullName }}</span>
 						· {{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}
 					</p>
+					{% if course.schedule %}
+						<p class="text-xs text-base-content/50 mt-0.5">🕐 {{ course.schedule }}</p>
+					{% endif %}
 					<div class="card-actions mt-3">
 						{% if course.id in enrolledCourseIds %}
 							<span class="badge badge-success gap-1 w-full justify-center py-3">Inscrito</span>
@@ -226,6 +261,17 @@
 		<p class="text-sm text-base-content/60 mb-4">Indica tu nivel de interés en cada área (0 = Sin interés, 5 = Máximo).</p>
 
 		<form method="post" action="{{ path('student_profile') }}" id="interests-form">
+			{# HU-8: Preset refinement buttons #}
+			<div class="mb-4">
+				<p class="text-xs text-base-content/50 mb-2">Ajuste rápido:</p>
+				<div class="flex gap-2 flex-wrap">
+					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Artes','Educación física y salud'],['Matemática','Filosofía'])">Más creativo</button>
+					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Ciencias','Matemática'],['Artes'])">Más científico</button>
+					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Historia, geografía y ciencias sociales','Lengua y literatura'],['Matemática','Ciencias'])">Más humanista</button>
+					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Filosofía','Lengua y literatura'],['Educación física y salud'])">Menos teórico</button>
+					<button type="button" class="btn btn-xs btn-ghost text-error" onclick="resetInterests()">Limpiar todo</button>
+				</div>
+			</div>
 			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 				{% set categories = [
 					'Filosofía',
@@ -262,6 +308,34 @@
 	</div>
 	<form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+
+<script>
+function boostInterests(boost, reduce) {
+	const form = document.getElementById('interests-form');
+	boost.forEach(cat => {
+		const el = form.querySelector(`input[name="interests[${cat}]"]`);
+		if (el) { el.value = Math.min(5, parseInt(el.value) + 2); updateOutput(el); }
+	});
+	reduce.forEach(cat => {
+		const el = form.querySelector(`input[name="interests[${cat}]"]`);
+		if (el) { el.value = Math.max(0, parseInt(el.value) - 2); updateOutput(el); }
+	});
+}
+function resetInterests() {
+	document.getElementById('interests-form').querySelectorAll('input[type="range"]').forEach(el => {
+		el.value = 0; updateOutput(el);
+	});
+}
+function updateOutput(el) {
+	const idx = el.name.match(/\d+/) ? el.name.match(/\d+/)[0] : null;
+	const outputs = document.querySelectorAll('[id^="output-"]');
+	outputs.forEach(o => {
+		if (o.closest('.form-control')?.querySelector(`input[name="${el.name}"]`)) {
+			o.textContent = el.value + '/5';
+		}
+	});
+}
+</script>
 
 {# Link to open interests modal #}
 <div class="fixed bottom-6 left-6 z-40">

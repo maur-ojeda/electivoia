@@ -38,6 +38,9 @@
                                         {% if enrollment.course.teacher %}
                                             <p class="text-xs text-gray-500">Prof. {{ enrollment.course.teacher.fullName }}</p>
                                         {% endif %}
+                                        {% if enrollment.course.schedule %}
+                                            <p class="text-xs text-gray-400">🕐 {{ enrollment.course.schedule }}</p>
+                                        {% endif %}
                                     </div>
                                     <div class="text-right">
                                         {% if att is not null and att.total > 0 %}

@@ -85,16 +85,17 @@ class GeminiChatbotService
 
     private function buildCoursesContext(): string
     {
-        $courses = $this->courseRepository->findAll();
+        $courses = $this->courseRepository->findActiveForContext();
         $context = "CURSOS DISPONIBLES:\n\n";
         
         foreach ($courses as $course) {
             $context .= sprintf(
-                "- %s (Categoría: %s)\n  Descripción: %s\n  Profesor: %s\n  Cupos: %d/%d\n\n",
+                "- %s (Categoría: %s)\n  Descripción: %s\n  Profesor: %s\n  Horario: %s\n  Cupos: %d/%d\n\n",
                 $course->getName(),
                 $course->getCategory()?->getName() ?? 'Sin categoría',
                 $course->getDescription() ?? 'Sin descripción',
                 $course->getTeacher()?->getFullName() ?? 'Por asignar',
+                $course->getSchedule() ?? 'Por definir',
                 $course->getCurrentEnrollment(),
                 $course->getMaxCapacity()
             );
