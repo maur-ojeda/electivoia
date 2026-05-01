@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: EnrollmentRepository::class)]
+#[ORM\HasLifecycleCallbacks]
 class Enrollment
 {
     #[ORM\Id]
@@ -52,6 +53,14 @@ class Enrollment
         $this->course = $course;
 
         return $this;
+    }
+
+    #[ORM\PrePersist]
+    public function setEnrolledAtOnCreate(): void
+    {
+        if ($this->enrolledAt === null) {
+            $this->enrolledAt = new \DateTime();
+        }
     }
 
     public function getEnrolledAt(): ?\DateTimeInterface
