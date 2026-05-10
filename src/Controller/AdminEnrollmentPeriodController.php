@@ -23,7 +23,7 @@ class AdminEnrollmentPeriodController extends AbstractController
 
         if ($school === null) {
             $this->addFlash('error', 'No hay colegio asignado a tu cuenta.');
-            return $this->redirectToRoute('admin_dashboard');
+            return $this->redirectToRoute('admin_user_index');
         }
 
         if ($request->isMethod('POST')) {
