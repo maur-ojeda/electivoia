@@ -250,6 +250,11 @@ class Course
     public function getSchool(): ?School { return $this->school; }
     public function setSchool(?School $school): static { $this->school = $school; return $this; }
 
+    public function getEnrollmentBadge(): string
+    {
+        return 'enrollment-badge-placeholder';
+    }
+
     public function __toString(): string
     {
         return $this->name ?? 'Curso sin nombre';

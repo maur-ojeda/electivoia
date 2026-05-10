@@ -116,26 +116,9 @@ class CourseCrudController extends AbstractCrudController
             TextField::new('name', 'Nombre'),
             TextField::new('schedule', 'Horario')->setRequired(false)->setHelp('Ej: Lunes y Miércoles 15:30-17:00'),
             TextEditorField::new('description', 'Descripción')->onlyOnForms(),
-            TextField::new('enrollmentInfo', 'Cupo')
+            TextField::new('enrollmentBadge', 'Cupo')
                 ->onlyOnIndex()
-                ->formatValue(function ($value, $entity) {
-                    if (!$entity || $entity->getMaxCapacity() === null || $entity->getMaxCapacity() === 0) {
-                        return '<span class="badge bg-secondary">Sin cupo definido</span>';
-                    }
-                    $current = (int) ($entity->getCurrentEnrollment() ?? 0);
-                    $max = (int) $entity->getMaxCapacity();
-                    $pct = ($current / $max) * 100;
-                    $color = match(true) {
-                        $pct >= 80 => 'danger',
-                        $pct >= 50 => 'warning',
-                        default => 'success',
-                    };
-                    return sprintf(
-                        '<span class="badge bg-%s">%d/%d alumnos (%.0f%%)</span>',
-                        $color, $current, $max, $pct
-                    );
-                })
-                ->renderAsHtml(),
+                ->setTemplatePath('admin/field/course_capacity.html.twig'),
             IntegerField::new('maxCapacity', 'Cupo máximo')->onlyOnForms(),
             DateTimeField::new('enrollmentDeadline', 'Fecha límite de inscripción')
                 ->setHelp('Dejar vacío para permitir inscripciones sin límite de tiempo'),

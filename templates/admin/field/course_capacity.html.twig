@@ -1,0 +1,9 @@
+{% set course = entity.instance %}
+{% set realCount = course.enrollments|length %}
+{% if course.maxCapacity %}
+    {% set pct = (realCount / course.maxCapacity) * 100 %}
+    {% set color = pct >= 80 ? 'danger' : (pct >= 50 ? 'warning' : 'success') %}
+    <span class="badge bg-{{ color }}">{{ realCount }}/{{ course.maxCapacity }} alumnos ({{ pct|round(0) }}%)</span>
+{% else %}
+    <span class="badge bg-secondary">Sin cupo definido</span>
+{% endif %}
