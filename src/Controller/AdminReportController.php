@@ -40,19 +40,45 @@ class AdminReportController extends AbstractController
         return $qb;
     }
 
+    /**
+     * Get enrollment counts for all active courses in a single query.
+     * Returns array [courseId => count].
+     */
+    private function getEnrollmentCounts(): array
+    {
+        $qb = $this->em->getRepository(Enrollment::class)
+            ->createQueryBuilder('e')
+            ->select('c.id as courseId, COUNT(e.id) as cnt')
+            ->join('e.course', 'c')
+            ->where('c.isActive = true')
+            ->groupBy('c.id');
+
+        if ($this->tenantContext->hasSchool()) {
+            $qb->andWhere('c.school = :_school')
+               ->setParameter('_school', $this->tenantContext->getCurrentSchool());
+        }
+
+        $rows = $qb->getQuery()->getScalarResult();
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['courseId']] = (int) $row['cnt'];
+        }
+        return $counts;
+    }
+
     #[Route('', name: 'index')]
     public function index(): Response
     {
         // --- Datos para gráfico: Ocupación por curso ---
         $courses = $this->activeCourseQb()->getQuery()->getResult();
+        $enrollmentCounts = $this->getEnrollmentCounts();
 
         $courseLabels = [];
         $enrollmentData = [];
         $capacityData = [];
 
         foreach ($courses as $course) {
-            $currentEnrollment = $this->em->getRepository(\App\Entity\Enrollment::class)
-                ->count(['course' => $course]);
+            $currentEnrollment = $enrollmentCounts[$course->getId()] ?? 0;
 
             $courseLabels[] = $course->getName();
             $enrollmentData[] = $currentEnrollment;
@@ -98,7 +124,7 @@ class AdminReportController extends AbstractController
         // Insight: Porcentaje de cursos con alta demanda (>80% de cupo lleno)
         $highDemandCount = 0;
         foreach ($courses as $course) {
-            $current = $this->em->getRepository(\App\Entity\Enrollment::class)->count(['course' => $course]);
+            $current = $enrollmentCounts[$course->getId()] ?? 0;
             if ($course->getMaxCapacity() > 0 && ($current / $course->getMaxCapacity()) >= 0.8) {
                 $highDemandCount++;
             }
@@ -115,7 +141,7 @@ class AdminReportController extends AbstractController
         $scienceEnrollments = 0;
         $scienceCapacity = 0;
         foreach ($scienceCourses as $course) {
-            $current = $this->em->getRepository(\App\Entity\Enrollment::class)->count(['course' => $course]);
+            $current = $enrollmentCounts[$course->getId()] ?? 0;
             $scienceEnrollments += $current;
             $scienceCapacity += $course->getMaxCapacity();
         }

@@ -51,6 +51,9 @@ class UserCrudController extends AbstractCrudController
                 ->setParameter('_tenant_school', $this->tenantContext->getCurrentSchool());
         }
 
+        // Eager load interest_profile to avoid N+1 queries on user list
+        $qb->leftJoin('entity.interestProfile', 'ip')->addSelect('ip');
+
         return $qb;
     }
 
