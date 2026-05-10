@@ -55,4 +55,17 @@ class InterestProfile
 
         return $this;
     }
+
+    public function getInterestsBadge(): string
+    {
+        if (empty($this->interests)) {
+            return 'sin-intereses';
+        }
+        // Format: "Filosofía:3, Historia:5, ..."
+        $parts = [];
+        foreach ($this->interests as $category => $score) {
+            $parts[] = $category . ':' . $score;
+        }
+        return implode(', ', $parts);
+    }
 }
