@@ -11,6 +11,7 @@ use App\Entity\InterestProfile;
 use App\Service\NotificationService;
 use App\Service\RecommendationService;
 use App\Service\TenantContext;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -211,62 +212,85 @@ class StudentController extends AbstractController
             return $this->redirectToRoute('student_courses');
         }
 
-        $existing = $em->getRepository(Enrollment::class)->findOneBy([
-            'student' => $student,
-            'course' => $course
-        ]);
-        if ($existing) {
-            $this->addFlash('warning', 'Ya estás inscrito en este curso.');
-            return $this->redirectToRoute('student_courses');
-        }
+        try {
+            $em->beginTransaction();
 
-        $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
-        if ($currentCount < $course->getMaxCapacity()) {
-            $enrollment = new Enrollment();
-            $enrollment->setStudent($student);
-            $enrollment->setCourse($course);
-            $enrollment->setEnrolledAt(new \DateTime());
-            $em->persist($enrollment);
-            $em->flush();
-            $this->notificationService->sendEnrollmentConfirmation($student, $course);
-            $this->addFlash('success', '¡Inscripción exitosa!');
-        } else {
-            $studentGrade = $student->getAverageGrade();
-            if ($studentGrade === null) {
-                $this->addFlash('error', 'No puedes inscribirte sin promedio registrado.');
+            // Pessimistic lock on the course row to prevent race conditions
+            // on capacity checks during concurrent enrollments.
+            $em->createQuery('SELECT c FROM App\Entity\Course c WHERE c.id = :id')
+                ->setParameter('id', $course->getId())
+                ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+                ->getSingleResult();
+
+            $existing = $em->getRepository(Enrollment::class)->findOneBy([
+                'student' => $student,
+                'course' => $course
+            ]);
+            if ($existing) {
+                $em->rollback();
+                $this->addFlash('warning', 'Ya estás inscrito en este curso.');
                 return $this->redirectToRoute('student_courses');
             }
 
-            $lowestEnrollment = $em->createQuery('
-                SELECT e FROM App\Entity\Enrollment e
-                JOIN e.student s
-                WHERE e.course = :course
-                ORDER BY COALESCE(s.averageGrade, 0) ASC
-            ')
-                ->setParameter('course', $course)
-                ->setMaxResults(1)
-                ->getOneOrNullResult();
-
-            if ($lowestEnrollment) {
-                $lowestStudent = $lowestEnrollment->getStudent();
-                $lowestGrade = $lowestStudent->getAverageGrade() ?? 0;
-                if ($studentGrade > $lowestGrade) {
-                    $em->remove($lowestEnrollment);
-                    $newEnrollment = new Enrollment();
-                    $newEnrollment->setStudent($student);
-                    $newEnrollment->setCourse($course);
-                    $newEnrollment->setEnrolledAt(new \DateTime());
-                    $em->persist($newEnrollment);
-                    $em->flush();
-                    $this->notificationService->sendEnrollmentConfirmation($student, $course);
-                    $this->notificationService->sendEnrollmentDisplaced($lowestStudent, $student, $course);
-                    $this->addFlash('success', "¡Inscripción exitosa! Reemplazaste a {$lowestStudent->getFullName()}.");
-                } else {
-                    $this->addFlash('error', 'No hay cupo y tu promedio no es suficiente.');
-                }
+            $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
+            if ($currentCount < $course->getMaxCapacity()) {
+                $enrollment = new Enrollment();
+                $enrollment->setStudent($student);
+                $enrollment->setCourse($course);
+                $enrollment->setEnrolledAt(new \DateTime());
+                $em->persist($enrollment);
+                $em->flush();
+                $em->commit();
+                $this->notificationService->sendEnrollmentConfirmation($student, $course);
+                $this->addFlash('success', '¡Inscripción exitosa!');
             } else {
-                $this->addFlash('error', 'Error al verificar prioridad.');
+                $studentGrade = $student->getAverageGrade();
+                if ($studentGrade === null) {
+                    $em->rollback();
+                    $this->addFlash('error', 'No puedes inscribirte sin promedio registrado.');
+                    return $this->redirectToRoute('student_courses');
+                }
+
+                $lowestEnrollment = $em->createQuery('
+                    SELECT e FROM App\Entity\Enrollment e
+                    JOIN e.student s
+                    WHERE e.course = :course
+                    ORDER BY COALESCE(s.averageGrade, 0) ASC
+                ')
+                    ->setParameter('course', $course)
+                    ->setMaxResults(1)
+                    ->getOneOrNullResult();
+
+                if ($lowestEnrollment) {
+                    $lowestStudent = $lowestEnrollment->getStudent();
+                    $lowestGrade = $lowestStudent->getAverageGrade() ?? 0;
+                    if ($studentGrade > $lowestGrade) {
+                        $em->remove($lowestEnrollment);
+                        $newEnrollment = new Enrollment();
+                        $newEnrollment->setStudent($student);
+                        $newEnrollment->setCourse($course);
+                        $newEnrollment->setEnrolledAt(new \DateTime());
+                        $em->persist($newEnrollment);
+                        $em->flush();
+                        $em->commit();
+                        $this->notificationService->sendEnrollmentConfirmation($student, $course);
+                        $this->notificationService->sendEnrollmentDisplaced($lowestStudent, $student, $course);
+                        $this->addFlash('success', "¡Inscripción exitosa! Reemplazaste a {$lowestStudent->getFullName()}.");
+                    } else {
+                        $em->rollback();
+                        $this->addFlash('error', 'No hay cupo y tu promedio no es suficiente.');
+                    }
+                } else {
+                    $em->rollback();
+                    $this->addFlash('error', 'Error al verificar prioridad.');
+                }
             }
+        } catch (\Doctrine\ORM\PessimisticLockException $e) {
+            $em->rollback();
+            $this->addFlash('error', 'Otro proceso está inscribiendo en este curso. Inténtalo de nuevo.');
+        } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
+            $em->rollback();
+            $this->addFlash('error', 'Ya estás inscrito en este curso (detectado concurrentemente).');
         }
 
         return $this->redirectToRoute('student_courses');

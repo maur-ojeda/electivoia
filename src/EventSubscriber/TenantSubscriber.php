@@ -4,6 +4,7 @@ namespace App\EventSubscriber;
 
 use App\Entity\User;
 use App\Service\TenantContext;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -14,13 +15,15 @@ class TenantSubscriber implements EventSubscriberInterface
     public function __construct(
         private TokenStorageInterface $tokenStorage,
         private TenantContext $tenantContext,
+        private EntityManagerInterface $entityManager,
     ) {}
 
     public static function getSubscribedEvents(): array
     {
         return [
-            // Priority 10 so it runs after firewall (priority 8) but before controllers
-            KernelEvents::REQUEST => ['onKernelRequest', 10],
+            // Priority 7 so it runs AFTER firewall (priority 8) but before controllers.
+            // The firewall must authenticate first so $token->getUser() returns the User entity.
+            KernelEvents::REQUEST => ['onKernelRequest', 7],
         ];
     }
 
@@ -39,6 +42,11 @@ class TenantSubscriber implements EventSubscriberInterface
         if (!$user instanceof User) {
             return;
         }
+
+        // Refresh the user from DB so all relations (including school) are loaded.
+        // The user from the security token is a serialized snapshot; lazy relations
+        // may be null or uninitialized proxies after deserialization.
+        $this->entityManager->refresh($user);
 
         $school = $user->getSchool();
         if ($school !== null) {

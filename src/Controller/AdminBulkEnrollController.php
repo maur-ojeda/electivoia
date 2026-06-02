@@ -6,6 +6,7 @@ use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\User;
 use App\Service\TenantContext;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Query\ResultSetMappingBuilder;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -84,33 +85,53 @@ class AdminBulkEnrollController extends AbstractController
             $skipped   = 0; // already enrolled
             $rejected  = 0; // over capacity
 
-            foreach ($students as $student) {
-                // Already enrolled?
-                $existing = $em->getRepository(Enrollment::class)->findOneBy([
-                    'student' => $student,
-                    'course'  => $course,
-                ]);
-                if ($existing) {
-                    $skipped++;
-                    continue;
+            try {
+                $em->beginTransaction();
+
+                // Pessimistic lock on the course row to prevent race conditions
+                // on capacity checks during concurrent enrollments.
+                $em->createQuery('SELECT c FROM App\Entity\Course c WHERE c.id = :id')
+                    ->setParameter('id', $course->getId())
+                    ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+                    ->getSingleResult();
+
+                foreach ($students as $student) {
+                    // Already enrolled?
+                    $existing = $em->getRepository(Enrollment::class)->findOneBy([
+                        'student' => $student,
+                        'course'  => $course,
+                    ]);
+                    if ($existing) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    // Capacity check (now safe under pessimistic lock)
+                    $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
+                    if ($currentCount >= $course->getMaxCapacity()) {
+                        $rejected++;
+                        continue;
+                    }
+
+                    $enrollment = new Enrollment();
+                    $enrollment->setStudent($student);
+                    $enrollment->setCourse($course);
+                    $enrollment->setEnrolledAt(new \DateTime());
+                    $em->persist($enrollment);
+                    $enrolled++;
                 }
 
-                // Capacity check
-                $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
-                if ($currentCount >= $course->getMaxCapacity()) {
-                    $rejected++;
-                    continue;
-                }
-
-                $enrollment = new Enrollment();
-                $enrollment->setStudent($student);
-                $enrollment->setCourse($course);
-                $enrollment->setEnrolledAt(new \DateTime());
-                $em->persist($enrollment);
-                $enrolled++;
+                $em->flush();
+                $em->commit();
+            } catch (\Doctrine\ORM\PessimisticLockException $e) {
+                $em->rollback();
+                $this->addFlash('error', 'Otro proceso está inscribiendo en este curso. Inténtalo de nuevo.');
+                return $this->redirectToRoute('admin_enrollments_bulk');
+            } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
+                $em->rollback();
+                $this->addFlash('error', 'Se detectó una inscripción duplicada. Verifica los datos e inténtalo de nuevo.');
+                return $this->redirectToRoute('admin_enrollments_bulk');
             }
-
-            $em->flush();
 
             $result = [
                 'course'   => $course,

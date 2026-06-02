@@ -8,6 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: EnrollmentRepository::class)]
 #[ORM\HasLifecycleCallbacks]
+#[ORM\UniqueConstraint(name: 'unique_enrollment', columns: ['student_id', 'course_id'])]
 class Enrollment
 {
     #[ORM\Id]
@@ -25,6 +26,10 @@ class Enrollment
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $enrolledAt = null;
+
+    #[ORM\Version]
+    #[ORM\Column(type: Types::INTEGER)]
+    private ?int $version = null;
 
     public function getId(): ?int
     {
@@ -73,5 +78,10 @@ class Enrollment
         $this->enrolledAt = $enrolledAt;
 
         return $this;
+    }
+
+    public function getVersion(): ?int
+    {
+        return $this->version;
     }
 }
