@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-    static targets = ['input', 'messages', 'widget', 'toggle'];
+    static targets = ['input', 'messages', 'widget'];
     static values = { url: String, clearUrl: String };
 
     toggle() {
