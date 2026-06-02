@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Repository\EnrollmentRepository;
 use App\Service\GeminiChatbotService;
+use App\Service\TenantContext;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,7 +16,11 @@ class ChatbotController extends AbstractController
     private const SESSION_KEY = 'chatbot_history';
     private const MAX_HISTORY = 10;
 
-    public function __construct(private RequestStack $requestStack) {}
+    public function __construct(
+        private RequestStack $requestStack,
+        private TenantContext $tenantContext,
+        private EnrollmentRepository $enrollmentRepository,
+    ) {}
 
     #[Route('/api/chatbot', name: 'api_chatbot', methods: ['POST'])]
     public function chat(Request $request, GeminiChatbotService $chatbotService): JsonResponse
@@ -25,11 +31,18 @@ class ChatbotController extends AbstractController
             return $this->json(['success' => false, 'message' => 'Por favor envía un mensaje válido.'], 400);
         }
 
+        $user = $this->getUser();
+        if ($user === null) {
+            return $this->json(['success' => false, 'message' => 'Debes iniciar sesión para usar el asistente.'], 401);
+        }
+
+        $studentContext = $this->buildStudentContext($user);
+
         $userMessage = trim($data['message']);
         $session = $this->requestStack->getSession();
         $history = $session->get(self::SESSION_KEY, []);
 
-        $response = $chatbotService->chat($userMessage, $history);
+        $response = $chatbotService->chat($userMessage, $history, $studentContext);
 
         if ($response['success']) {
             $history[] = ['user' => $userMessage, 'bot' => $response['message']];
@@ -47,5 +60,35 @@ class ChatbotController extends AbstractController
     {
         $this->requestStack->getSession()->remove(self::SESSION_KEY);
         return $this->json(['success' => true]);
+    }
+
+    private function buildStudentContext(\App\Entity\User $user): array
+    {
+        $interestProfile = $user->getInterestProfile();
+        $interests = $interestProfile?->getInterests() ?? [];
+
+        $enrollments = $this->enrollmentRepository->findBy(['student' => $user]);
+        $enrolledCourses = [];
+        foreach ($enrollments as $enrollment) {
+            $course = $enrollment->getCourse();
+            if ($course !== null) {
+                $enrolledCourses[] = [
+                    'id' => $course->getId(),
+                    'name' => $course->getName(),
+                    'category' => $course->getCategory()?->getName(),
+                ];
+            }
+        }
+
+        $school = $this->tenantContext->getCurrentSchool();
+        $enrollmentOpen = $school === null || $school->isEnrollmentOpen();
+
+        return [
+            'name' => $user->getFullName() ?? 'Estudiante',
+            'grade' => $user->getGrade() ?? 'No especificado',
+            'interests' => $interests,
+            'enrolledCourses' => $enrolledCourses,
+            'enrollmentOpen' => $enrollmentOpen,
+        ];
     }
 }

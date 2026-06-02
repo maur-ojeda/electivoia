@@ -18,14 +18,14 @@ class GeminiChatbotService
     ) {
     }
 
-    public function chat(string $userMessage, array $history = []): array
+    public function chat(string $userMessage, array $history = [], array $studentContext = []): array
     {
         try {
             // Obtener información de los cursos disponibles
             $coursesContext = $this->buildCoursesContext();
 
             // Construir el prompt con contexto
-            $systemPrompt = $this->buildSystemPrompt($coursesContext);
+            $systemPrompt = $this->buildSystemPrompt($coursesContext, $studentContext);
 
             // Construir el array de contenidos incluyendo historial
             $contents = [['parts' => [['text' => $systemPrompt]]]];
@@ -104,29 +104,68 @@ class GeminiChatbotService
         return $context;
     }
 
-    private function buildSystemPrompt(string $coursesContext): string
+    private function buildSystemPrompt(string $coursesContext, array $studentContext = []): string
     {
+        $studentBlock = $this->buildStudentContextBlock($studentContext);
+
         return <<<PROMPT
-Eres un asistente virtual amigable y útil del sistema de cursos electivos de un colegio chileno.
-
-Tu objetivo es ayudar a los estudiantes a:
-1. Descubrir cursos que les puedan interesar
-2. Responder preguntas sobre los cursos disponibles
-3. Recomendar cursos según sus intereses
-4. Proporcionar información sobre profesores, horarios y cupos
-
+Eres ElectivoBot, el asistente virtual del sistema de cursos electivos de un colegio chileno.
+{$studentBlock}
 INFORMACIÓN DE CURSOS DISPONIBLES:
 {$coursesContext}
-
 INSTRUCCIONES:
-- Sé amigable, cercano y motivador
-- Usa lenguaje apropiado para estudiantes de enseñanza media
-- Si te preguntan por un curso específico, busca en la lista y proporciona detalles
-- Si te piden recomendaciones, pregunta por sus intereses primero
-- Si no sabes algo, sé honesto y sugiere contactar a un profesor o administrador
-- Mantén las respuestas concisas pero informativas (máximo 3-4 párrafos)
+- Sé amigable, cercano y motivador. Usa lenguaje apropiado para estudiantes de enseñanza media.
+- Recomienda cursos basándote en los intereses del estudiante.
+- Si te preguntan por un curso específico, busca en la lista y proporciona detalles.
+- Si no sabes algo, sé honesto y sugiere contactar a un profesor o administrador.
+- Mantén las respuestas concisas pero informativas (máximo 3-4 párrafos).
 - Usa emojis ocasionalmente para ser más amigable 😊
+- Si te preguntan por temas no relacionados con cursos, profesores, horarios o inscripciones, responde amablemente: "¡Ups! Solo puedo ayudarte con temas de cursos electivos, profesores, horarios e inscripciones. ¿Quieres que te ayude a encontrar un curso?" No intentes responder preguntas fuera de este alcance.
 
 PROMPT;
+    }
+
+    private function buildStudentContextBlock(array $studentContext): string
+    {
+        if (empty($studentContext)) {
+            return '';
+        }
+
+        $lines = [];
+        $lines[] = 'CONTEXTO DEL ESTUDIANTE:';
+        $lines[] = '- Nombre: ' . ($studentContext['name'] ?? 'Estudiante');
+        $lines[] = '- Curso: ' . ($studentContext['grade'] ?? 'No especificado');
+
+        // Interests: array like ['Filosofía' => 4, 'Artes' => 5]
+        $interests = $studentContext['interests'] ?? [];
+        if (!empty($interests)) {
+            $interestParts = [];
+            foreach ($interests as $topic => $score) {
+                $interestParts[] = "{$topic} (nivel {$score})";
+            }
+            $lines[] = '- Intereses: ' . implode(', ', $interestParts);
+        } else {
+            $lines[] = '- Intereses: Sin intereses registrados aún';
+        }
+
+        // Enrolled courses
+        $enrolledCourses = $studentContext['enrolledCourses'] ?? [];
+        if (!empty($enrolledCourses)) {
+            $courseNames = array_map(fn($c) => $c['name'] ?? $c, $enrolledCourses);
+            $lines[] = '- Cursos inscrito actualmente: ' . implode(', ', $courseNames);
+        } else {
+            $lines[] = '- Cursos inscrito actualmente: Ninguno';
+        }
+
+        // Enrollment period status
+        $enrollmentOpen = $studentContext['enrollmentOpen'] ?? null;
+        if ($enrollmentOpen === true) {
+            $lines[] = '- Período de inscripción: Abierto';
+        } elseif ($enrollmentOpen === false) {
+            $lines[] = '- Período de inscripción: Cerrado';
+        }
+
+        $lines[] = '';
+        return implode("\n", $lines);
     }
 }
