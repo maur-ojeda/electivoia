@@ -1,11 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Alumnos — {{ course.name }}{% endblock %}
+{% block title %}Asistencia — {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
 	<div>
-		<h1 class="text-2xl font-bold">Listado de Alumnos</h1>
+		<h1 class="text-2xl font-bold">Libro de Asistencia</h1>
 		<p class="text-base-content/60 text-sm">{{ course.name }}</p>
 	</div>
 	<a href="{{ path('teacher_courses') }}" class="btn btn-ghost btn-sm">← Volver</a>
@@ -21,6 +21,13 @@
 					<p class="text-xs text-base-content/60">{{ course.category.area }} · {{ course.category.name }}</p>
 				{% endif %}
 				<div class="divider my-2"></div>
+				<p class="text-xs text-base-content/60">
+					<strong>Fecha:</strong> {{ date|date('d/m/Y') }}
+				</p>
+				<p class="text-xs text-base-content/60 mt-1">
+					<strong>Alumnos:</strong> {{ students|length }}
+				</p>
+				<div class="divider my-2"></div>
 				<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="btn btn-outline btn-sm w-full">
 					Exportar listado
 				</a>
@@ -31,37 +38,78 @@
 	<div class="lg:col-span-3">
 		<div class="card bg-base-100 shadow">
 			<div class="card-body p-4">
-				<h4 class="font-semibold mb-4">Alumnos del curso</h4>
-				<div class="overflow-x-auto">
-					<table class="table table-sm">
-						<thead>
-							<tr>
-								<th></th>
-								<th>Alumno</th>
-								<th>RUT</th>
-								<th>Curso</th>
-								<th>Promedio</th>
-							</tr>
-						</thead>
-						<tbody>
-							{% for student in students %}
-								<tr class="hover">
-									<td>
-										<div class="avatar">
-											<div class="w-8 rounded-full">
-												<img src="{{ student.avatarUrl }}" alt="{{ student.fullName }}">
-											</div>
-										</div>
-									</td>
-									<td class="font-medium">{{ student.fullName }}</td>
-									<td class="text-base-content/60">{{ student.rut }}</td>
-									<td>{{ student.grade }}</td>
-									<td>{{ student.averageGrade ?? '—' }}</td>
-								</tr>
-							{% endfor %}
-						</tbody>
-					</table>
+				<div class="flex items-center justify-between mb-4">
+					<h4 class="font-semibold">Registrar Asistencia — {{ date|date('d/m/Y') }}</h4>
 				</div>
+
+				{% if students is empty %}
+					<div class="text-center py-8 text-base-content/50">
+						<p>No hay alumnos inscritos en este curso.</p>
+					</div>
+				{% else %}
+					<form method="post" action="{{ path('teacher_attendance_save', {id: course.id}) }}">
+						<div class="overflow-x-auto">
+							<table class="table table-sm">
+								<thead>
+									<tr>
+										<th></th>
+										<th>Alumno</th>
+										<th>RUT</th>
+										<th>Grado</th>
+										<th class="text-center">Presente</th>
+										<th class="text-center">Ausente</th>
+										<th class="text-center">Justificado</th>
+										<th class="text-center">Atraso</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for student in students %}
+										{% set currentStatus = attendanceMap[student.id] ?? 'present' %}
+										<tr class="hover">
+											<td>
+												<div class="avatar">
+													<div class="w-8 rounded-full">
+														<img src="{{ student.avatarUrl }}" alt="{{ student.fullName }}">
+													</div>
+												</div>
+											</td>
+											<td class="font-medium">{{ student.fullName }}</td>
+											<td class="text-base-content/60">{{ student.rut }}</td>
+											<td>{{ student.grade }}</td>
+											<td class="text-center">
+												<input type="radio" name="status[{{ student.id }}]" value="present"
+													class="radio radio-sm radio-success"
+													{{ currentStatus == 'present' ? 'checked' : '' }}>
+											</td>
+											<td class="text-center">
+												<input type="radio" name="status[{{ student.id }}]" value="absent"
+													class="radio radio-sm radio-error"
+													{{ currentStatus == 'absent' ? 'checked' : '' }}>
+											</td>
+											<td class="text-center">
+												<input type="radio" name="status[{{ student.id }}]" value="justified"
+													class="radio radio-sm radio-warning"
+													{{ currentStatus == 'justified' ? 'checked' : '' }}>
+											</td>
+											<td class="text-center">
+												<input type="radio" name="status[{{ student.id }}]" value="late"
+													class="radio radio-sm radio-info"
+													{{ currentStatus == 'late' ? 'checked' : '' }}>
+											</td>
+											<input type="hidden" name="student_ids[]" value="{{ student.id }}">
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+
+						<div class="flex justify-end mt-4">
+							<button type="submit" class="btn btn-primary btn-sm">
+								Guardar Asistencia
+							</button>
+						</div>
+					</form>
+				{% endif %}
 			</div>
 		</div>
 	</div>
