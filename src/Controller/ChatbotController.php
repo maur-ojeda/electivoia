@@ -42,7 +42,7 @@ class ChatbotController extends AbstractController
         $session = $this->requestStack->getSession();
         $history = $session->get(self::SESSION_KEY, []);
 
-        $response = $chatbotService->chat($userMessage, $history, $studentContext);
+        $response = $chatbotService->chat($userMessage, $history, $studentContext, $user);
 
         if ($response['success']) {
             $history[] = ['user' => $userMessage, 'bot' => $response['message']];

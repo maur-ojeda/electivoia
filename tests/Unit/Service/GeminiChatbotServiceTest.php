@@ -6,6 +6,7 @@ use App\Entity\Course;
 use App\Entity\CourseCategory;
 use App\Entity\User;
 use App\Repository\CourseRepository;
+use App\Service\EnrollmentService;
 use App\Service\GeminiChatbotService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -17,17 +18,20 @@ class GeminiChatbotServiceTest extends TestCase
     private GeminiChatbotService $service;
     private \PHPUnit\Framework\MockObject\MockObject $httpClient;
     private \PHPUnit\Framework\MockObject\MockObject $courseRepository;
+    private \PHPUnit\Framework\MockObject\MockObject $enrollmentService;
     private \PHPUnit\Framework\MockObject\MockObject $logger;
 
     protected function setUp(): void
     {
         $this->httpClient = $this->createMock(HttpClientInterface::class);
         $this->courseRepository = $this->createMock(CourseRepository::class);
+        $this->enrollmentService = $this->createMock(EnrollmentService::class);
         $this->logger = $this->createMock(LoggerInterface::class);
 
         $this->service = new GeminiChatbotService(
             $this->httpClient,
             $this->courseRepository,
+            $this->enrollmentService,
             $this->logger,
             'test-api-key',
         );
@@ -134,6 +138,7 @@ class GeminiChatbotServiceTest extends TestCase
         $this->service = new GeminiChatbotService(
             $this->httpClient,
             $this->courseRepository,
+            $this->enrollmentService,
             $this->logger,
             'test-api-key',
         );
