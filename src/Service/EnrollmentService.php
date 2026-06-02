@@ -29,6 +29,115 @@ class EnrollmentService
         $this->userRepository = $userRepository;
     }
 
+    /**
+     * Returns available courses with real-time capacity and enrollment status per student.
+     *
+     * @param string|null $category Filter by category name
+     * @param string|null $search   Search term for name or description
+     * @return array{courses: array<int, array{id: int, name: string, category: string|null, teacher: string, schedule: string|null, capacity: string, spots_available: int, enrolled: bool}>, total: int}
+     */
+    public function getAvailableCourses(?string $category = null, ?string $search = null): array
+    {
+        $courses = $this->courseRepository->findAvailableForStudent(
+            grade: null,
+            category: $category,
+            search: $search,
+        );
+
+        $result = [];
+        foreach ($courses as $course) {
+            $spotsAvailable = $course->getMaxCapacity() - $course->getCurrentEnrollment();
+            $teacher = $course->getTeacher();
+            $cat = $course->getCategory();
+
+            $result[] = [
+                'id' => $course->getId(),
+                'name' => $course->getName(),
+                'category' => $cat?->getName(),
+                'teacher' => $teacher ? $teacher->getFullName() : '',
+                'schedule' => $course->getSchedule(),
+                'capacity' => $course->getCurrentEnrollment() . '/' . $course->getMaxCapacity(),
+                'spots_available' => $spotsAvailable,
+            ];
+        }
+
+        return [
+            'courses' => $result,
+            'total' => count($result),
+        ];
+    }
+
+    /**
+     * Returns full details for one course + enrollment status for a specific student.
+     *
+     * @return array{id: int, name: string, description: string|null, category: string|null, teacher: string, schedule: string|null, capacity: string, spots_available: int, enrolled: bool, can_enroll: bool, enrollment_message: string}
+     */
+    public function getCourseDetails(int $courseId, User $student): array
+    {
+        $course = $this->courseRepository->find($courseId);
+
+        if ($course === null) {
+            return [
+                'id' => 0,
+                'name' => '',
+                'description' => null,
+                'category' => null,
+                'teacher' => '',
+                'schedule' => null,
+                'capacity' => '0/0',
+                'spots_available' => 0,
+                'enrolled' => false,
+                'can_enroll' => false,
+                'enrollment_message' => 'Curso no encontrado.',
+            ];
+        }
+
+        $enrolled = $this->isEnrolled($student, $course);
+        $spotsAvailable = $course->getMaxCapacity() - $course->getCurrentEnrollment();
+        $teacher = $course->getTeacher();
+        $cat = $course->getCategory();
+
+        $canEnroll = false;
+        $enrollmentMessage = '';
+
+        if (!$course->isActive()) {
+            $enrollmentMessage = 'El curso no está disponible.';
+        } elseif ($enrolled) {
+            $enrollmentMessage = 'Ya estás inscrito en este curso.';
+        } elseif ($spotsAvailable <= 0) {
+            $enrollmentMessage = 'No hay cupos disponibles.';
+        } else {
+            $canEnroll = true;
+        }
+
+        return [
+            'id' => $course->getId(),
+            'name' => $course->getName(),
+            'description' => $course->getDescription(),
+            'category' => $cat?->getName(),
+            'teacher' => $teacher ? $teacher->getFullName() : '',
+            'schedule' => $course->getSchedule(),
+            'capacity' => $course->getCurrentEnrollment() . '/' . $course->getMaxCapacity(),
+            'spots_available' => $spotsAvailable,
+            'enrolled' => $enrolled,
+            'can_enroll' => $canEnroll,
+            'enrollment_message' => $enrollmentMessage,
+        ];
+    }
+
+    /**
+     * Checks if a student is enrolled in a specific course.
+     */
+    public function isEnrolled(User $student, Course $course): bool
+    {
+        $enrollment = $this->enrollmentRepository->findOneBy([
+            'student' => $student,
+            'course' => $course,
+        ]);
+
+        return $enrollment !== null;
+    }
+
     public function enrollStudent(User $student, Course $course): array // Devuelve un array con resultado y mensaje
     {
         // Verificar que el usuario sea un estudiante (opcional, pero buena práctica aquí o en el controlador)
