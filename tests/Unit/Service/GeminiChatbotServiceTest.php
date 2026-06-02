@@ -511,4 +511,36 @@ class GeminiChatbotServiceTest extends TestCase
         $systemPrompt = $capturedContents[0]['parts'][0]['text'];
         $this->assertStringContainsString('Juan Pérez', $systemPrompt);
     }
+
+    public function testSystemPromptContainsUnenrollRefusal(): void
+    {
+        $this->courseRepository
+            ->method('findActiveForContext')
+            ->willReturn([]);
+
+        $capturedContents = [];
+
+        $this->httpClient
+            ->method('request')
+            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
+                $capturedContents = $options['json']['contents'] ?? [];
+                $response = $this->createMock(ResponseInterface::class);
+                $response->method('toArray')->willReturn([
+                    'candidates' => [
+                        [
+                            'content' => [
+                                'parts' => [['text' => 'Ok']],
+                            ],
+                        ],
+                    ],
+                ]);
+                return $response;
+            });
+
+        $result = $this->service->chat('Hola');
+
+        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
+        // The prompt should contain instructions to NOT handle unenrollment
+        $this->assertStringContainsString('perfil', $systemPrompt);
+    }
 }
