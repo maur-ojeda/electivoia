@@ -2,7 +2,7 @@
   "build/app.css": "/build/app.css",
   "build/app.js": "/build/app.js",
   "build/runtime.js": "/build/runtime.js",
-  "build/vendors-node_modules_hotwired_stimulus_dist_stimulus_js-node_modules_symfony_webpack-encore_i-0eb5be.js": "/build/vendors-node_modules_hotwired_stimulus_dist_stimulus_js-node_modules_symfony_webpack-encore_i-0eb5be.js",
+  "build/vendors-node_modules_hotwired_stimulus_dist_stimulus_js.js": "/build/vendors-node_modules_hotwired_stimulus_dist_stimulus_js.js",
   "build/images/banner/banner-01.png": "/build/images/banner/banner-01.png",
   "build/images/course/02.png": "/build/images/course/02.png",
   "build/images/course/06.png": "/build/images/course/06.png",

@@ -3,7 +3,7 @@
     "app": {
       "js": [
         "/build/runtime.js",
-        "/build/vendors-node_modules_hotwired_stimulus_dist_stimulus_js-node_modules_symfony_webpack-encore_i-0eb5be.js",
+        "/build/vendors-node_modules_hotwired_stimulus_dist_stimulus_js.js",
         "/build/app.js"
       ],
       "css": [
