@@ -23,11 +23,12 @@ RUN composer install \
 # Copy application source
 COPY . .
 
-# Run composer post-install scripts (cache:clear, assets:install)
-# and set proper permissions
-RUN composer run-script post-install-cmd --no-interaction \
-    && mkdir -p var/cache var/log \
+# Create var directories BEFORE post-install scripts (cache:clear needs them)
+RUN mkdir -p var/cache var/log \
     && chmod -R 775 var/
+
+# Run composer post-install scripts (cache:clear, assets:install)
+RUN composer run-script post-install-cmd --no-interaction
 
 # Production environment
 ENV APP_ENV=prod
