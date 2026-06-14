@@ -19,7 +19,7 @@ services:
       TRUSTED_HOSTS: ".*"
       MAILER_FROM: ${MAILER_FROM:-noreply@electivoia.cl}
     ports:
-      - "8080:80"
+      - "8888:80"
 
   database:
     image: postgres:16-alpine
