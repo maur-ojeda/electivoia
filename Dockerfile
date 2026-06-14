@@ -23,6 +23,9 @@ RUN composer install \
 # Copy application source
 COPY . .
 
+# Copy Caddyfile for FrankenPHP
+COPY Caddyfile /etc/caddy/Caddyfile
+
 # Production environment
 ENV APP_ENV=prod
 ENV APP_DEBUG=0
