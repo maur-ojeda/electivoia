@@ -23,19 +23,19 @@ RUN composer install \
 # Copy application source
 COPY . .
 
-# Production environment (needed BEFORE post-install scripts for cache:clear)
+# Production environment
 ENV APP_ENV=prod
 ENV APP_DEBUG=0
 
 # Dummy DATABASE_URL so Symfony kernel can boot during cache:clear (overridden at runtime)
 ENV DATABASE_URL="postgresql://localhost:5432/dummy"
 
-# Create var directories BEFORE post-install scripts (cache:clear needs them)
+# Create var directories and set permissions
 RUN mkdir -p var/cache var/log \
     && chmod -R 775 var/
 
-# Run composer post-install scripts (cache:clear, assets:install)
-RUN composer run-script post-install-cmd --no-interaction
+# Warm up the Symfony cache (production)
+RUN php bin/console cache:warmup --env=prod --no-debug 2>/dev/null || true
 
 # FrankenPHP / Caddy configuration
 # Trust Coolify's internal reverse proxy (Docker networks)
