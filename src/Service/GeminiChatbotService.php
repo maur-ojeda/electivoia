@@ -213,7 +213,7 @@ class GeminiChatbotService
             'query' => ['key' => $this->geminiApiKey],
             'json' => [
                 'contents' => $contents,
-                'tools' => self::TOOL_DECLARATIONS,
+                'tools' => [['functionDeclarations' => self::TOOL_DECLARATIONS]],
                 'toolConfig' => [
                     'functionCallingConfig' => [
                         'mode' => 'AUTO',

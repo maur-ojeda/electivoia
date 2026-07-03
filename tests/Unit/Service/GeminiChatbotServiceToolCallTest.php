@@ -473,10 +473,12 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         $this->service->chat('Hola');
 
         $this->assertArrayHasKey('tools', $capturedJson);
-        $this->assertCount(4, $capturedJson['tools']);
+        $this->assertCount(1, $capturedJson['tools']);
+        $this->assertArrayHasKey('functionDeclarations', $capturedJson['tools'][0]);
+        $this->assertCount(4, $capturedJson['tools'][0]['functionDeclarations']);
         $this->assertArrayHasKey('toolConfig', $capturedJson);
 
-        $toolNames = array_map(fn($t) => $t['name'], $capturedJson['tools']);
+        $toolNames = array_map(fn($t) => $t['name'], $capturedJson['tools'][0]['functionDeclarations']);
         $this->assertContains('get_available_courses', $toolNames);
         $this->assertContains('get_course_details', $toolNames);
         $this->assertContains('enroll_in_course', $toolNames);
