@@ -4,82 +4,57 @@ namespace App\Service;
 
 use App\Entity\Course;
 use App\Entity\User;
+use App\Repository\EnrollmentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 class RecommendationService
 {
-    public function __construct(private EntityManagerInterface $em) {}
+    private const MAX_RESULTS = 6;
+    private const INTEREST_MULTIPLIER = 10;
+    private const AVAILABLE_CUPOS_BONUS = 5;
+    private const FULL_COURSE_PENALTY = -10;
+
+    public function __construct(
+        private EntityManagerInterface $em,
+        private EnrollmentRepository $enrollmentRepository,
+    ) {}
 
     /**
      * Genera recomendaciones de cursos basadas en el perfil de intereses del estudiante.
+     *
+     * @return Course[]
      */
     public function getForStudent(User $student): array
     {
+        return array_map(
+            fn (array $item): Course => $item['course'],
+            $this->getForStudentWithReasons($student),
+        );
+    }
 
-
+    /**
+     * Genera recomendaciones de cursos con puntuación y razones explicativas.
+     *
+     * Algoritmo de content-based filtering:
+     * 1. Coincidencia de intereses: interest_level * 10 (señal principal)
+     * 2. Bonus por cupos disponibles: +5 puntos
+     * 3. Penalización por curso lleno: -10 puntos (no excluye)
+     * 4. Exclusión si ya está inscrito
+     * 5. Filtro por grado del estudiante
+     *
+     * @return array<int, array{course: Course, score: int, reasons: string[]}>
+     */
+    public function getForStudentWithReasons(User $student): array
+    {
         $interests = $student->getInterestProfile()?->getInterests() ?? [];
+
         if (empty($interests)) {
             return [];
         }
 
-        $studentGrade = $student->getGrade(); // Ej: "3M", "4M"
-        
-        // Si el estudiante no tiene grado asignado, no podemos recomendar cursos
-        if (!$studentGrade) {
-            return [];
-        }
+        $studentGrade = $student->getGrade();
 
-        $courses = $this->em->getRepository(Course::class)->findBy(['isActive' => true]);
-        $recommended = [];
-
-        
-
-        foreach ($courses as $course) {
-            // Filtrar por grado del estudiante
-            $targetGrades = $course->getTargetGrades();
-            
-            // Saltar cursos que no tienen grados asignados (null) o que no incluyen el grado del estudiante
-            if (!$targetGrades || !in_array($studentGrade, $targetGrades)) {
-                continue;
-            }
-
-            $score = 0;
-            $description = strtolower($course->getDescription() ?? '');
-
-            // Asigna puntos según coincidencia de intereses
-            if (($interests['arte'] ?? 0) >= 4 && str_contains($description, 'arte')) {
-                $score += ($interests['arte'] ?? 0);
-            }
-            if (($interests['ciencia'] ?? 0) >= 4 && (str_contains($description, 'ciencia') || str_contains($description, 'científ'))) {
-                $score += ($interests['ciencia'] ?? 0);
-            }
-            if (($interests['tecnologia'] ?? 0) >= 4 && (str_contains($description, 'tecnología') || str_contains($description, 'tecnolog') || str_contains($description, 'programación'))) {
-                $score += ($interests['tecnologia'] ?? 0);
-            }
-            if (($interests['deporte'] ?? 0) >= 4 && str_contains($description, 'deporte')) {
-                $score += ($interests['deporte'] ?? 0);
-            }
-            if (($interests['musica'] ?? 0) >= 4 && str_contains($description, 'música')) {
-                $score += ($interests['musica'] ?? 0);
-            }
-
-            if ($score > 0) {
-                $recommended[] = $course;
-            }
-        }
-
-        // Ordena por puntuación (opcional) y limita a 5
-        usort($recommended, fn($a, $b) => rand(-1, 1)); // mezcla aleatoria para simplicidad
-        return array_slice($recommended, 0, 5);
-    }
-
-    public function getForStudentWithReasons(User $student): array
-    {
-        $interests = $student->getInterestProfile()?->getInterests() ?? [];
-        $studentGrade = $student->getGrade(); // Ej: "3M", "4M"
-        
-        // Si el estudiante no tiene grado asignado, no podemos recomendar cursos
-        if (!$studentGrade) {
+        if ($studentGrade === null) {
             return [];
         }
 
@@ -87,29 +62,84 @@ class RecommendationService
         $results = [];
 
         foreach ($courses as $course) {
-            // Filtrar por grado del estudiante
-            $targetGrades = $course->getTargetGrades();
-            
-            // Saltar cursos que no tienen grados asignados (null) o que no incluyen el grado del estudiante
-            if (!$targetGrades || !in_array($studentGrade, $targetGrades)) {
-                continue;
-            }
+            $scored = $this->scoreCourse($course, $student, $interests, $studentGrade);
 
-            $reasons = [];
-            $cat = $course->getCategory();
-
-            if (!$cat) continue;
-
-            $catName = $cat->getName();
-            if (($interests[$catName] ?? 0) >= 4) {
-                $reasons[] = $catName;
-            }
-
-            if (!empty($reasons)) {
-                $results[] = ['course' => $course, 'reasons' => $reasons];
+            if ($scored !== null) {
+                $results[] = $scored;
             }
         }
 
-        return array_slice($results, 0, 5);
+        usort($results, fn (array $a, array $b): int => $b['score'] <=> $a['score']);
+
+        return array_slice($results, 0, self::MAX_RESULTS);
+    }
+
+    /**
+     * Evalúa un curso individual y devuelve su puntuación con razones, o null si debe excluirse.
+     *
+     * @param array<string, int> $interests
+     *
+     * @return array{course: Course, score: int, reasons: string[]}|null
+     */
+    private function scoreCourse(
+        Course $course,
+        User $student,
+        array $interests,
+        string $studentGrade,
+    ): ?array {
+        // Filtro: el curso debe incluir el grado del estudiante
+        $targetGrades = $course->getTargetGrades();
+        if ($targetGrades === null || !in_array($studentGrade, $targetGrades, true)) {
+            return null;
+        }
+
+        // Excluir cursos en los que el estudiante ya está inscrito
+        $alreadyEnrolled = $this->enrollmentRepository->findOneBy([
+            'student' => $student,
+            'course' => $course,
+        ]) !== null;
+
+        if ($alreadyEnrolled) {
+            return null;
+        }
+
+        // La categoría debe existir y coincidir con un interés del estudiante
+        $category = $course->getCategory();
+        if ($category === null) {
+            return null;
+        }
+
+        $categoryName = $category->getName();
+        $interestLevel = $interests[$categoryName] ?? 0;
+
+        if ($interestLevel <= 0) {
+            return null;
+        }
+
+        // --- Cálculo de puntuación ---
+        $score = $interestLevel * self::INTEREST_MULTIPLIER;
+        $reasons = [];
+
+        $reasons[] = sprintf(
+            'Coincide con tu interés en %s (nivel %d)',
+            $categoryName,
+            $interestLevel,
+        );
+
+        $availableCupos = ($course->getMaxCapacity() ?? 0) - $course->getCurrentEnrollment();
+
+        if ($availableCupos > 0) {
+            $score += self::AVAILABLE_CUPOS_BONUS;
+            $reasons[] = 'Tiene cupos disponibles';
+        } else {
+            $score += self::FULL_COURSE_PENALTY;
+            // No se generan razones para penalizaciones
+        }
+
+        return [
+            'course' => $course,
+            'score' => $score,
+            'reasons' => $reasons,
+        ];
     }
 }
