@@ -9,6 +9,7 @@ use App\Entity\InterestProfile;
 use App\Entity\User;
 use App\Repository\CourseRepository;
 use App\Repository\EnrollmentRepository;
+use App\Repository\InterestProfileRepository;
 use App\Service\RecommendationService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -25,6 +26,7 @@ class RecommendationServiceTest extends TestCase
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
         $this->courseRepository = $this->createMock(CourseRepository::class);
         $this->enrollmentRepository = $this->createMock(EnrollmentRepository::class);
+        $interestProfileRepository = $this->createMock(InterestProfileRepository::class);
 
         $this->entityManager
             ->method('getRepository')
@@ -33,6 +35,7 @@ class RecommendationServiceTest extends TestCase
         $this->service = new RecommendationService(
             $this->entityManager,
             $this->enrollmentRepository,
+            $interestProfileRepository,
         );
     }
 
