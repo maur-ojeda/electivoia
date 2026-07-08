@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\AiSignalRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\InterestProfileRepository;
+use App\Service\BiasDetectionService;
 use App\Service\DemandPredictionService;
 use App\Service\RecommendationService;
 use App\Service\TenantContext;
@@ -26,6 +27,7 @@ class AiDashboardController extends AbstractController
         private EntityManagerInterface $em,
         private RecommendationService $recommendationService,
         private DemandPredictionService $demandPredictionService,
+        private BiasDetectionService $biasDetectionService,
         private AiSignalRepository $aiSignalRepository,
         private EnrollmentRepository $enrollmentRepository,
         private TenantContext $tenantContext,
@@ -51,11 +53,17 @@ class AiDashboardController extends AbstractController
         // --- 4. Recommendation Coverage ---
         $coverage = $this->calculateCoverage($school);
 
+        // --- 5. Bias Detection ---
+        $biasReport = $school !== null
+            ? $this->biasDetectionService->analyzeBias($school)
+            : null;
+
         return $this->render('admin/ai_dashboard.html.twig', [
             'engine_overview' => $engineOverview,
             'predictions' => $predictions,
             'signal_counts' => $signalCounts,
             'coverage' => $coverage,
+            'bias_report' => $biasReport,
             'school' => $school,
         ]);
     }

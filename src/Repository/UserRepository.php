@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\School;
 use App\Entity\User;
 use App\Service\TenantContext;
 use Doctrine\Persistence\ManagerRegistry;
@@ -31,5 +32,35 @@ class UserRepository extends TenantAwareRepository implements PasswordUpgraderIn
         $user->setPassword($newHashedPassword);
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
+    }
+
+    /**
+     * Returns gender counts (M/F) for users in a school.
+     *
+     * @return array{M: int, F: int}
+     */
+    public function countByGenderForSchool(School $school): array
+    {
+        $results = $this->createQueryBuilder('u')
+            ->select('u.gender')
+            ->addSelect('COUNT(u.id) as cnt')
+            ->where('u.school = :school')
+            ->andWhere('u.gender IN (:genders)')
+            ->setParameter('school', $school)
+            ->setParameter('genders', ['M', 'F'])
+            ->groupBy('u.gender')
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = ['M' => 0, 'F' => 0];
+
+        foreach ($results as $row) {
+            $gender = $row['gender'];
+            if (isset($counts[$gender])) {
+                $counts[$gender] = (int) $row['cnt'];
+            }
+        }
+
+        return $counts;
     }
 }

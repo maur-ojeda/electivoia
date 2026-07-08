@@ -121,4 +121,145 @@
         </div>
     </div>
 </div>
+
+{# ── 5. Bias Detection ─────────────────────────────────────────────── #}
+<h2 class="text-lg font-semibold mb-3">Detección de Sesgos</h2>
+
+{% if bias_report is null %}
+<div class="alert alert-info mb-8">
+    <span>Sin colegio asignado — no hay datos para analizar sesgos.</span>
+</div>
+{% else %}
+
+{# Summary card #}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="stat bg-base-100 shadow rounded-box">
+        <div class="stat-title">Categorías analizadas</div>
+        <div class="stat-value text-primary">{{ bias_report.summary.total_categories_analyzed }}</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-box">
+        <div class="stat-title">Sesgos de género</div>
+        <div class="stat-value {{ bias_report.summary.gender_flags > 0 ? 'text-warning' : 'text-success' }}">
+            {{ bias_report.summary.gender_flags }}
+        </div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-box">
+        <div class="stat-title">Sesgos de grado</div>
+        <div class="stat-value {{ bias_report.summary.grade_flags > 0 ? 'text-warning' : 'text-success' }}">
+            {{ bias_report.summary.grade_flags }}
+        </div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-box">
+        <div class="stat-title">Estado general</div>
+        <div class="stat-value text-lg">
+            {% if bias_report.summary.overall_fair %}
+                <span class="badge badge-success badge-lg">Sin sesgos detectados</span>
+            {% else %}
+                <span class="badge badge-warning badge-lg">Revisar sesgos</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Gender bias table #}
+<h3 class="text-base font-semibold mb-2">Distribución por Género</h3>
+<div class="overflow-x-auto bg-base-100 shadow rounded-box mb-6">
+    <table class="table table-zebra">
+        <thead>
+            <tr>
+                <th>Categoría</th>
+                <th class="text-center">Inscritos</th>
+                <th class="text-center">% M</th>
+                <th class="text-center">% F</th>
+                <th class="text-center">Base colegio (M/F)</th>
+                <th class="text-center">Desviación</th>
+                <th class="text-center">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in bias_report.gender_bias %}
+                <tr>
+                    <td class="font-medium">{{ item.category }}</td>
+                    <td class="text-center">{{ item.total_enrolled }}</td>
+                    <td class="text-center">{{ item.male_pct }}%</td>
+                    <td class="text-center">{{ item.female_pct }}%</td>
+                    <td class="text-center text-sm text-base-content/60">
+                        {{ item.school_male_pct }}% / {{ item.school_female_pct }}%
+                    </td>
+                    <td class="text-center">
+                        <span class="font-mono {{ item.deviation > 20 ? 'text-warning font-bold' : '' }}">
+                            {{ item.deviation }} pp
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        {% if item.flagged %}
+                            <span class="badge badge-warning">Sesgo</span>
+                        {% else %}
+                            <span class="badge badge-success">OK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-base-content/50 py-8">
+                        No hay inscripciones para analizar.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# Grade bias table #}
+<h3 class="text-base font-semibold mb-2">Distribución por Grado</h3>
+<div class="overflow-x-auto bg-base-100 shadow rounded-box mb-8">
+    <table class="table table-zebra">
+        <thead>
+            <tr>
+                <th>Categoría</th>
+                <th class="text-center">Inscritos</th>
+                <th>Grado dominante</th>
+                <th class="text-center">% Dominante</th>
+                <th>Distribución</th>
+                <th class="text-center">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in bias_report.grade_bias %}
+                <tr>
+                    <td class="font-medium">{{ item.category }}</td>
+                    <td class="text-center">{{ item.total_enrolled }}</td>
+                    <td>{{ item.dominant_grade }}</td>
+                    <td class="text-center">
+                        <span class="font-mono {{ item.dominant_pct > 70 ? 'text-warning font-bold' : '' }}">
+                            {{ item.dominant_pct }}%
+                        </span>
+                    </td>
+                    <td>
+                        <div class="flex flex-wrap gap-1">
+                            {% for grade, pct in item.grade_distribution %}
+                                <span class="badge badge-ghost badge-sm">{{ grade }}: {{ pct }}%</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        {% if item.flagged %}
+                            <span class="badge badge-warning">Sesgo</span>
+                        {% else %}
+                            <span class="badge badge-success">OK</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-base-content/50 py-8">
+                        No hay inscripciones para analizar.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endif %}
 {% endblock %}
