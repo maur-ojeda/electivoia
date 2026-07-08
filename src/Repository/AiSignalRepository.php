@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\AiSignal;
+use App\Entity\School;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -85,5 +86,53 @@ class AiSignalRepository extends ServiceEntityRepository
             ->setParameter('categoryId', $categoryId)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * Counts recent 'view' signals for a specific course within the given number of days.
+     */
+    public function countRecentViewsForCourse(int $courseId, int $days = 30): int
+    {
+        $since = new \DateTimeImmutable(sprintf('-%d days', $days));
+
+        return (int) $this->createQueryBuilder('s')
+            ->select('COUNT(s.id)')
+            ->andWhere('s.course = :courseId')
+            ->andWhere('s.action = :action')
+            ->andWhere('s.createdAt >= :since')
+            ->setParameter('courseId', $courseId)
+            ->setParameter('action', AiSignal::ACTION_VIEW)
+            ->setParameter('since', $since)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Returns signal counts grouped by action type since the given date.
+     * Optionally filtered by school.
+     *
+     * @return array<string, int> [action => count]
+     */
+    public function countByActionSince(\DateTimeImmutable $since, ?School $school = null): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->select('s.action, COUNT(s.id) as cnt')
+            ->andWhere('s.createdAt >= :since')
+            ->setParameter('since', $since)
+            ->groupBy('s.action');
+
+        if ($school !== null) {
+            $qb->andWhere('s.school = :school')
+                ->setParameter('school', $school);
+        }
+
+        $rows = $qb->getQuery()->getScalarResult();
+        $result = [];
+
+        foreach ($rows as $row) {
+            $result[$row['action']] = (int) $row['cnt'];
+        }
+
+        return $result;
     }
 }

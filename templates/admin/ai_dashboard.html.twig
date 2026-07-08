@@ -1,0 +1,124 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Panel IA — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="flex items-center gap-4 mb-6">
+    <a href="{{ path('admin') }}" class="btn btn-ghost btn-sm">&larr; Volver</a>
+    <div>
+        <h1 class="text-2xl font-bold">Panel de Supervisión IA</h1>
+        <p class="text-sm text-base-content/60">
+            {% if school %}{{ school.name }}{% else %}Sin colegio asignado{% endif %}
+        </p>
+    </div>
+</div>
+
+{# ── 1. Engine Overview ──────────────────────────────────────────────── #}
+<h2 class="text-lg font-semibold mb-3">Resumen del Motor</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div class="stat bg-base-100 shadow rounded-box">
+        <div class="stat-title">Inscripciones totales</div>
+        <div class="stat-value text-primary">{{ engine_overview.total_enrollments }}</div>
+        <div class="stat-desc">Cursos activos</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-box">
+        <div class="stat-title">Cursos activos</div>
+        <div class="stat-value text-secondary">{{ engine_overview.active_courses }}</div>
+        <div class="stat-desc">Disponibles para inscripción</div>
+    </div>
+    <div class="stat bg-base-100 shadow rounded-box">
+        <div class="stat-title">Perfiles de interés</div>
+        <div class="stat-value text-accent">{{ engine_overview.students_with_profiles }}</div>
+        <div class="stat-desc">Estudiantes con perfil</div>
+    </div>
+</div>
+
+{# ── 2. Demand Predictions ──────────────────────────────────────────── #}
+<h2 class="text-lg font-semibold mb-3">Predicciones de Demanda</h2>
+<div class="overflow-x-auto bg-base-100 shadow rounded-box mb-8">
+    <table class="table table-zebra">
+        <thead>
+            <tr>
+                <th>Curso</th>
+                <th class="text-center">Demanda estimada</th>
+                <th class="text-center">Confianza</th>
+                <th class="text-center">Pool de interés</th>
+                <th>Factores</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for prediction in predictions %}
+                <tr>
+                    <td class="font-medium">{{ prediction.course.name }}</td>
+                    <td class="text-center">
+                        <span class="badge badge-lg badge-primary">{{ prediction.predicted_enrollments }}</span>
+                    </td>
+                    <td class="text-center">
+                        <div class="flex items-center gap-2 justify-center">
+                            <progress
+                                class="progress progress-primary w-20"
+                                value="{{ (prediction.confidence * 100)|round }}"
+                                max="100"
+                            ></progress>
+                            <span class="text-sm">{{ (prediction.confidence * 100)|round }}%</span>
+                        </div>
+                    </td>
+                    <td class="text-center">{{ prediction.demand_pool }}</td>
+                    <td>
+                        <ul class="text-xs space-y-1 list-disc list-inside text-base-content/70">
+                            {% for factor in prediction.factors %}
+                                <li>{{ factor }}</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-base-content/50 py-8">
+                        No hay cursos activos para predecir demanda.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{# ── 3. Signal Activity (last 30 days) ──────────────────────────────── #}
+<h2 class="text-lg font-semibold mb-3">Actividad de Señales (últimos 30 días)</h2>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    {% set signal_labels = {
+        'view': 'Vistas',
+        'click': 'Clics',
+        'enroll': 'Inscripciones',
+        'unenroll': 'Bajas',
+        'profile_update': 'Act. perfil'
+    } %}
+    {% for action, label in signal_labels %}
+        <div class="stat bg-base-100 shadow rounded-box">
+            <div class="stat-title text-xs">{{ label }}</div>
+            <div class="stat-value text-lg">{{ signal_counts[action]|default(0) }}</div>
+        </div>
+    {% endfor %}
+</div>
+
+{# ── 4. Recommendation Coverage ─────────────────────────────────────── #}
+<h2 class="text-lg font-semibold mb-3">Cobertura de Recomendaciones</h2>
+<div class="card bg-base-100 shadow mb-4">
+    <div class="card-body">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-base-content/60">
+                    Cursos con al menos un estudiante interesado en su categoría (nivel &ge; 3)
+                </p>
+                <p class="text-3xl font-bold mt-2">{{ coverage.percentage }}%</p>
+                <p class="text-sm text-base-content/50">{{ coverage.covered }} de {{ coverage.total }} cursos cubiertos</p>
+            </div>
+            <progress
+                class="progress progress-success w-40"
+                value="{{ coverage.percentage }}"
+                max="100"
+            ></progress>
+        </div>
+    </div>
+</div>
+{% endblock %}
