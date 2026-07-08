@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Repository\CourseRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\InterestProfileRepository;
+use App\Repository\AiSignalRepository;
 use App\Service\RecommendationService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -20,6 +21,7 @@ class RecommendationServiceTest extends TestCase
     private \PHPUnit\Framework\MockObject\MockObject $entityManager;
     private \PHPUnit\Framework\MockObject\MockObject $courseRepository;
     private \PHPUnit\Framework\MockObject\MockObject $enrollmentRepository;
+    private \PHPUnit\Framework\MockObject\MockObject $signalRepository;
 
     protected function setUp(): void
     {
@@ -27,15 +29,21 @@ class RecommendationServiceTest extends TestCase
         $this->courseRepository = $this->createMock(CourseRepository::class);
         $this->enrollmentRepository = $this->createMock(EnrollmentRepository::class);
         $interestProfileRepository = $this->createMock(InterestProfileRepository::class);
+        $this->signalRepository = $this->createMock(AiSignalRepository::class);
 
         $this->entityManager
             ->method('getRepository')
             ->willReturn($this->courseRepository);
 
+        // Default: no signals
+        $this->signalRepository->method('findViewedCourseIds')->willReturn([]);
+        $this->signalRepository->method('countViewedInCategory')->willReturn(0);
+
         $this->service = new RecommendationService(
             $this->entityManager,
             $this->enrollmentRepository,
             $interestProfileRepository,
+            $this->signalRepository,
         );
     }
 

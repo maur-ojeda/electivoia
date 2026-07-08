@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Course;
 use App\Entity\User;
+use App\Repository\AiSignalRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\InterestProfileRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -14,11 +15,15 @@ class RecommendationService
     private const INTEREST_MULTIPLIER = 10;
     private const AVAILABLE_CUPOS_BONUS = 5;
     private const FULL_COURSE_PENALTY = -10;
+    private const SIGNAL_VIEW_BOOST = 3;
+    private const SIGNAL_CATEGORY_BOOST = 2;
+    private const SIGNAL_CATEGORY_THRESHOLD = 3;
 
     public function __construct(
         private EntityManagerInterface $em,
         private EnrollmentRepository $enrollmentRepository,
         private InterestProfileRepository $interestProfileRepository,
+        private AiSignalRepository $signalRepository,
     ) {}
 
     /**
@@ -334,9 +339,58 @@ class RecommendationService
 
         $results = array_values($merged);
 
+        // Apply signal boost to each course's score
+        $viewedCourseIds = $this->signalRepository->findViewedCourseIds($student);
+
+        foreach ($results as $key => $item) {
+            $boost = $this->getSignalBoost($student, $item['course'], $viewedCourseIds);
+            $results[$key]['score'] += $boost;
+
+            if (in_array($item['course']->getId(), $viewedCourseIds, true)) {
+                $results[$key]['reasons'][] = 'Viste este curso anteriormente';
+            }
+        }
+
         usort($results, fn (array $a, array $b): int => $b['score'] <=> $a['score']);
 
         return array_slice($results, 0, self::MAX_RESULTS);
+    }
+
+    /**
+     * Returns a signal-based score boost for a course.
+     *
+     * Rules:
+     * - +3 if the student previously viewed this specific course
+     * - +2 if the student viewed 3+ courses in the same category
+     *
+     * @param int[]|null $viewedCourseIds Pre-fetched viewed course IDs (avoids repeated queries)
+     */
+    public function getSignalBoost(User $student, Course $course, ?array $viewedCourseIds = null): int
+    {
+        $boost = 0;
+
+        if ($viewedCourseIds === null) {
+            $viewedCourseIds = $this->signalRepository->findViewedCourseIds($student);
+        }
+
+        if (in_array($course->getId(), $viewedCourseIds, true)) {
+            $boost += self::SIGNAL_VIEW_BOOST;
+        }
+
+        $category = $course->getCategory();
+
+        if ($category !== null && $category->getId() !== null) {
+            $viewedInCategory = $this->signalRepository->countViewedInCategory(
+                $student,
+                $category->getId(),
+            );
+
+            if ($viewedInCategory >= self::SIGNAL_CATEGORY_THRESHOLD) {
+                $boost += self::SIGNAL_CATEGORY_BOOST;
+            }
+        }
+
+        return $boost;
     }
 
     /**
