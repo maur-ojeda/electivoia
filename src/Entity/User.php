@@ -85,6 +85,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: Attendance::class, mappedBy: 'student')]
     private Collection $attendances;
 
+    /**
+     * @var Collection<int, AiSignal>
+     */
+    #[ORM\OneToMany(targetEntity: AiSignal::class, mappedBy: 'student')]
+    private Collection $aiSignals;
+
     #[ORM\Column(options: ['default' => true])]
     private bool $active = true;
 
@@ -125,6 +131,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->guardianStudents = new ArrayCollection();
         $this->guardians = new ArrayCollection();
         $this->attendances = new ArrayCollection();
+        $this->aiSignals = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -410,6 +417,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, AiSignal>
+     */
+    public function getAiSignals(): Collection
+    {
+        return $this->aiSignals;
     }
 
     public function getFullName(): ?string
