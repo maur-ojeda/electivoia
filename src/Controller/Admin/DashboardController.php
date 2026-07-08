@@ -52,6 +52,7 @@ class DashboardController extends AbstractDashboardController
 
         yield MenuItem::section('Informes');
         yield MenuItem::linkToUrl('📊 Reportes Avanzados', 'fa fa-chart-line', $this->generateUrl('admin_reports_index'));
+        yield MenuItem::linkToUrl('🤖 Panel IA', 'fa fa-robot', $this->generateUrl('admin_ai_dashboard'));
 
         // Super Admin only
         if ($this->isGranted('ROLE_SUPER_ADMIN')) {
