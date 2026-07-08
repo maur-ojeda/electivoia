@@ -5,6 +5,7 @@ namespace App\Repository;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use App\Entity\Course;
 use App\Entity\Enrollment;
+use App\Entity\School;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -64,5 +65,27 @@ class EnrollmentRepository extends ServiceEntityRepository
             ->setParameter('studentIds', $studentIds)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Returns enrollment demographics (category name, student gender, student grade)
+     * for all active courses in the given school.
+     *
+     * @return array<int, array{category: string, gender: ?string, grade: ?string}>
+     */
+    public function findEnrollmentDemographicsForSchool(School $school): array
+    {
+        return $this->createQueryBuilder('e')
+            ->select('cat.name as category')
+            ->addSelect('s.gender as gender')
+            ->addSelect('s.grade as grade')
+            ->join('e.course', 'c')
+            ->join('c.category', 'cat')
+            ->join('e.student', 's')
+            ->where('c.school = :school')
+            ->andWhere('c.isActive = true')
+            ->setParameter('school', $school)
+            ->getQuery()
+            ->getArrayResult();
     }
 }
