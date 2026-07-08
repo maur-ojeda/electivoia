@@ -5,6 +5,7 @@ namespace App\Repository;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use App\Entity\Course;
 use App\Entity\Enrollment;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -37,5 +38,31 @@ class EnrollmentRepository extends ServiceEntityRepository
             ->orderBy('COALESCE(s.averageGrade, 0.0)', 'ASC'); // Ordena por promedio, tratando NULL como 0.0
 
         return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Returns all enrollments for the given students.
+     *
+     * @param User[] $students
+     * @return Enrollment[]
+     */
+    public function findEnrollmentsByStudents(array $students): array
+    {
+        if (empty($students)) {
+            return [];
+        }
+
+        $studentIds = array_map(fn (User $s) => $s->getId(), $students);
+        $studentIds = array_filter($studentIds, fn ($id) => $id !== null);
+
+        if (empty($studentIds)) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('e')
+            ->where('e.student IN (:studentIds)')
+            ->setParameter('studentIds', $studentIds)
+            ->getQuery()
+            ->getResult();
     }
 }
