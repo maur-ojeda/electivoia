@@ -2,6 +2,7 @@
 
 namespace App\Tests\Integration;
 
+use App\Tests\Double\GeminiMockHttpClient;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 class ChatbotControllerIntegrationTest extends WebTestCase
@@ -50,7 +51,7 @@ class ChatbotControllerIntegrationTest extends WebTestCase
         $this->assertEquals(200, $client->getResponse()->getStatusCode());
         $data = json_decode($client->getResponse()->getContent(), true);
         $this->assertTrue($data['success']);
-        $this->assertNotEmpty($data['message']);
+        $this->assertSame(GeminiMockHttpClient::REPLY, $data['message']);
     }
 
     public function testClearHistoryEndpoint(): void
@@ -81,6 +82,7 @@ class ChatbotControllerIntegrationTest extends WebTestCase
             $user->setEmail('test-student@example.com');
             $user->setPassword('test-password');
             $user->setRoles(['ROLE_STUDENT']);
+            $user->setRut('11111111-1');
             $entityManager->persist($user);
             $entityManager->flush();
         }

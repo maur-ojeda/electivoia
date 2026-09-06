@@ -1,0 +1,295 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Console\\Helper\\HelperInterface\:\:ask\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Command/CreateAdminUserCommand.php
+
+		-
+			message: '#^Property App\\Controller\\Admin\\AiDashboardController\:\:\$enrollmentRepository is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: src/Controller/Admin/AiDashboardController.php
+
+		-
+			message: '#^Property App\\Controller\\Admin\\AiDashboardController\:\:\$recommendationService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: src/Controller/Admin/AiDashboardController.php
+
+		-
+			message: '#^Call to an undefined method Doctrine\\Persistence\\ObjectRepository\<App\\Entity\\Attendance\>\:\:count\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Controller/Admin/CourseCrudController.php
+
+		-
+			message: '#^Call to an undefined method Doctrine\\Persistence\\ObjectRepository\<App\\Entity\\Enrollment\>\:\:count\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Controller/Admin/CourseCrudController.php
+
+		-
+			message: '#^Property App\\Controller\\Admin\\EnrollmentCrudController\:\:\$adminUrlGenerator is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: src/Controller/Admin/EnrollmentCrudController.php
+
+		-
+			message: '#^Call to an undefined method PhpOffice\\PhpSpreadsheet\\Worksheet\\Worksheet\:\:setCellValueByColumnAndRow\(\)\.$#'
+			identifier: method.notFound
+			count: 7
+			path: src/Controller/AdminReportController.php
+
+		-
+			message: '#^Parameter \#1 \$student of method App\\Service\\SignalCollectionService\:\:record\(\) expects App\\Entity\\User, Symfony\\Component\\Security\\Core\\User\\UserInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/ApiSignalController.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Controller\\ChatbotController\:\:buildStudentContext\(\) expects App\\Entity\\User, Symfony\\Component\\Security\\Core\\User\\UserInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/ChatbotController.php
+
+		-
+			message: '#^Parameter \#4 \$user of method App\\Service\\GeminiChatbotService\:\:chat\(\) expects App\\Entity\\User\|null, Symfony\\Component\\Security\\Core\\User\\UserInterface given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/ChatbotController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Security\\Core\\User\\UserInterface\:\:getAverageGrade\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Controller/EnrollmentController.php
+
+		-
+			message: '#^Parameter \#1 \$student of method App\\Entity\\Enrollment\:\:setStudent\(\) expects App\\Entity\\User\|null, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Controller/EnrollmentController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Security\\Core\\User\\UserInterface\:\:getGuardianStudents\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Controller/GuardianController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Security\\Core\\User\\UserInterface\:\:getAverageGrade\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Security\\Core\\User\\UserInterface\:\:getGrade\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Call to an undefined method Symfony\\Component\\Security\\Core\\User\\UserInterface\:\:getInterestProfile\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Parameter \#1 \$student of method App\\Entity\\Enrollment\:\:setStudent\(\) expects App\\Entity\\User\|null, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Parameter \#1 \$student of method App\\Service\\NotificationService\:\:sendEnrollmentConfirmation\(\) expects App\\Entity\\User, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Parameter \#1 \$student of method App\\Service\\RecommendationService\:\:getForStudentWithReasons\(\) expects App\\Entity\\User, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Parameter \#2 \$displacer of method App\\Service\\NotificationService\:\:sendEnrollmentDisplaced\(\) expects App\\Entity\\User, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Property App\\Controller\\StudentController\:\:\$enrollmentService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: src/Controller/StudentController.php
+
+		-
+			message: '#^Call to method getActiveSheet\(\) on an unknown class App\\Controller\\Spreadsheet\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Controller/TeacherController.php
+
+		-
+			message: '#^Call to method save\(\) on an unknown class App\\Controller\\Xlsx\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Controller/TeacherController.php
+
+		-
+			message: '#^Instantiated class App\\Controller\\Spreadsheet not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Controller/TeacherController.php
+
+		-
+			message: '#^Instantiated class App\\Controller\\Xlsx not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Controller/TeacherController.php
+
+		-
+			message: '#^Parameter \#1 \$teacher of method App\\Entity\\Course\:\:setTeacher\(\) expects App\\Entity\\User\|null, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Controller/TeacherController.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: src/DataFixtures/AppFixtures.php
+
+		-
+			message: '#^Offset ''Artes''\|''Ciencias''\|''Educación física y…''\|''Filosofía''\|''Historia, geografía…''\|''Lengua y literatura''\|''Matemática'' on array\{Filosofía\: App\\Entity\\CourseCategory, ''Historia, geografía y ciencias sociales''\: App\\Entity\\CourseCategory, ''Lengua y literatura''\: App\\Entity\\CourseCategory, Matemática\: App\\Entity\\CourseCategory, Ciencias\: App\\Entity\\CourseCategory, Artes\: App\\Entity\\CourseCategory, ''Educación física y salud''\: App\\Entity\\CourseCategory\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: src/DataFixtures/AppFixtures.php
+
+		-
+			message: '#^Method Doctrine\\Common\\DataFixtures\\AbstractFixture\:\:getReference\(\) invoked with 1 parameter, 2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: src/DataFixtures/CourseFixtures.php
+
+		-
+			message: '#^Access to undefined constant Doctrine\\ORM\\Query\\Lexer\:\:T_CLOSE_PARENTHESIS\.$#'
+			identifier: classConstant.notFound
+			count: 1
+			path: src/Doctrine/Functions/JsonbExistsAny.php
+
+		-
+			message: '#^Access to undefined constant Doctrine\\ORM\\Query\\Lexer\:\:T_COMMA\.$#'
+			identifier: classConstant.notFound
+			count: 1
+			path: src/Doctrine/Functions/JsonbExistsAny.php
+
+		-
+			message: '#^Access to undefined constant Doctrine\\ORM\\Query\\Lexer\:\:T_IDENTIFIER\.$#'
+			identifier: classConstant.notFound
+			count: 1
+			path: src/Doctrine/Functions/JsonbExistsAny.php
+
+		-
+			message: '#^Access to undefined constant Doctrine\\ORM\\Query\\Lexer\:\:T_OPEN_PARENTHESIS\.$#'
+			identifier: classConstant.notFound
+			count: 1
+			path: src/Doctrine/Functions/JsonbExistsAny.php
+
+		-
+			message: '#^Property App\\Entity\\AiSignal\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/AiSignal.php
+
+		-
+			message: '#^Property App\\Entity\\Attendance\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/Attendance.php
+
+		-
+			message: '#^Access to an undefined property App\\Entity\\Course\:\:\$courseCategories\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/Entity/Course.php
+
+		-
+			message: '#^Property App\\Entity\\CourseCategory\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/CourseCategory.php
+
+		-
+			message: '#^Property App\\Entity\\Enrollment\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/Enrollment.php
+
+		-
+			message: '#^Property App\\Entity\\Enrollment\:\:\$version \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/Enrollment.php
+
+		-
+			message: '#^Property App\\Entity\\InterestProfile\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/InterestProfile.php
+
+		-
+			message: '#^Property App\\Entity\\School\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/School.php
+
+		-
+			message: '#^Property App\\Entity\\User\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
+			count: 1
+			path: src/Entity/User.php
+
+		-
+			message: '#^PHPDoc tag @extends contains generic type App\\Repository\\TenantAwareRepository\<App\\Entity\\Course\> but class App\\Repository\\TenantAwareRepository is not generic\.$#'
+			identifier: generics.notGeneric
+			count: 1
+			path: src/Repository/CourseRepository.php
+
+		-
+			message: '#^The @extends tag of class App\\Repository\\EnrollmentRepository describes Doctrine\\ORM\\EntityRepository but the class extends Doctrine\\Bundle\\DoctrineBundle\\Repository\\ServiceEntityRepository\.$#'
+			identifier: generics.wrongParent
+			count: 1
+			path: src/Repository/EnrollmentRepository.php
+
+		-
+			message: '#^PHPDoc tag @extends contains generic type App\\Repository\\TenantAwareRepository\<App\\Entity\\User\> but class App\\Repository\\TenantAwareRepository is not generic\.$#'
+			identifier: generics.notGeneric
+			count: 1
+			path: src/Repository/UserRepository.php
+
+		-
+			message: '#^Call to an undefined method Doctrine\\ORM\\EntityRepository\<App\\Entity\\User\>\:\:countByGenderForSchool\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/Service/BiasDetectionService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: src/Service/BiasDetectionService.php
+
+		-
+			message: '#^Method App\\Service\\EnrollmentService\:\:getAvailableCourses\(\) should return array\{courses\: array\<int, array\{id\: int, name\: string, category\: string\|null, teacher\: string, schedule\: string\|null, capacity\: string, spots_available\: int, enrolled\: bool\}\>, total\: int\} but returns array\{courses\: list\<array\{id\: mixed, name\: mixed, category\: mixed, teacher\: mixed, schedule\: mixed, capacity\: non\-falsy\-string, spots_available\: \(float\|int\)\}\>, total\: int\<0, max\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: src/Service/EnrollmentService.php
+
+		-
+			message: '#^Property App\\Service\\EnrollmentService\:\:\$userRepository is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: src/Service/EnrollmentService.php

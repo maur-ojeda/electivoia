@@ -1,0 +1,19 @@
+# Test-env-only service overrides, auto-imported by MicroKernelTrait's
+# services_{env}.yaml convention. Wires the deterministic Gemini HTTP double
+# in place of the real HTTP client so tests never reach the live Gemini API.
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\Tests\Double\GeminiMockHttpClient: ~
+
+    App\Service\GeminiChatbotService:
+        arguments:
+            $httpClient: '@App\Tests\Double\GeminiMockHttpClient'
+            $geminiApiKey: 'test-gemini-key'
+
+    App\Service\GeminiInsightsService:
+        arguments:
+            $httpClient: '@App\Tests\Double\GeminiMockHttpClient'
+            $geminiApiKey: 'test-gemini-key'
