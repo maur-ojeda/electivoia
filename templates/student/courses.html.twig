@@ -1,130 +1,105 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Cursos Disponibles — ElectivoIA{% endblock %}
 
 {% block content %}
-{# ─── Category image map ─── #}
 {% set category_map = {
-	'Filosofía': '01',
-	'Matemática': '02',
-	'Educación física y salud': '03',
-	'Historia, geografía y ciencias sociales': '04',
-	'Ciencias': '05',
-	'Lengua y literatura': '07',
-	'Artes': '06'
+	'Filosofía': '01', 'Matemática': '02', 'Educación física y salud': '03',
+	'Historia, geografía y ciencias sociales': '04', 'Ciencias': '05',
+	'Lengua y literatura': '07', 'Artes': '06'
 } %}
 
-{# ─── Header ─── #}
 <div class="flex items-center justify-between mb-6">
 	<div>
-		<h1 class="text-2xl font-bold">Cursos Disponibles</h1>
-		<p class="text-base-content/60 text-sm">Hola, {{ app.user.fullName }} · {{ app.user.grade }}</p>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Cursos Disponibles</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">Hola, {{ app.user.fullName }} · {{ app.user.grade }}</p>
 	</div>
-	{# Chatbot button #}
-	
 </div>
 
-{# ─── HU-16: Enrollment period banner ─── #}
+{# Enrollment period banner #}
 {% if not enrollmentOpen %}
-	<div class="alert alert-warning mb-6">
-		<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-2.693-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-		</svg>
+	<div class="flex items-center p-4 mb-6 text-sm text-yellow-800 border border-yellow-300 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300 dark:border-yellow-800" role="alert">
+		<svg class="shrink-0 inline w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
 		<div>
-			<p class="font-semibold">El período de inscripción está cerrado.</p>
+			<span class="font-semibold">El período de inscripción está cerrado.</span>
 			{% if school and school.enrollmentStart and school.enrollmentStart > date() %}
-				<p class="text-sm">Las inscripciones abren el {{ school.enrollmentStart|date('d/m/Y') }} a las {{ school.enrollmentStart|date('H:i') }}.</p>
+				<span class="ml-1">Las inscripciones abren el {{ school.enrollmentStart|date('d/m/Y') }} a las {{ school.enrollmentStart|date('H:i') }}.</span>
 			{% elseif school and school.enrollmentEnd %}
-				<p class="text-sm">El plazo cerró el {{ school.enrollmentEnd|date('d/m/Y') }} a las {{ school.enrollmentEnd|date('H:i') }}.</p>
+				<span class="ml-1">El plazo cerró el {{ school.enrollmentEnd|date('d/m/Y') }} a las {{ school.enrollmentEnd|date('H:i') }}.</span>
 			{% endif %}
 		</div>
 	</div>
 {% elseif school and school.enrollmentEnd %}
-	<div class="alert alert-info mb-4 py-2">
-		<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-		</svg>
-		<span class="text-sm">Inscripciones abiertas hasta el <strong>{{ school.enrollmentEnd|date('d/m/Y') }}</strong> a las {{ school.enrollmentEnd|date('H:i') }}.</span>
+	<div class="flex items-center p-4 mb-4 text-sm text-blue-800 border border-blue-300 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400 dark:border-blue-800">
+		<svg class="shrink-0 inline w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+		Inscripciones abiertas hasta el <strong class="ml-1">{{ school.enrollmentEnd|date('d/m/Y') }}</strong>&nbsp;a las {{ school.enrollmentEnd|date('H:i') }}.
 	</div>
 {% endif %}
 
-{# ─── Search bar ─── #}
-<form method="GET" class="mb-8">
-	<div class="flex gap-3 flex-wrap items-end">
-		<label class="flex items-center gap-2 cursor-pointer">
-			<input type="checkbox" name="available" value="1" class="checkbox checkbox-primary checkbox-sm"
-				{% if showAvailableOnly %}checked{% endif %} onchange="this.form.submit()">
-			<span class="label-text text-sm">Solo con cupos</span>
-		</label>
-		<select name="category" class="select select-bordered w-full max-w-xs" onchange="this.form.submit()">
-			<option value="">Todas las áreas</option>
-			{% for cat in allCategories %}
-				<option value="{{ cat.id }}" {% if cat.id == selectedCategory %}selected{% endif %}>
-					{{ cat.name }}
-				</option>
-			{% endfor %}
-		</select>
-		<div class="join flex-1">
-			<input
-				type="text"
-				name="q"
-				value="{{ searchQuery }}"
-				placeholder="Buscar por nombre, descripción u horario…"
-				class="input input-bordered join-item flex-1"
-			>
-			<button type="submit" class="btn btn-primary join-item">
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-				</svg>
-			</button>
-		</div>
+{# Search bar #}
+<form method="GET" class="mb-8 flex flex-wrap gap-3 items-end">
+	<label class="flex items-center gap-2 cursor-pointer">
+		<input type="checkbox" name="available" value="1"
+			class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600"
+			{% if showAvailableOnly %}checked{% endif %} onchange="this.form.submit()">
+		<span class="text-sm text-gray-700 dark:text-gray-300">Solo con cupos</span>
+	</label>
+	<select name="category" onchange="this.form.submit()"
+		class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+		<option value="">Todas las áreas</option>
+		{% for cat in allCategories %}
+			<option value="{{ cat.id }}" {% if cat.id == selectedCategory %}selected{% endif %}>{{ cat.name }}</option>
+		{% endfor %}
+	</select>
+	<div class="flex flex-1 gap-0">
+		<input type="text" name="q" value="{{ searchQuery }}"
+			placeholder="Buscar por nombre, descripción u horario…"
+			class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+		<button type="submit"
+			class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-r-lg text-sm px-4 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+		</button>
 	</div>
 </form>
 
-{# ─── Recommended courses ─── #}
+{# Recommended courses #}
 {% if recommendations|length > 0 %}
 	<div class="mb-8">
-		<h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-			<span class="badge badge-warning badge-sm">IA</span>
+		<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+			<span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">IA</span>
 			Cursos recomendados para ti
 		</h2>
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 			{% for item in recommendations %}
 				{% set course = item.course %}
 				{% set img = category_map[course.category.name]|default('default') %}
-				<div class="card bg-base-100 shadow border-2 border-primary/30 hover:border-primary transition-colors">
-					<figure class="h-36 overflow-hidden">
-						<img src="{{ asset('build/images/course/' ~ img ~ '.png') }}" alt="{{ course.name }}" class="object-cover w-full h-full">
-					</figure>
-					<div class="card-body p-4">
-						<div class="flex gap-1 flex-wrap mb-1">
-							<span class="badge badge-ghost badge-xs">{{ course.category.area }}</span>
-							<span class="badge badge-primary badge-xs badge-outline">{{ course.category.name }}</span>
+				<div class="bg-white border-2 border-blue-300 rounded-lg shadow hover:border-blue-500 transition-colors dark:bg-gray-800 dark:border-blue-700">
+					<img src="{{ asset('build/images/course/' ~ img ~ '.png') }}" alt="{{ course.name }}" class="rounded-t-lg w-full h-36 object-cover">
+					<div class="p-4">
+						<div class="flex gap-1 flex-wrap mb-2">
+							<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">{{ course.category.area }}</span>
+							<span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ course.category.name }}</span>
 						</div>
-						<h3 class="card-title text-sm font-bold leading-tight">{{ course.name }}</h3>
-						<p class="text-xs text-base-content/60 line-clamp-2">{{ course.description }}</p>
-						<p class="text-xs text-base-content/70 mt-1">
-							<span class="font-medium">{{ course.teacher.fullName }}</span>
-							· {{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}
-						</p>
-						{% if course.schedule %}
-							<p class="text-xs text-base-content/50 mt-0.5">🕐 {{ course.schedule }}</p>
-						{% endif %}
-						<p class="text-xs text-warning mt-1">★ {{ item.reasons|join(', ') }}</p>
-						<div class="card-actions mt-3">
+						<h3 class="font-bold text-sm text-gray-900 dark:text-white leading-tight mb-1">{{ course.name }}</h3>
+						<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{{ course.description }}</p>
+						<p class="text-xs text-gray-700 dark:text-gray-300">{{ course.teacher.fullName }} · {{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}</p>
+						{% if course.schedule %}<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">🕐 {{ course.schedule }}</p>{% endif %}
+						<p class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">★ {{ item.reasons|join(', ') }}</p>
+						<div class="mt-3">
 							{% if course.id in enrolledCourseIds %}
-								<span class="badge badge-success gap-1 w-full justify-center py-3">Inscrito</span>
-								<form method="post" action="{{ path('student_unenroll', {id: course.id}) }}" class="w-full">
-									<button type="submit" class="btn btn-error btn-xs btn-outline w-full"
-										data-controller="confirm"
-										data-action="click->confirm#confirm"
-										data-confirm-message-value="¿Darse de baja de {{ course.name }}?">
+								<span class="block text-center text-xs text-green-700 bg-green-100 rounded px-2 py-1.5 mb-1 dark:bg-green-900 dark:text-green-300">✓ Inscrito</span>
+								<form method="post" action="{{ path('student_unenroll', {id: course.id}) }}">
+									<button type="submit"
+										class="w-full text-red-700 border border-red-300 hover:bg-red-50 text-xs font-medium rounded-lg px-3 py-1.5 dark:border-red-700 dark:text-red-400 dark:hover:bg-gray-700"
+										onclick="return confirm('¿Darse de baja de {{ course.name }}?')">
 										Dar de baja
 									</button>
 								</form>
 							{% else %}
-								<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="w-full">
-									<button type="submit" class="btn btn-primary btn-sm w-full">Inscribirse</button>
+								<form method="post" action="{{ path('student_enroll', {id: course.id}) }}">
+									<button type="submit"
+										class="w-full text-white bg-blue-700 hover:bg-blue-800 text-xs font-medium rounded-lg px-3 py-2 dark:bg-blue-600 dark:hover:bg-blue-700">
+										Inscribirse
+									</button>
 								</form>
 							{% endif %}
 						</div>
@@ -135,49 +110,44 @@
 	</div>
 {% endif %}
 
-{# ─── All courses ─── #}
+{# All courses #}
 {% set recommendedCourseIds = recommendations|map(r => r.course.id) %}
 {% set otherCourses = courses|filter(c => c.id not in recommendedCourseIds) %}
 
 {% if otherCourses|length > 0 %}
 	{% if recommendations|length > 0 %}
-		<h2 class="text-lg font-semibold mb-4">Todos los cursos</h2>
+		<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Todos los cursos</h2>
 	{% endif %}
 	<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 		{% for course in otherCourses %}
 			{% set img = category_map[course.category.name]|default('default') %}
-			<div class="card bg-base-100 shadow hover:shadow-md transition-shadow">
-				<figure class="h-36 overflow-hidden">
-					<img src="{{ asset('build/images/course/' ~ img ~ '.png') }}" alt="{{ course.name }}" class="object-cover w-full h-full">
-				</figure>
-				<div class="card-body p-4">
-					<div class="flex gap-1 flex-wrap mb-1">
-						<span class="badge badge-ghost badge-xs">{{ course.category.area }}</span>
-						<span class="badge badge-outline badge-xs">{{ course.category.name }}</span>
+			<div class="bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700">
+				<img src="{{ asset('build/images/course/' ~ img ~ '.png') }}" alt="{{ course.name }}" class="rounded-t-lg w-full h-36 object-cover">
+				<div class="p-4">
+					<div class="flex gap-1 flex-wrap mb-2">
+						<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">{{ course.category.area }}</span>
+						<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">{{ course.category.name }}</span>
 					</div>
-					<h3 class="card-title text-sm font-bold leading-tight">{{ course.name }}</h3>
-					<p class="text-xs text-base-content/60 line-clamp-2">{{ course.description }}</p>
-					<p class="text-xs text-base-content/70 mt-1">
-						<span class="font-medium">{{ course.teacher.fullName }}</span>
-						· {{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}
-					</p>
-					{% if course.schedule %}
-						<p class="text-xs text-base-content/50 mt-0.5">🕐 {{ course.schedule }}</p>
-					{% endif %}
-					<div class="card-actions mt-3">
+					<h3 class="font-bold text-sm text-gray-900 dark:text-white leading-tight mb-1">{{ course.name }}</h3>
+					<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{{ course.description }}</p>
+					<p class="text-xs text-gray-700 dark:text-gray-300">{{ course.teacher.fullName }} · {{ enrollmentCounts[course.id] ?? 0 }}/{{ course.maxCapacity }}</p>
+					{% if course.schedule %}<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">🕐 {{ course.schedule }}</p>{% endif %}
+					<div class="mt-3">
 						{% if course.id in enrolledCourseIds %}
-							<span class="badge badge-success gap-1 w-full justify-center py-3">Inscrito</span>
-							<form method="post" action="{{ path('student_unenroll', {id: course.id}) }}" class="w-full">
-								<button type="submit" class="btn btn-error btn-xs btn-outline w-full"
-									data-controller="confirm"
-									data-action="click->confirm#confirm"
-									data-confirm-message-value="¿Darse de baja de {{ course.name }}?">
+							<span class="block text-center text-xs text-green-700 bg-green-100 rounded px-2 py-1.5 mb-1 dark:bg-green-900 dark:text-green-300">✓ Inscrito</span>
+							<form method="post" action="{{ path('student_unenroll', {id: course.id}) }}">
+								<button type="submit"
+									class="w-full text-red-700 border border-red-300 hover:bg-red-50 text-xs font-medium rounded-lg px-3 py-1.5 dark:border-red-700 dark:text-red-400 dark:hover:bg-gray-700"
+									onclick="return confirm('¿Darse de baja de {{ course.name }}?')">
 									Dar de baja
 								</button>
 							</form>
 						{% else %}
-							<form method="post" action="{{ path('student_enroll', {id: course.id}) }}" class="w-full">
-								<button type="submit" class="btn btn-neutral btn-sm w-full">Inscribirse</button>
+							<form method="post" action="{{ path('student_enroll', {id: course.id}) }}">
+								<button type="submit"
+									class="w-full text-white bg-gray-700 hover:bg-gray-800 text-xs font-medium rounded-lg px-3 py-2 dark:bg-gray-600 dark:hover:bg-gray-500">
+									Inscribirse
+								</button>
 							</form>
 						{% endif %}
 					</div>
@@ -188,149 +158,123 @@
 {% endif %}
 
 {% if courses|length == 0 %}
-	<div class="text-center py-16 text-base-content/50">
+	<div class="text-center py-16 text-gray-500 dark:text-gray-400">
 		<p class="text-lg">No se encontraron cursos con los filtros aplicados.</p>
-		<a href="{{ path('student_courses') }}" class="btn btn-ghost btn-sm mt-4">Limpiar filtros</a>
+		<a href="{{ path('student_courses') }}"
+			class="mt-4 inline-block text-blue-600 hover:underline dark:text-blue-400">Limpiar filtros</a>
 	</div>
 {% endif %}
 
-{# ─── Chatbot widget ─── #}
-<div
-	data-controller="chatbot"
+{# Chatbot widget #}
+<div data-controller="chatbot"
 	data-chatbot-url-value="{{ path('api_chatbot') }}"
 	data-chatbot-clear-url-value="{{ path('api_chatbot_clear') }}"
-	class="fixed bottom-6 right-6 z-50"
->
-	<button
-		class="btn btn-primary btn-circle btn-lg shadow-lg"
-		data-action="click->chatbot#toggle"
-		title="Asistente IA"
-	>
-		<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-		</svg>
+	class="fixed bottom-6 right-6 z-50">
+	<button data-action="click->chatbot#toggle" title="Asistente IA"
+		class="flex items-center justify-center w-14 h-14 text-white bg-blue-700 hover:bg-blue-800 rounded-full shadow-lg dark:bg-blue-600 dark:hover:bg-blue-700">
+		<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
 	</button>
+	<div data-chatbot-target="widget" class="hidden absolute bottom-16 right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-2xl dark:bg-gray-800 dark:border-gray-700">
+		<div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-blue-700 text-white rounded-t-lg dark:border-gray-600">
+			<span class="font-semibold text-sm">🤖 Asistente de Cursos</span>
+			<div class="flex gap-1">
+				<button data-action="click->chatbot#clearHistory" class="hover:bg-blue-800 rounded p-1 text-xs" title="Limpiar chat">↺</button>
+				<button data-action="click->chatbot#toggle" class="hover:bg-blue-800 rounded p-1 text-xs">✕</button>
+			</div>
+		</div>
+		<div data-chatbot-target="messages" class="h-60 overflow-y-auto p-3 space-y-2 bg-gray-50 dark:bg-gray-900">
+			<div class="flex items-start gap-2">
+				<div class="bg-gray-200 dark:bg-gray-700 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-gray-200 max-w-[90%]">
+					¡Hola! Soy tu asistente para cursos electivos. ¿En qué puedo ayudarte? 🌟
+				</div>
+			</div>
+		</div>
+		<form data-action="submit->chatbot#send" class="flex gap-2 p-3 border-t border-gray-200 dark:border-gray-700">
+			<input data-chatbot-target="input" type="text" placeholder="Escribe tu pregunta…"
+				class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+			<button type="submit"
+				class="text-white bg-blue-700 hover:bg-blue-800 rounded-lg px-3 py-2 text-sm dark:bg-blue-600 dark:hover:bg-blue-700">→</button>
+		</form>
+	</div>
+</div>
 
-	<div data-chatbot-target="widget" class="hidden absolute bottom-16 right-0 card bg-base-100 shadow-2xl w-80 border border-base-300">
-		<div class="card-body p-0">
-			<div class="flex items-center justify-between px-4 py-3 border-b bg-primary text-primary-content rounded-t-2xl">
-				<span class="font-semibold text-sm">🤖 Asistente de Cursos</span>
-				<div class="flex gap-1">
-					<button class="btn btn-ghost btn-xs text-primary-content" data-action="click->chatbot#clearHistory" title="Limpiar chat">↺</button>
-					<button class="btn btn-ghost btn-xs text-primary-content" data-action="click->chatbot#toggle">✕</button>
-				</div>
+{# Interests modal #}
+<div id="interestModal" tabindex="-1" aria-hidden="true"
+	class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full h-full bg-gray-900/50 dark:bg-gray-900/80">
+	<div class="relative p-4 w-full max-w-2xl">
+		<div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+			<div class="flex items-center justify-between p-4 border-b dark:border-gray-600">
+				<h3 class="text-lg font-semibold text-gray-900 dark:text-white">¿Qué te gusta? 🌟</h3>
+				<button type="button" onclick="document.getElementById('interestModal').classList.add('hidden')"
+					class="text-gray-400 hover:text-gray-900 dark:hover:text-white">
+					<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+				</button>
 			</div>
-			<div
-				data-chatbot-target="messages"
-				class="h-60 overflow-y-auto p-3 space-y-2 bg-base-200"
-			>
-				<div class="chat chat-start mb-2">
-					<div class="chat-bubble chat-bubble-ghost text-sm">
-						¡Hola! Soy tu asistente para cursos electivos. ¿En qué puedo ayudarte? 🌟
-					</div>
+			<form method="post" action="{{ path('student_profile') }}" id="interests-form" class="p-4">
+				<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Indica tu nivel de interés en cada área (0 = Sin interés, 5 = Máximo).</p>
+				<div class="flex gap-2 flex-wrap mb-4">
+					<button type="button" onclick="boostInterests(['Artes','Educación física y salud'],['Matemática','Filosofía'])"
+						class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Más creativo</button>
+					<button type="button" onclick="boostInterests(['Ciencias','Matemática'],['Artes'])"
+						class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Más científico</button>
+					<button type="button" onclick="boostInterests(['Historia, geografía y ciencias sociales','Lengua y literatura'],['Matemática','Ciencias'])"
+						class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Más humanista</button>
+					<button type="button" onclick="resetInterests()"
+						class="text-red-600 hover:underline text-xs font-medium px-2 dark:text-red-400">Limpiar todo</button>
 				</div>
-			</div>
-			<form data-action="submit->chatbot#send" class="flex gap-2 p-3 border-t bg-base-100 rounded-b-2xl">
-				<input
-					data-chatbot-target="input"
-					type="text"
-					placeholder="Escribe tu pregunta…"
-					class="input input-bordered input-sm flex-1"
-				>
-				<button type="submit" class="btn btn-primary btn-sm">→</button>
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+					{% set categories = ['Filosofía','Historia, geografía y ciencias sociales','Lengua y literatura','Matemática','Ciencias','Artes','Educación física y salud'] %}
+					{% for category in categories %}
+						<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+							<div class="flex justify-between mb-1">
+								<label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ category }}</label>
+								<span id="output-{{ loop.index }}" class="text-sm text-gray-500 dark:text-gray-400">{{ interests[category] ?? 0 }}/5</span>
+							</div>
+							<input type="range" name="interests[{{ category }}]" min="0" max="5" value="{{ interests[category] ?? 0 }}"
+								class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+								oninput="document.getElementById('output-{{ loop.index }}').textContent = this.value + '/5'">
+						</div>
+					{% endfor %}
+				</div>
+				<div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+					<button type="button" onclick="document.getElementById('interestModal').classList.add('hidden')"
+						class="text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:bg-gray-600">
+						Cancelar
+					</button>
+					<button type="submit"
+						class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+						Guardar cambios
+					</button>
+				</div>
 			</form>
 		</div>
 	</div>
 </div>
 
-{# ─── Interest modal ─── #}
-<dialog id="interestModal" class="modal">
-	<div class="modal-box max-w-2xl">
-		<h3 class="font-bold text-lg mb-2">¿Qué te gusta? 🌟</h3>
-		<p class="text-sm text-base-content/60 mb-4">Indica tu nivel de interés en cada área (0 = Sin interés, 5 = Máximo).</p>
-
-		<form method="post" action="{{ path('student_profile') }}" id="interests-form">
-			{# HU-8: Preset refinement buttons #}
-			<div class="mb-4">
-				<p class="text-xs text-base-content/50 mb-2">Ajuste rápido:</p>
-				<div class="flex gap-2 flex-wrap">
-					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Artes','Educación física y salud'],['Matemática','Filosofía'])">Más creativo</button>
-					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Ciencias','Matemática'],['Artes'])">Más científico</button>
-					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Historia, geografía y ciencias sociales','Lengua y literatura'],['Matemática','Ciencias'])">Más humanista</button>
-					<button type="button" class="btn btn-xs btn-outline" onclick="boostInterests(['Filosofía','Lengua y literatura'],['Educación física y salud'])">Menos teórico</button>
-					<button type="button" class="btn btn-xs btn-ghost text-error" onclick="resetInterests()">Limpiar todo</button>
-				</div>
-			</div>
-			<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-				{% set categories = [
-					'Filosofía',
-					'Historia, geografía y ciencias sociales',
-					'Lengua y literatura',
-					'Matemática',
-					'Ciencias',
-					'Artes',
-					'Educación física y salud'
-				] %}
-				{% for category in categories %}
-					<div class="form-control bg-base-200 rounded-lg p-3">
-						<label class="label py-0 mb-1">
-							<span class="label-text font-medium text-sm">{{ category }}</span>
-							<span class="label-text-alt" id="output-{{ loop.index }}">{{ interests[category] ?? 0 }}/5</span>
-						</label>
-						<input
-							type="range"
-							name="interests[{{ category }}]"
-							min="0" max="5"
-							value="{{ interests[category] ?? 0 }}"
-							class="range range-primary range-xs"
-							oninput="document.getElementById('output-{{ loop.index }}').textContent = this.value + '/5'"
-						>
-					</div>
-				{% endfor %}
-			</div>
-
-			<div class="modal-action mt-6">
-				<button type="submit" class="btn btn-primary">Guardar cambios</button>
-				<button type="button" class="btn btn-ghost" onclick="document.getElementById('interestModal').close()">Cancelar</button>
-			</div>
-		</form>
-	</div>
-	<form method="dialog" class="modal-backdrop"><button>close</button></form>
-</dialog>
+{# Interests button #}
+<div class="fixed bottom-6 left-6 z-40">
+	<button onclick="document.getElementById('interestModal').classList.remove('hidden')"
+		class="text-white bg-purple-700 hover:bg-purple-800 font-medium rounded-lg text-sm px-4 py-2.5 shadow-lg dark:bg-purple-600 dark:hover:bg-purple-700">
+		⭐ Mis intereses
+	</button>
+</div>
 
 <script>
 function boostInterests(boost, reduce) {
 	const form = document.getElementById('interests-form');
 	boost.forEach(cat => {
 		const el = form.querySelector(`input[name="interests[${cat}]"]`);
-		if (el) { el.value = Math.min(5, parseInt(el.value) + 2); updateOutput(el); }
+		if (el) { el.value = Math.min(5, parseInt(el.value) + 2); el.dispatchEvent(new Event('input')); }
 	});
 	reduce.forEach(cat => {
 		const el = form.querySelector(`input[name="interests[${cat}]"]`);
-		if (el) { el.value = Math.max(0, parseInt(el.value) - 2); updateOutput(el); }
+		if (el) { el.value = Math.max(0, parseInt(el.value) - 2); el.dispatchEvent(new Event('input')); }
 	});
 }
 function resetInterests() {
 	document.getElementById('interests-form').querySelectorAll('input[type="range"]').forEach(el => {
-		el.value = 0; updateOutput(el);
-	});
-}
-function updateOutput(el) {
-	const idx = el.name.match(/\d+/) ? el.name.match(/\d+/)[0] : null;
-	const outputs = document.querySelectorAll('[id^="output-"]');
-	outputs.forEach(o => {
-		if (o.closest('.form-control')?.querySelector(`input[name="${el.name}"]`)) {
-			o.textContent = el.value + '/5';
-		}
+		el.value = 0; el.dispatchEvent(new Event('input'));
 	});
 }
 </script>
-
-{# Link to open interests modal #}
-<div class="fixed bottom-6 left-6 z-40">
-	<button onclick="document.getElementById('interestModal').showModal()" class="btn btn-secondary btn-sm shadow">
-		⭐ Mis intereses
-	</button>
-</div>
-
 {% endblock %}

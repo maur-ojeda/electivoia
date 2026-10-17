@@ -1,89 +1,91 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Mi Dashboard — ElectivoIA{% endblock %}
 
 {% block content %}
 <div class="mb-6">
-	<h1 class="text-2xl font-bold">Hola, {{ student.fullName }} 👋</h1>
-	<p class="text-base-content/60">
+	<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Hola, {{ student.fullName }} 👋</h1>
+	<p class="text-gray-500 dark:text-gray-400 text-sm mt-1">
 		{{ student.grade }}
 		{% if student.averageGrade %}· Promedio: <strong>{{ student.averageGrade|number_format(1) }}</strong>{% endif %}
 	</p>
 </div>
 
-{# ─── Stat widgets ─── #}
-<div class="stats shadow w-full mb-8 flex flex-col sm:flex-row">
-	<div class="stat">
-		<div class="stat-title">Cursos inscritos</div>
-		<div class="stat-value text-primary">{{ totalCourses }}</div>
+{# Stats #}
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+	<div class="bg-white rounded-lg shadow p-5 dark:bg-gray-800">
+		<p class="text-sm text-gray-500 dark:text-gray-400">Cursos inscritos</p>
+		<p class="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ totalCourses }}</p>
 	</div>
-
-	<div class="stat">
-		<div class="stat-title">Asistencia promedio</div>
+	<div class="bg-white rounded-lg shadow p-5 dark:bg-gray-800">
+		<p class="text-sm text-gray-500 dark:text-gray-400">Asistencia promedio</p>
 		{% if avgAttendance is not null %}
-			<div class="stat-value {{ avgAttendance >= 75 ? 'text-success' : (avgAttendance >= 50 ? 'text-warning' : 'text-error') }}">
+			<p class="text-3xl font-bold mt-1 {{ avgAttendance >= 75 ? 'text-green-600 dark:text-green-400' : (avgAttendance >= 50 ? 'text-yellow-500' : 'text-red-600 dark:text-red-400') }}">
 				{{ avgAttendance }}%
-			</div>
+			</p>
 		{% else %}
-			<div class="stat-value text-base-content/30">—</div>
+			<p class="text-3xl font-bold text-gray-300 dark:text-gray-600 mt-1">—</p>
 		{% endif %}
 	</div>
-
-	<div class="stat">
-		<div class="stat-title">Áreas de interés</div>
-		<div class="stat-value text-secondary">
+	<div class="bg-white rounded-lg shadow p-5 dark:bg-gray-800">
+		<p class="text-sm text-gray-500 dark:text-gray-400">Áreas de interés</p>
+		<p class="text-3xl font-bold text-purple-600 dark:text-purple-400 mt-1">
 			{{ student.interestProfile ? student.interestProfile.interests|length : 0 }}
-		</div>
+		</p>
 	</div>
 </div>
 
-{# ─── Quick links ─── #}
+{# Quick links #}
 <div class="flex flex-wrap gap-3 mb-8">
-	<a href="{{ path('student_courses') }}" class="btn btn-primary btn-sm">🔍 Explorar cursos</a>
-	<a href="{{ path('student_enrollments') }}" class="btn btn-outline btn-sm">📋 Mis cursos</a>
-	<a href="{{ path('student_attendance') }}" class="btn btn-outline btn-sm">📅 Mi asistencia</a>
-	<a href="{{ path('student_profile') }}" class="btn btn-outline btn-sm">⭐ Mis intereses</a>
+	<a href="{{ path('student_courses') }}"
+		class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700">
+		Explorar cursos
+	</a>
+	<a href="{{ path('student_enrollments') }}"
+		class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+		Mis cursos
+	</a>
+	<a href="{{ path('student_attendance') }}"
+		class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+		Mi asistencia
+	</a>
+	<a href="{{ path('student_profile') }}"
+		class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+		Mis intereses
+	</a>
 </div>
 
-{# ─── Course status ─── #}
+{# Course status #}
 {% if courseStats|length > 0 %}
-	<h2 class="text-lg font-semibold mb-3">Estado de mis cursos</h2>
+	<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Estado de mis cursos</h2>
 	<div class="space-y-3">
 		{% for item in courseStats %}
-			<div class="card bg-base-100 shadow-sm border-l-4
-				{% if item.percentage is null %}border-base-300
-				{% elseif item.percentage >= 75 %}border-success
-				{% elseif item.percentage >= 50 %}border-warning
-				{% else %}border-error{% endif %}">
-				<div class="card-body p-4 flex-row justify-between items-center">
-					<div>
-						<p class="font-medium">{{ item.course.name }}</p>
-						{% if item.course.teacher %}
-							<p class="text-xs text-base-content/60">Prof. {{ item.course.teacher.fullName }}</p>
-						{% endif %}
-					</div>
-					<div class="text-right">
-						{% if item.percentage is not null %}
-							<p class="text-xl font-bold {{ item.percentage >= 75 ? 'text-success' : (item.percentage >= 50 ? 'text-warning' : 'text-error') }}">
-								{{ item.percentage }}%
-							</p>
-							<p class="text-xs text-base-content/40">{{ item.attended }}/{{ item.sessions }} sesiones</p>
-						{% else %}
-							<p class="text-xs text-base-content/40">Sin sesiones aún</p>
-						{% endif %}
-					</div>
+			{% set borderColor = item.percentage is null ? 'border-gray-200 dark:border-gray-700' : (item.percentage >= 75 ? 'border-green-500' : (item.percentage >= 50 ? 'border-yellow-400' : 'border-red-500')) %}
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow border-l-4 {{ borderColor }} p-4 flex justify-between items-center">
+				<div>
+					<p class="font-medium text-gray-900 dark:text-white">{{ item.course.name }}</p>
+					{% if item.course.teacher %}
+						<p class="text-xs text-gray-500 dark:text-gray-400">Prof. {{ item.course.teacher.fullName }}</p>
+					{% endif %}
+				</div>
+				<div class="text-right">
+					{% if item.percentage is not null %}
+						{% set textColor = item.percentage >= 75 ? 'text-green-600 dark:text-green-400' : (item.percentage >= 50 ? 'text-yellow-500' : 'text-red-600 dark:text-red-400') %}
+						<p class="text-xl font-bold {{ textColor }}">{{ item.percentage }}%</p>
+						<p class="text-xs text-gray-400 dark:text-gray-500">{{ item.attended }}/{{ item.sessions }} sesiones</p>
+					{% else %}
+						<p class="text-xs text-gray-400 dark:text-gray-500">Sin sesiones aún</p>
+					{% endif %}
 				</div>
 			</div>
 		{% endfor %}
 	</div>
 {% else %}
-	<div class="card bg-base-100 shadow text-center py-10">
-		<div class="card-body">
-			<p class="text-base-content/60 mb-3">Aún no estás inscrito en ningún curso.</p>
-			<a href="{{ path('student_courses') }}" class="btn btn-primary btn-sm">
-				Explorar cursos disponibles
-			</a>
-		</div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-10 text-center">
+		<p class="text-gray-500 dark:text-gray-400 mb-4">Aún no estás inscrito en ningún curso.</p>
+		<a href="{{ path('student_courses') }}"
+			class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+			Explorar cursos disponibles
+		</a>
 	</div>
 {% endif %}
 {% endblock %}
