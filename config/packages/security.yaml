@@ -24,7 +24,13 @@ security:
                 login_path: app_login
                 check_path: app_login
                 enable_csrf: true
-                # AÑADIR ESTA LÍNEA para usar el manejador de éxito
+                success_handler: App\Security\LoginSuccessHandler
+            login_link:
+                check_route: login_link_check
+                check_post_only: false
+                signature_properties: ['id', 'rut']
+                lifetime: 600
+                max_uses: 1
                 success_handler: App\Security\LoginSuccessHandler
             logout:
                 path: app_logout
@@ -45,6 +51,7 @@ security:
         - { path: ^/student, roles: ROLE_STUDENT }
         - { path: ^/guardian, roles: ROLE_GUARDIAN }
         - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/magic-login, roles: PUBLIC_ACCESS }
 
 when@test:
     security:

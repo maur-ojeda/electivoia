@@ -1,0 +1,80 @@
+{% extends 'base.html.twig' %}
+{% block title %}Acceso sin contraseña — ElectivoIA{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center py-8">
+	<div class="w-full max-w-md">
+
+		{% if sent %}
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
+				<div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+					<svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+					</svg>
+				</div>
+				<h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Revisa tu correo</h2>
+				<p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
+					Si tu RUT está registrado con un email, recibirás un enlace de acceso en los próximos minutos.<br>
+					El enlace expira en <strong>10 minutos</strong> y solo puede usarse una vez.
+				</p>
+				<a href="{{ path('magic_login') }}"
+					class="text-blue-600 hover:underline text-sm dark:text-blue-400">
+					← Solicitar otro enlace
+				</a>
+				<span class="text-gray-300 dark:text-gray-600 mx-3">|</span>
+				<a href="{{ path('app_login') }}"
+					class="text-blue-600 hover:underline text-sm dark:text-blue-400">
+					Ingresar con contraseña
+				</a>
+			</div>
+
+		{% else %}
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+				<div class="text-center mb-6">
+					<h2 class="text-2xl font-bold text-gray-900 dark:text-white">Acceso sin contraseña</h2>
+					<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Recibirás un enlace de acceso en tu correo registrado</p>
+				</div>
+
+				{% for label, messages in app.flashes %}
+					{% for message in messages %}
+						<div class="flex items-center p-3 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-700 dark:text-red-400" role="alert">
+							{{ message }}
+						</div>
+					{% endfor %}
+				{% endfor %}
+
+				<form method="post" class="space-y-4">
+					<div>
+						<label for="rut" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+							Tu RUT
+						</label>
+						<input type="text" id="rut" name="rut" required autofocus
+							class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+							placeholder="12345678-9">
+						<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Mismo formato que usas para iniciar sesión</p>
+					</div>
+
+					<button type="submit"
+						class="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center justify-center gap-2 dark:bg-blue-600 dark:hover:bg-blue-700">
+						<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+						</svg>
+						Enviar enlace de acceso
+					</button>
+				</form>
+
+				<div class="flex items-center my-4">
+					<div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+					<span class="px-3 text-xs text-gray-400 dark:text-gray-500">¿Prefieres usar contraseña?</span>
+					<div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+				</div>
+				<a href="{{ path('app_login') }}"
+					class="block text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+					Iniciar sesión con RUT y contraseña
+				</a>
+			</div>
+		{% endif %}
+
+	</div>
+</div>
+{% endblock %}
