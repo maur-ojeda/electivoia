@@ -1,33 +1,34 @@
-# Stage 1: build frontend assets
-FROM node:20-alpine AS assets
+# Stage 1: Composer dependencies
+FROM composer:2 AS composer
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --prefer-offline
-COPY . .
-RUN npm run build
-
-# Stage 2: PHP application
-FROM dunglas/frankenphp:php8.3-alpine
-
-# Install PHP extensions required by the project
-RUN install-php-extensions pdo_pgsql intl gd zip opcache pcntl
-
-# Copy Composer from official image
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-# Set working directory
-WORKDIR /app
-
-# Copy dependency manifests first for layer caching
 COPY composer.json composer.lock ./
-
-# Install production dependencies (no dev, optimized autoloader)
 RUN composer install \
     --no-dev \
     --no-interaction \
     --no-scripts \
     --optimize-autoloader \
     --prefer-dist
+
+# Stage 2: Node build (needs vendor/symfony/stimulus-bundle for webpack alias)
+FROM node:20-alpine AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --prefer-offline
+COPY . .
+COPY --from=composer /app/vendor ./vendor
+RUN npm run build
+
+# Stage 3: PHP application
+FROM dunglas/frankenphp:php8.3-alpine
+
+# Install PHP extensions required by the project
+RUN install-php-extensions pdo_pgsql intl gd zip opcache pcntl
+
+# Set working directory
+WORKDIR /app
+
+# Copy Composer vendor from stage 1
+COPY --from=composer /app/vendor ./vendor
 
 # Copy application source
 COPY . .
