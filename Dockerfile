@@ -53,6 +53,9 @@ RUN mkdir -p var/cache var/log \
 # Install importmap vendor assets (required by EasyAdmin AssetMapper)
 RUN php bin/console importmap:install 2>/dev/null || true
 
+# Publish bundle assets to public/bundles/ (required by EasyAdmin)
+RUN php bin/console assets:install --symlink 2>/dev/null || php bin/console assets:install 2>/dev/null || true
+
 # Warm up the Symfony cache (production)
 RUN php bin/console cache:warmup --env=prod --no-debug 2>/dev/null || true
 
