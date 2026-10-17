@@ -1,3 +1,12 @@
+# Stage 1: build frontend assets
+FROM node:20-alpine AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --prefer-offline
+COPY . .
+RUN npm run build
+
+# Stage 2: PHP application
 FROM dunglas/frankenphp:php8.3-alpine
 
 # Install PHP extensions required by the project
@@ -22,6 +31,9 @@ RUN composer install \
 
 # Copy application source
 COPY . .
+
+# Copy compiled frontend assets from Node stage
+COPY --from=assets /app/public/build ./public/build
 
 # Copy Caddyfile for FrankenPHP
 COPY Caddyfile /etc/frankenphp/Caddyfile
