@@ -1,89 +1,89 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Envío Masivo de Email — Admin{% endblock %}
 
 {% block content %}
 <div class="mb-6">
-	<h1 class="text-2xl font-bold">Envío masivo de email</h1>
-	<p class="text-base-content/60 text-sm">Enviar anuncios a estudiantes activos con email registrado.</p>
+	<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Envío masivo de email</h1>
+	<p class="text-sm text-gray-500 dark:text-gray-400">Enviar anuncios a estudiantes activos con email registrado.</p>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-	{# Sidebar: estadísticas #}
 	<div class="lg:col-span-1">
-		<div class="card bg-base-100 shadow sticky top-20">
-			<div class="card-body p-4">
-				<h3 class="font-semibold text-sm mb-3">Destinatarios disponibles</h3>
-				<ul class="space-y-2 text-sm">
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sticky top-20">
+			<h3 class="font-semibold text-sm text-gray-900 dark:text-white mb-3">Destinatarios disponibles</h3>
+			<ul class="space-y-2 text-sm">
+				<li class="flex justify-between items-center">
+					<span class="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">Todos</span>
+					<span class="font-bold text-gray-900 dark:text-white">{{ totalWithEmail }}</span>
+				</li>
+				{% for grade, count in gradeStats %}
 					<li class="flex justify-between items-center">
-						<span class="badge badge-ghost badge-sm">Todos</span>
-						<span class="font-bold">{{ totalWithEmail }}</span>
+						<span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ grade }}</span>
+						<span class="font-bold text-gray-900 dark:text-white">{{ count }}</span>
 					</li>
-					{% for grade, count in gradeStats %}
-						<li class="flex justify-between items-center">
-							<span class="badge badge-primary badge-sm">{{ grade }}</span>
-							<span class="font-bold">{{ count }}</span>
-						</li>
-					{% endfor %}
-				</ul>
-				<div class="divider my-3"></div>
-				<p class="text-xs text-base-content/50">Solo estudiantes activos con email registrado.</p>
-			</div>
+				{% endfor %}
+			</ul>
+			<hr class="my-3 border-gray-200 dark:border-gray-700">
+			<p class="text-xs text-gray-500 dark:text-gray-400">Solo estudiantes activos con email registrado.</p>
 		</div>
 	</div>
 
-	{# Formulario #}
 	<div class="lg:col-span-3">
-		<div class="card bg-base-100 shadow">
-			<div class="card-body">
-				<h2 class="card-title text-base mb-4">Nuevo anuncio</h2>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+			<h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">Nuevo anuncio</h2>
 
-				<form method="post" class="space-y-5">
+			<form method="post" class="space-y-5">
 
-					<div class="form-control">
-						<label class="label"><span class="label-text font-medium">Destinatarios</span></label>
-						<select name="grade" class="select select-bordered w-full">
-							<option value="">Todos los estudiantes</option>
-							{% for grade in grades %}
-								<option value="{{ grade }}">
-									Solo {{ grade == '3M' ? 'Tercer Medio' : 'Cuarto Medio' }}
-									({{ gradeStats[grade] }} con email)
-								</option>
-							{% endfor %}
-						</select>
-					</div>
+				<div>
+					<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Destinatarios</label>
+					<select name="grade"
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+						<option value="">Todos los estudiantes</option>
+						{% for grade in grades %}
+							<option value="{{ grade }}">
+								Solo {{ grade == '3M' ? 'Tercer Medio' : 'Cuarto Medio' }}
+								({{ gradeStats[grade] }} con email)
+							</option>
+						{% endfor %}
+					</select>
+				</div>
 
-					<div class="form-control">
-						<label class="label">
-							<span class="label-text font-medium">Asunto <span class="text-error">*</span></span>
-						</label>
-						<input type="text" name="subject" class="input input-bordered w-full"
-							required maxlength="150"
-							placeholder="Ej: ¡Comienza el período de inscripciones!">
-					</div>
+				<div>
+					<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+						Asunto <span class="text-red-600">*</span>
+					</label>
+					<input type="text" name="subject"
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+						required maxlength="150"
+						placeholder="Ej: ¡Comienza el período de inscripciones!">
+				</div>
 
-					<div class="form-control">
-						<label class="label">
-							<span class="label-text font-medium">Mensaje <span class="text-error">*</span></span>
-						</label>
-						<textarea name="body" class="textarea textarea-bordered w-full" rows="6" required
-							placeholder="Escribe el mensaje que recibirán los estudiantes…"></textarea>
-					</div>
+				<div>
+					<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+						Mensaje <span class="text-red-600">*</span>
+					</label>
+					<textarea name="body" rows="6" required
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+						placeholder="Escribe el mensaje que recibirán los estudiantes…"></textarea>
+				</div>
 
-					<div class="flex gap-3 pt-2">
-						<button type="submit" class="btn btn-primary gap-2"
-							data-controller="confirm"
-							data-action="click->confirm#confirm"
-							data-confirm-message-value="¿Confirmas el envío del email masivo?">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-							Enviar emails
-						</button>
-						<a href="{{ path('admin_reports_index') }}" class="btn btn-ghost">Cancelar</a>
-					</div>
+				<div class="flex gap-3 pt-2">
+					<button type="submit"
+						class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 flex items-center gap-2 dark:bg-blue-600 dark:hover:bg-blue-700"
+						data-controller="confirm"
+						data-action="click->confirm#confirm"
+						data-confirm-message-value="¿Confirmas el envío del email masivo?">
+						<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+						Enviar emails
+					</button>
+					<a href="{{ path('admin_reports_index') }}"
+						class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+						Cancelar
+					</a>
+				</div>
 
-				</form>
-			</div>
+			</form>
 		</div>
 	</div>
 

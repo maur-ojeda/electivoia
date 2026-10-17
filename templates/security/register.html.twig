@@ -1,81 +1,94 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Registro — {{ school.name }} — ElectivoIA{% endblock %}
 
 {% block content %}
 <div class="min-h-[70vh] flex items-center justify-center py-8">
-	<div class="card w-full max-w-lg bg-base-100 shadow-xl">
-		<div class="card-body">
-			<div class="text-center mb-4">
-				<h2 class="card-title text-2xl font-bold justify-center">Crear cuenta</h2>
-				<p class="text-base-content/60 text-sm mt-1">{{ school.name }}</p>
+	<div class="w-full max-w-lg bg-white rounded-lg shadow dark:bg-gray-800 p-6">
+		<div class="text-center mb-6">
+			<h2 class="text-2xl font-bold text-gray-900 dark:text-white">Crear cuenta</h2>
+			<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ school.name }}</p>
+		</div>
+
+		{% if errors|length > 0 %}
+			<div class="flex items-start p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-700 dark:text-red-400" role="alert">
+				<ul class="list-disc list-inside space-y-1">
+					{% for error in errors %}
+						<li>{{ error }}</li>
+					{% endfor %}
+				</ul>
+			</div>
+		{% endif %}
+
+		<form method="post" class="space-y-4">
+			<div>
+				<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Nombre completo *</label>
+				<input type="text" name="fullName" required
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					value="{{ app.request.request.get('fullName') }}"
+					placeholder="Juan Pérez González">
 			</div>
 
-			{% if errors|length > 0 %}
-				<div class="alert alert-error mb-4">
-					<ul class="list-disc list-inside text-sm space-y-1">
-						{% for error in errors %}
-							<li>{{ error }}</li>
-						{% endfor %}
-					</ul>
+			<div>
+				<div class="flex justify-between mb-1">
+					<label class="text-sm font-medium text-gray-900 dark:text-white">RUT *</label>
+					<span class="text-xs text-gray-500 dark:text-gray-400">Formato: 12345678-9</span>
 				</div>
-			{% endif %}
+				<input type="text" name="rut" required
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					value="{{ app.request.request.get('rut') }}"
+					placeholder="12345678-9">
+			</div>
 
-			<form method="post">
-				<div class="form-control mb-3">
-					<label class="label"><span class="label-text font-medium">Nombre completo *</span></label>
-					<input type="text" name="fullName" class="input input-bordered" required
-						value="{{ app.request.request.get('fullName') }}"
-						placeholder="Juan Pérez González">
+			<div>
+				<div class="flex justify-between mb-1">
+					<label class="text-sm font-medium text-gray-900 dark:text-white">Email</label>
+					<span class="text-xs text-gray-500 dark:text-gray-400">Opcional</span>
 				</div>
+				<input type="email" name="email"
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					value="{{ app.request.request.get('email') }}"
+					placeholder="juan@colegio.cl">
+			</div>
 
-				<div class="form-control mb-3">
-					<label class="label">
-						<span class="label-text font-medium">RUT *</span>
-						<span class="label-text-alt text-base-content/50">Formato: 12345678-9</span>
-					</label>
-					<input type="text" name="rut" class="input input-bordered" required
-						value="{{ app.request.request.get('rut') }}"
-						placeholder="12345678-9">
-				</div>
+			<div>
+				<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Grado *</label>
+				<select name="grade" required
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+					<option value="">Selecciona tu grado</option>
+					<option value="3M" {% if app.request.request.get('grade') == '3M' %}selected{% endif %}>3° Medio</option>
+					<option value="4M" {% if app.request.request.get('grade') == '4M' %}selected{% endif %}>4° Medio</option>
+				</select>
+			</div>
 
-				<div class="form-control mb-3">
-					<label class="label">
-						<span class="label-text font-medium">Email</span>
-						<span class="label-text-alt text-base-content/50">Opcional</span>
-					</label>
-					<input type="email" name="email" class="input input-bordered"
-						value="{{ app.request.request.get('email') }}"
-						placeholder="juan@colegio.cl">
-				</div>
+			<div>
+				<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Contraseña *</label>
+				<input type="password" name="password" required
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+			</div>
 
-				<div class="form-control mb-3">
-					<label class="label"><span class="label-text font-medium">Grado *</span></label>
-					<select name="grade" class="select select-bordered" required>
-						<option value="">Selecciona tu grado</option>
-						<option value="3M" {% if app.request.request.get('grade') == '3M' %}selected{% endif %}>3° Medio</option>
-						<option value="4M" {% if app.request.request.get('grade') == '4M' %}selected{% endif %}>4° Medio</option>
-					</select>
-				</div>
+			<div>
+				<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Confirmar contraseña *</label>
+				<input type="password" name="confirmPassword" required
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					placeholder="Repite tu contraseña" autocomplete="new-password">
+			</div>
 
-				<div class="form-control mb-3">
-					<label class="label"><span class="label-text font-medium">Contraseña *</span></label>
-					<input type="password" name="password" class="input input-bordered" required
-						placeholder="Mínimo 6 caracteres" autocomplete="new-password">
-				</div>
+			<button type="submit"
+				class="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+				Crear cuenta
+			</button>
+		</form>
 
-				<div class="form-control mb-6">
-					<label class="label"><span class="label-text font-medium">Confirmar contraseña *</span></label>
-					<input type="password" name="confirmPassword" class="input input-bordered" required
-						placeholder="Repite tu contraseña" autocomplete="new-password">
-				</div>
-
-				<button type="submit" class="btn btn-primary w-full">Crear cuenta</button>
-			</form>
-
-			<div class="divider text-xs text-base-content/40">¿Ya tienes cuenta?</div>
-			<a href="{{ path('app_login') }}" class="btn btn-ghost btn-sm w-full">Iniciar sesión</a>
+		<div class="flex items-center my-4">
+			<div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
+			<span class="px-3 text-xs text-gray-400 dark:text-gray-500">¿Ya tienes cuenta?</span>
+			<div class="flex-1 border-t border-gray-200 dark:border-gray-700"></div>
 		</div>
+		<a href="{{ path('app_login') }}"
+			class="block text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+			Iniciar sesión
+		</a>
 	</div>
 </div>
 {% endblock %}

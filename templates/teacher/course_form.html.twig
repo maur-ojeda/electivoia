@@ -1,17 +1,16 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}{{ formTitle }} — ElectivoIA{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
 	<div class="mb-6">
-		<h1 class="text-2xl font-bold">{{ formTitle }}</h1>
-		<p class="text-base-content/60 text-sm">{{ app.user.fullName }}</p>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ formTitle }}</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">{{ app.user.fullName }}</p>
 	</div>
 
 	{% if errors is not empty %}
-		<div class="alert alert-error mb-6">
-			<ul class="list-disc list-inside text-sm">
+		<div class="flex items-start p-4 mb-6 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+			<ul class="list-disc list-inside space-y-1">
 				{% for error in errors %}
 					<li>{{ error }}</li>
 				{% endfor %}
@@ -19,89 +18,102 @@
 		</div>
 	{% endif %}
 
-	<div class="card bg-base-100 shadow">
-		<div class="card-body">
-			<form method="post" class="space-y-5">
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+		<form method="post" class="space-y-5">
 
-				<div class="form-control">
-					<label class="label"><span class="label-text font-medium">Nombre del curso <span class="text-error">*</span></span></label>
-					<input type="text" name="name" class="input input-bordered w-full"
-						value="{{ data.name ?? '' }}" required maxlength="255"
-						placeholder="Ej: Introducción a la Filosofía">
-				</div>
+			<div>
+				<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+					Nombre del curso <span class="text-red-600">*</span>
+				</label>
+				<input type="text" name="name"
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					value="{{ data.name ?? '' }}" required maxlength="255"
+					placeholder="Ej: Introducción a la Filosofía">
+			</div>
 
-				<div class="form-control">
-					<label class="label"><span class="label-text font-medium">Descripción</span></label>
-					<textarea name="description" class="textarea textarea-bordered w-full" rows="3"
-						placeholder="Describe brevemente el contenido del curso…">{{ data.description ?? '' }}</textarea>
-				</div>
+			<div>
+				<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Descripción</label>
+				<textarea name="description" rows="3"
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					placeholder="Describe brevemente el contenido del curso…">{{ data.description ?? '' }}</textarea>
+			</div>
 
-				<div class="form-control">
-					<label class="label">
-						<span class="label-text font-medium">Capacidad máxima <span class="text-error">*</span></span>
-					</label>
-					<input type="number" name="maxCapacity" class="input input-bordered w-full"
-						value="{{ data.maxCapacity ?? '' }}" required min="1" max="200"
-						placeholder="Ej: 30">
-					{% if course is not null and course.currentEnrollment > 0 %}
-						<label class="label">
-							<span class="label-text-alt text-base-content/60">Hay {{ course.currentEnrollment }} alumnos inscritos; no puede quedar menor que ese número.</span>
-						</label>
-					{% endif %}
-				</div>
+			<div>
+				<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+					Capacidad máxima <span class="text-red-600">*</span>
+				</label>
+				<input type="number" name="maxCapacity"
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					value="{{ data.maxCapacity ?? '' }}" required min="1" max="200"
+					placeholder="Ej: 30">
+				{% if course is not null and course.currentEnrollment > 0 %}
+					<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+						Hay {{ course.currentEnrollment }} alumnos inscritos; no puede quedar menor que ese número.
+					</p>
+				{% endif %}
+			</div>
 
-				<div class="form-control">
-					<label class="label"><span class="label-text font-medium">Grados objetivo <span class="text-error">*</span></span></label>
-					<div class="flex gap-6 mt-1">
-						{% for grade in ['3M', '4M'] %}
-							<label class="flex items-center gap-2 cursor-pointer">
-								<input type="checkbox" class="checkbox checkbox-primary"
-									name="targetGrades[]" value="{{ grade }}"
-									{% if grade in (data.targetGrades ?? []) %}checked{% endif %}>
-								<span class="label-text">{{ grade == '3M' ? 'Tercer Medio' : 'Cuarto Medio' }}</span>
+			<div>
+				<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+					Grados objetivo <span class="text-red-600">*</span>
+				</label>
+				<div class="flex gap-6 mt-1">
+					{% for grade in ['3M', '4M'] %}
+						<div class="flex items-center">
+							<input type="checkbox" id="grade_{{ grade }}"
+								class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+								name="targetGrades[]" value="{{ grade }}"
+								{% if grade in (data.targetGrades ?? []) %}checked{% endif %}>
+							<label for="grade_{{ grade }}" class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+								{{ grade == '3M' ? 'Tercer Medio' : 'Cuarto Medio' }}
 							</label>
-						{% endfor %}
-					</div>
+						</div>
+					{% endfor %}
 				</div>
+			</div>
 
-				<div class="form-control">
-					<label class="label"><span class="label-text font-medium">Horario</span></label>
-					<input type="text" name="schedule" class="input input-bordered w-full"
-						value="{{ data.schedule ?? '' }}"
-						placeholder="Ej: Lunes y Miércoles 15:30 - 17:00">
-					<label class="label">
-						<span class="label-text-alt text-base-content/60">Opcional. Días y hora en que se realiza el curso.</span>
-					</label>
-				</div>
+			<div>
+				<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Horario</label>
+				<input type="text" name="schedule"
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					value="{{ data.schedule ?? '' }}"
+					placeholder="Ej: Lunes y Miércoles 15:30 - 17:00">
+				<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Opcional. Días y hora en que se realiza el curso.</p>
+			</div>
 
-				<div class="form-control">
-					<label class="label"><span class="label-text font-medium">Fecha límite de inscripción</span></label>
-					<input type="datetime-local" name="enrollmentDeadline" class="input input-bordered w-full"
-						value="{{ data.enrollmentDeadline ?? '' }}">
-					<label class="label">
-						<span class="label-text-alt text-base-content/60">Opcional. Después de esta fecha no se aceptarán nuevas inscripciones.</span>
-					</label>
-				</div>
+			<div>
+				<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Fecha límite de inscripción</label>
+				<input type="datetime-local" name="enrollmentDeadline"
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+					value="{{ data.enrollmentDeadline ?? '' }}">
+				<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Opcional. Después de esta fecha no se aceptarán nuevas inscripciones.</p>
+			</div>
 
-				<div class="form-control">
-					<label class="label"><span class="label-text font-medium">Categoría</span></label>
-					<select name="category" class="select select-bordered w-full">
-						<option value="">Sin categoría</option>
-						{% for cat in categories %}
-							<option value="{{ cat.id }}" {% if (data.category ?? null) == cat.id %}selected{% endif %}>
-								{{ cat.name }}
-							</option>
-						{% endfor %}
-					</select>
-				</div>
+			<div>
+				<label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Categoría</label>
+				<select name="category"
+					class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+					<option value="">Sin categoría</option>
+					{% for cat in categories %}
+						<option value="{{ cat.id }}" {% if (data.category ?? null) == cat.id %}selected{% endif %}>
+							{{ cat.name }}
+						</option>
+					{% endfor %}
+				</select>
+			</div>
 
-				<div class="flex gap-3 pt-4">
-					<button type="submit" class="btn btn-primary">{{ submitLabel }}</button>
-					<a href="{{ path('teacher_courses') }}" class="btn btn-ghost">Cancelar</a>
-				</div>
+			<div class="flex gap-3 pt-2">
+				<button type="submit"
+					class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+					{{ submitLabel }}
+				</button>
+				<a href="{{ path('teacher_courses') }}"
+					class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+					Cancelar
+				</a>
+			</div>
 
-			</form>
-		</div>
+		</form>
 	</div>
 </div>
 {% endblock %}

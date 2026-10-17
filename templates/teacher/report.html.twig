@@ -1,94 +1,96 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Reporte — {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
 	<div>
-		<h1 class="text-2xl font-bold">Reporte de Asistencia</h1>
-		<p class="text-base-content/60 text-sm">{{ course.name }}</p>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Reporte de Asistencia</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">{{ course.name }}</p>
 	</div>
-	<a href="{{ path('teacher_courses') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<a href="{{ path('teacher_courses') }}" class="text-blue-600 hover:underline text-sm dark:text-blue-400">← Volver</a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-	{# Sidebar #}
 	<div class="lg:col-span-1">
-		<div class="card bg-base-100 shadow sticky top-20">
-			<div class="card-body p-4">
-				<h3 class="font-semibold text-sm mb-3">{{ course.name }}</h3>
-				<ul class="space-y-2 text-sm text-base-content/70">
-					{% if course.category %}
-						<li>{{ course.category.name }}</li>
-					{% endif %}
-					<li>{{ reportData|length }} alumnos</li>
-					<li>{{ totalSessions }} sesiones</li>
-				</ul>
-				<div class="divider my-3"></div>
-				<div class="space-y-2">
-					<a href="{{ path('teacher_report_export', {id: course.id}) }}" class="btn btn-outline btn-sm w-full">
-						Exportar Excel
-					</a>
-					<a href="{{ path('teacher_attendance', {id: course.id}) }}" class="btn btn-primary btn-sm w-full">
-						Registrar Asistencia
-					</a>
-				</div>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sticky top-20">
+			<h3 class="font-semibold text-sm text-gray-900 dark:text-white mb-3">{{ course.name }}</h3>
+			<ul class="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+				{% if course.category %}
+					<li>{{ course.category.name }}</li>
+				{% endif %}
+				<li>{{ reportData|length }} alumnos</li>
+				<li>{{ totalSessions }} sesiones</li>
+			</ul>
+			<hr class="my-3 border-gray-200 dark:border-gray-700">
+			<div class="space-y-2">
+				<a href="{{ path('teacher_report_export', {id: course.id}) }}"
+					class="block text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+					Exportar Excel
+				</a>
+				<a href="{{ path('teacher_attendance', {id: course.id}) }}"
+					class="block text-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700">
+					Registrar Asistencia
+				</a>
 			</div>
 		</div>
 	</div>
 
-	{# Main table #}
 	<div class="lg:col-span-3">
-		<div class="card bg-base-100 shadow">
-			<div class="card-body p-4">
-				<h4 class="font-semibold mb-4">Reporte por Alumno</h4>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+			<h4 class="font-semibold text-gray-900 dark:text-white mb-4">Reporte por Alumno</h4>
 
-				{% if totalSessions == 0 %}
-					<p class="text-base-content/60 text-sm">Aún no hay sesiones registradas para este curso.</p>
-				{% elseif reportData|length > 0 %}
-					<div class="overflow-x-auto">
-						<table class="table table-sm">
-							<thead>
-								<tr>
-									<th>Alumno</th>
-									<th>RUT</th>
-									<th>Grado</th>
-									<th class="text-center">Pres.</th>
-									<th class="text-center">Aus.</th>
-									<th class="text-center">Just.</th>
-									<th class="text-center">%</th>
-								</tr>
-							</thead>
-							<tbody>
-								{% for item in reportData %}
-									<tr class="hover">
-										<td class="font-medium">{{ item.student.fullName }}</td>
-										<td class="text-base-content/60">{{ item.student.rut }}</td>
-										<td>{{ item.student.grade }}</td>
-										<td class="text-center"><span class="badge badge-success badge-sm">{{ item.present }}</span></td>
-										<td class="text-center"><span class="badge badge-error badge-sm">{{ item.absent }}</span></td>
-										<td class="text-center"><span class="badge badge-warning badge-sm">{{ item.justified }}</span></td>
-										<td class="text-center">
-											{% if item.percentage is not null %}
-												<span class="badge badge-sm
-													{% if item.percentage >= 75 %}badge-success
-													{% elseif item.percentage >= 50 %}badge-warning
-													{% else %}badge-error{% endif %}">
-													{{ item.percentage }}%
-												</span>
+			{% if totalSessions == 0 %}
+				<p class="text-sm text-gray-500 dark:text-gray-400">Aún no hay sesiones registradas para este curso.</p>
+			{% elseif reportData|length > 0 %}
+				<div class="overflow-x-auto">
+					<table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+						<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+							<tr>
+								<th class="px-3 py-3">Alumno</th>
+								<th class="px-3 py-3">RUT</th>
+								<th class="px-3 py-3">Grado</th>
+								<th class="px-3 py-3 text-center">Pres.</th>
+								<th class="px-3 py-3 text-center">Aus.</th>
+								<th class="px-3 py-3 text-center">Just.</th>
+								<th class="px-3 py-3 text-center">%</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for item in reportData %}
+								<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+									<td class="px-3 py-3 font-medium text-gray-900 dark:text-white">{{ item.student.fullName }}</td>
+									<td class="px-3 py-3">{{ item.student.rut }}</td>
+									<td class="px-3 py-3">{{ item.student.grade }}</td>
+									<td class="px-3 py-3 text-center">
+										<span class="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">{{ item.present }}</span>
+									</td>
+									<td class="px-3 py-3 text-center">
+										<span class="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-red-900 dark:text-red-300">{{ item.absent }}</span>
+									</td>
+									<td class="px-3 py-3 text-center">
+										<span class="bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">{{ item.justified }}</span>
+									</td>
+									<td class="px-3 py-3 text-center">
+										{% if item.percentage is not null %}
+											{% if item.percentage >= 75 %}
+												<span class="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">{{ item.percentage }}%</span>
+											{% elseif item.percentage >= 50 %}
+												<span class="bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">{{ item.percentage }}%</span>
 											{% else %}
-												<span class="text-base-content/40">—</span>
+												<span class="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-red-900 dark:text-red-300">{{ item.percentage }}%</span>
 											{% endif %}
-										</td>
-									</tr>
-								{% endfor %}
-							</tbody>
-						</table>
-					</div>
-					<p class="text-xs text-base-content/50 mt-3">* Ordenado de menor a mayor asistencia. Umbral mínimo recomendado: 75%.</p>
-				{% endif %}
-			</div>
+										{% else %}
+											<span class="text-gray-400">—</span>
+										{% endif %}
+									</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<p class="text-xs text-gray-400 dark:text-gray-500 mt-3">* Ordenado de menor a mayor asistencia. Umbral mínimo recomendado: 75%.</p>
+			{% endif %}
 		</div>
 	</div>
 

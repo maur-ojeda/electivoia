@@ -1,118 +1,98 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Asistencia — {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
 	<div>
-		<h1 class="text-2xl font-bold">Libro de Asistencia</h1>
-		<p class="text-base-content/60 text-sm">{{ course.name }}</p>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Libro de Asistencia</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">{{ course.name }}</p>
 	</div>
-	<a href="{{ path('teacher_courses') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<a href="{{ path('teacher_courses') }}" class="text-blue-600 hover:underline text-sm dark:text-blue-400">← Volver</a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
 	<div class="lg:col-span-1">
-		<div class="card bg-base-100 shadow sticky top-20">
-			<div class="card-body p-4">
-				<h3 class="font-semibold text-sm">{{ course.name }}</h3>
-				{% if course.category %}
-					<p class="text-xs text-base-content/60">{{ course.category.area }} · {{ course.category.name }}</p>
-				{% endif %}
-				<div class="divider my-2"></div>
-				<p class="text-xs text-base-content/60">
-					<strong>Fecha:</strong> {{ date|date('d/m/Y') }}
-				</p>
-				<p class="text-xs text-base-content/60 mt-1">
-					<strong>Alumnos:</strong> {{ students|length }}
-				</p>
-				<div class="divider my-2"></div>
-				<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="btn btn-outline btn-sm w-full">
-					Exportar listado
-				</a>
-			</div>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sticky top-20">
+			<h3 class="font-semibold text-sm text-gray-900 dark:text-white">{{ course.name }}</h3>
+			{% if course.category %}
+				<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ course.category.area }} · {{ course.category.name }}</p>
+			{% endif %}
+			<hr class="my-3 border-gray-200 dark:border-gray-700">
+			<p class="text-xs text-gray-600 dark:text-gray-400"><strong>Fecha:</strong> {{ date|date('d/m/Y') }}</p>
+			<p class="text-xs text-gray-600 dark:text-gray-400 mt-1"><strong>Alumnos:</strong> {{ students|length }}</p>
+			<hr class="my-3 border-gray-200 dark:border-gray-700">
+			<a href="{{ path('teacher_export_students', {id: course.id}) }}"
+				class="block text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+				Exportar listado
+			</a>
 		</div>
 	</div>
 
 	<div class="lg:col-span-3">
-		<div class="card bg-base-100 shadow">
-			<div class="card-body p-4">
-				<div class="flex items-center justify-between mb-4">
-					<h4 class="font-semibold">Registrar Asistencia — {{ date|date('d/m/Y') }}</h4>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+			<h4 class="font-semibold text-gray-900 dark:text-white mb-4">Registrar Asistencia — {{ date|date('d/m/Y') }}</h4>
+
+			{% if students is empty %}
+				<div class="text-center py-8 text-gray-400 dark:text-gray-500">
+					<p>No hay alumnos inscritos en este curso.</p>
 				</div>
-
-				{% if students is empty %}
-					<div class="text-center py-8 text-base-content/50">
-						<p>No hay alumnos inscritos en este curso.</p>
-					</div>
-				{% else %}
-					<form method="post" action="{{ path('teacher_attendance_save', {id: course.id}) }}">
-						<div class="overflow-x-auto">
-							<table class="table table-sm">
-								<thead>
-									<tr>
-										<th></th>
-										<th>Alumno</th>
-										<th>RUT</th>
-										<th>Grado</th>
-										<th class="text-center">Presente</th>
-										<th class="text-center">Ausente</th>
-										<th class="text-center">Justificado</th>
-										<th class="text-center">Atraso</th>
+			{% else %}
+				<form method="post" action="{{ path('teacher_attendance_save', {id: course.id}) }}">
+					<div class="overflow-x-auto">
+						<table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+							<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+								<tr>
+									<th class="px-3 py-3">Alumno</th>
+									<th class="px-3 py-3">RUT</th>
+									<th class="px-3 py-3">Grado</th>
+									<th class="px-3 py-3 text-center text-green-600">Presente</th>
+									<th class="px-3 py-3 text-center text-red-600">Ausente</th>
+									<th class="px-3 py-3 text-center text-yellow-500">Justificado</th>
+									<th class="px-3 py-3 text-center text-blue-500">Atraso</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for student in students %}
+									{% set currentStatus = attendanceMap[student.id] ?? 'present' %}
+									<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+										<td class="px-3 py-3 font-medium text-gray-900 dark:text-white">{{ student.fullName }}</td>
+										<td class="px-3 py-3">{{ student.rut }}</td>
+										<td class="px-3 py-3">{{ student.grade }}</td>
+										<td class="px-3 py-3 text-center">
+											<input type="radio" name="status[{{ student.id }}]" value="present"
+												class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+												{{ currentStatus == 'present' ? 'checked' : '' }}>
+										</td>
+										<td class="px-3 py-3 text-center">
+											<input type="radio" name="status[{{ student.id }}]" value="absent"
+												class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+												{{ currentStatus == 'absent' ? 'checked' : '' }}>
+										</td>
+										<td class="px-3 py-3 text-center">
+											<input type="radio" name="status[{{ student.id }}]" value="justified"
+												class="w-4 h-4 text-yellow-500 bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+												{{ currentStatus == 'justified' ? 'checked' : '' }}>
+										</td>
+										<td class="px-3 py-3 text-center">
+											<input type="radio" name="status[{{ student.id }}]" value="late"
+												class="w-4 h-4 text-blue-500 bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600"
+												{{ currentStatus == 'late' ? 'checked' : '' }}>
+										</td>
+										<input type="hidden" name="student_ids[]" value="{{ student.id }}">
 									</tr>
-								</thead>
-								<tbody>
-									{% for student in students %}
-										{% set currentStatus = attendanceMap[student.id] ?? 'present' %}
-										<tr class="hover">
-											<td>
-												<div class="avatar">
-													<div class="w-8 rounded-full">
-														<img src="{{ student.avatarUrl }}" alt="{{ student.fullName }}">
-													</div>
-												</div>
-											</td>
-											<td class="font-medium">{{ student.fullName }}</td>
-											<td class="text-base-content/60">{{ student.rut }}</td>
-											<td>{{ student.grade }}</td>
-											<td class="text-center">
-												<input type="radio" name="status[{{ student.id }}]" value="present"
-													class="radio radio-sm radio-success"
-													{{ currentStatus == 'present' ? 'checked' : '' }}>
-											</td>
-											<td class="text-center">
-												<input type="radio" name="status[{{ student.id }}]" value="absent"
-													class="radio radio-sm radio-error"
-													{{ currentStatus == 'absent' ? 'checked' : '' }}>
-											</td>
-											<td class="text-center">
-												<input type="radio" name="status[{{ student.id }}]" value="justified"
-													class="radio radio-sm radio-warning"
-													{{ currentStatus == 'justified' ? 'checked' : '' }}>
-											</td>
-											<td class="text-center">
-												<input type="radio" name="status[{{ student.id }}]" value="late"
-													class="radio radio-sm radio-info"
-													{{ currentStatus == 'late' ? 'checked' : '' }}>
-											</td>
-											<input type="hidden" name="student_ids[]" value="{{ student.id }}">
-										</tr>
-									{% endfor %}
-								</tbody>
-							</table>
-						</div>
-
-						<div class="flex justify-end mt-4">
-							<button type="submit" class="btn btn-primary btn-sm">
-								Guardar Asistencia
-							</button>
-						</div>
-					</form>
-				{% endif %}
-			</div>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+					<div class="flex justify-end mt-4">
+						<button type="submit"
+							class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+							Guardar Asistencia
+						</button>
+					</div>
+				</form>
+			{% endif %}
 		</div>
 	</div>
-
 </div>
 {% endblock %}

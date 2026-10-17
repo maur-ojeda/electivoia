@@ -1,264 +1,221 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Panel IA — ElectivoIA{% endblock %}
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-    <a href="{{ path('admin') }}" class="btn btn-ghost btn-sm">&larr; Volver</a>
-    <div>
-        <h1 class="text-2xl font-bold">Panel de Supervisión IA</h1>
-        <p class="text-sm text-base-content/60">
-            {% if school %}{{ school.name }}{% else %}Sin colegio asignado{% endif %}
-        </p>
-    </div>
+	<a href="{{ path('admin') }}" class="text-blue-600 hover:underline text-sm dark:text-blue-400">← Volver</a>
+	<div>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Panel de Supervisión IA</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">
+			{% if school %}{{ school.name }}{% else %}Sin colegio asignado{% endif %}
+		</p>
+	</div>
 </div>
 
-{# ── 1. Engine Overview ──────────────────────────────────────────────── #}
-<h2 class="text-lg font-semibold mb-3">Resumen del Motor</h2>
+<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Resumen del Motor</h2>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-    <div class="stat bg-base-100 shadow rounded-box">
-        <div class="stat-title">Inscripciones totales</div>
-        <div class="stat-value text-primary">{{ engine_overview.total_enrollments }}</div>
-        <div class="stat-desc">Cursos activos</div>
-    </div>
-    <div class="stat bg-base-100 shadow rounded-box">
-        <div class="stat-title">Cursos activos</div>
-        <div class="stat-value text-secondary">{{ engine_overview.active_courses }}</div>
-        <div class="stat-desc">Disponibles para inscripción</div>
-    </div>
-    <div class="stat bg-base-100 shadow rounded-box">
-        <div class="stat-title">Perfiles de interés</div>
-        <div class="stat-value text-accent">{{ engine_overview.students_with_profiles }}</div>
-        <div class="stat-desc">Estudiantes con perfil</div>
-    </div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+		<p class="text-xs text-gray-500 dark:text-gray-400">Inscripciones totales</p>
+		<p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ engine_overview.total_enrollments }}</p>
+		<p class="text-xs text-gray-400 dark:text-gray-500">Cursos activos</p>
+	</div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+		<p class="text-xs text-gray-500 dark:text-gray-400">Cursos activos</p>
+		<p class="text-3xl font-bold text-purple-600 dark:text-purple-400">{{ engine_overview.active_courses }}</p>
+		<p class="text-xs text-gray-400 dark:text-gray-500">Disponibles para inscripción</p>
+	</div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+		<p class="text-xs text-gray-500 dark:text-gray-400">Perfiles de interés</p>
+		<p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ engine_overview.students_with_profiles }}</p>
+		<p class="text-xs text-gray-400 dark:text-gray-500">Estudiantes con perfil</p>
+	</div>
 </div>
 
-{# ── 2. Demand Predictions ──────────────────────────────────────────── #}
-<h2 class="text-lg font-semibold mb-3">Predicciones de Demanda</h2>
-<div class="overflow-x-auto bg-base-100 shadow rounded-box mb-8">
-    <table class="table table-zebra">
-        <thead>
-            <tr>
-                <th>Curso</th>
-                <th class="text-center">Demanda estimada</th>
-                <th class="text-center">Confianza</th>
-                <th class="text-center">Pool de interés</th>
-                <th>Factores</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for prediction in predictions %}
-                <tr>
-                    <td class="font-medium">{{ prediction.course.name }}</td>
-                    <td class="text-center">
-                        <span class="badge badge-lg badge-primary">{{ prediction.predicted_enrollments }}</span>
-                    </td>
-                    <td class="text-center">
-                        <div class="flex items-center gap-2 justify-center">
-                            <progress
-                                class="progress progress-primary w-20"
-                                value="{{ (prediction.confidence * 100)|round }}"
-                                max="100"
-                            ></progress>
-                            <span class="text-sm">{{ (prediction.confidence * 100)|round }}%</span>
-                        </div>
-                    </td>
-                    <td class="text-center">{{ prediction.demand_pool }}</td>
-                    <td>
-                        <ul class="text-xs space-y-1 list-disc list-inside text-base-content/70">
-                            {% for factor in prediction.factors %}
-                                <li>{{ factor }}</li>
-                            {% endfor %}
-                        </ul>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="5" class="text-center text-base-content/50 py-8">
-                        No hay cursos activos para predecir demanda.
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Predicciones de Demanda</h2>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto mb-8">
+	<table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+		<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+			<tr>
+				<th class="px-4 py-3">Curso</th>
+				<th class="px-4 py-3 text-center">Demanda estimada</th>
+				<th class="px-4 py-3 text-center">Confianza</th>
+				<th class="px-4 py-3 text-center">Pool de interés</th>
+				<th class="px-4 py-3">Factores</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for prediction in predictions %}
+				<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+					<td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ prediction.course.name }}</td>
+					<td class="px-4 py-3 text-center">
+						<span class="bg-blue-100 text-blue-700 text-sm font-bold px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ prediction.predicted_enrollments }}</span>
+					</td>
+					<td class="px-4 py-3 text-center">
+						<div class="flex items-center gap-2 justify-center">
+							<div class="w-20 bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+								<div class="bg-blue-600 h-2 rounded-full" style="width: {{ (prediction.confidence * 100)|round }}%"></div>
+							</div>
+							<span class="text-xs">{{ (prediction.confidence * 100)|round }}%</span>
+						</div>
+					</td>
+					<td class="px-4 py-3 text-center">{{ prediction.demand_pool }}</td>
+					<td class="px-4 py-3">
+						<ul class="text-xs space-y-1 list-disc list-inside text-gray-500 dark:text-gray-400">
+							{% for factor in prediction.factors %}
+								<li>{{ factor }}</li>
+							{% endfor %}
+						</ul>
+					</td>
+				</tr>
+			{% else %}
+				<tr>
+					<td colspan="5" class="text-center text-gray-400 dark:text-gray-500 py-8">
+						No hay cursos activos para predecir demanda.
+					</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
 </div>
 
-{# ── 3. Signal Activity (last 30 days) ──────────────────────────────── #}
-<h2 class="text-lg font-semibold mb-3">Actividad de Señales (últimos 30 días)</h2>
+<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Actividad de Señales (últimos 30 días)</h2>
 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-    {% set signal_labels = {
-        'view': 'Vistas',
-        'click': 'Clics',
-        'enroll': 'Inscripciones',
-        'unenroll': 'Bajas',
-        'profile_update': 'Act. perfil'
-    } %}
-    {% for action, label in signal_labels %}
-        <div class="stat bg-base-100 shadow rounded-box">
-            <div class="stat-title text-xs">{{ label }}</div>
-            <div class="stat-value text-lg">{{ signal_counts[action]|default(0) }}</div>
-        </div>
-    {% endfor %}
+	{% set signal_labels = {'view': 'Vistas', 'click': 'Clics', 'enroll': 'Inscripciones', 'unenroll': 'Bajas', 'profile_update': 'Act. perfil'} %}
+	{% for action, label in signal_labels %}
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+			<p class="text-xs text-gray-500 dark:text-gray-400">{{ label }}</p>
+			<p class="text-2xl font-bold text-gray-900 dark:text-white">{{ signal_counts[action]|default(0) }}</p>
+		</div>
+	{% endfor %}
 </div>
 
-{# ── 4. Recommendation Coverage ─────────────────────────────────────── #}
-<h2 class="text-lg font-semibold mb-3">Cobertura de Recomendaciones</h2>
-<div class="card bg-base-100 shadow mb-4">
-    <div class="card-body">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm text-base-content/60">
-                    Cursos con al menos un estudiante interesado en su categoría (nivel &ge; 3)
-                </p>
-                <p class="text-3xl font-bold mt-2">{{ coverage.percentage }}%</p>
-                <p class="text-sm text-base-content/50">{{ coverage.covered }} de {{ coverage.total }} cursos cubiertos</p>
-            </div>
-            <progress
-                class="progress progress-success w-40"
-                value="{{ coverage.percentage }}"
-                max="100"
-            ></progress>
-        </div>
-    </div>
+<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Cobertura de Recomendaciones</h2>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+	<div class="flex items-center justify-between">
+		<div>
+			<p class="text-sm text-gray-500 dark:text-gray-400">
+				Cursos con al menos un estudiante interesado en su categoría (nivel ≥ 3)
+			</p>
+			<p class="text-4xl font-bold text-gray-900 dark:text-white mt-2">{{ coverage.percentage }}%</p>
+			<p class="text-sm text-gray-400 dark:text-gray-500">{{ coverage.covered }} de {{ coverage.total }} cursos cubiertos</p>
+		</div>
+		<div class="w-40">
+			<div class="w-full bg-gray-200 rounded-full h-3 dark:bg-gray-700">
+				<div class="bg-green-600 h-3 rounded-full" style="width: {{ coverage.percentage }}%"></div>
+			</div>
+		</div>
+	</div>
 </div>
 
-{# ── 5. Bias Detection ─────────────────────────────────────────────── #}
-<h2 class="text-lg font-semibold mb-3">Detección de Sesgos</h2>
+<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Detección de Sesgos</h2>
 
 {% if bias_report is null %}
-<div class="alert alert-info mb-8">
-    <span>Sin colegio asignado — no hay datos para analizar sesgos.</span>
-</div>
+	<div class="flex items-center p-4 mb-8 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400" role="alert">
+		<span>Sin colegio asignado — no hay datos para analizar sesgos.</span>
+	</div>
 {% else %}
 
-{# Summary card #}
 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="stat bg-base-100 shadow rounded-box">
-        <div class="stat-title">Categorías analizadas</div>
-        <div class="stat-value text-primary">{{ bias_report.summary.total_categories_analyzed }}</div>
-    </div>
-    <div class="stat bg-base-100 shadow rounded-box">
-        <div class="stat-title">Sesgos de género</div>
-        <div class="stat-value {{ bias_report.summary.gender_flags > 0 ? 'text-warning' : 'text-success' }}">
-            {{ bias_report.summary.gender_flags }}
-        </div>
-    </div>
-    <div class="stat bg-base-100 shadow rounded-box">
-        <div class="stat-title">Sesgos de grado</div>
-        <div class="stat-value {{ bias_report.summary.grade_flags > 0 ? 'text-warning' : 'text-success' }}">
-            {{ bias_report.summary.grade_flags }}
-        </div>
-    </div>
-    <div class="stat bg-base-100 shadow rounded-box">
-        <div class="stat-title">Estado general</div>
-        <div class="stat-value text-lg">
-            {% if bias_report.summary.overall_fair %}
-                <span class="badge badge-success badge-lg">Sin sesgos detectados</span>
-            {% else %}
-                <span class="badge badge-warning badge-lg">Revisar sesgos</span>
-            {% endif %}
-        </div>
-    </div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+		<p class="text-xs text-gray-500 dark:text-gray-400">Categorías analizadas</p>
+		<p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ bias_report.summary.total_categories_analyzed }}</p>
+	</div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+		<p class="text-xs text-gray-500 dark:text-gray-400">Sesgos de género</p>
+		<p class="text-3xl font-bold {{ bias_report.summary.gender_flags > 0 ? 'text-yellow-500' : 'text-green-600 dark:text-green-400' }}">{{ bias_report.summary.gender_flags }}</p>
+	</div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+		<p class="text-xs text-gray-500 dark:text-gray-400">Sesgos de grado</p>
+		<p class="text-3xl font-bold {{ bias_report.summary.grade_flags > 0 ? 'text-yellow-500' : 'text-green-600 dark:text-green-400' }}">{{ bias_report.summary.grade_flags }}</p>
+	</div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+		<p class="text-xs text-gray-500 dark:text-gray-400">Estado general</p>
+		{% if bias_report.summary.overall_fair %}
+			<span class="bg-green-100 text-green-700 text-sm font-medium px-2.5 py-1 rounded dark:bg-green-900 dark:text-green-300">Sin sesgos</span>
+		{% else %}
+			<span class="bg-yellow-100 text-yellow-700 text-sm font-medium px-2.5 py-1 rounded dark:bg-yellow-900 dark:text-yellow-300">Revisar sesgos</span>
+		{% endif %}
+	</div>
 </div>
 
-{# Gender bias table #}
-<h3 class="text-base font-semibold mb-2">Distribución por Género</h3>
-<div class="overflow-x-auto bg-base-100 shadow rounded-box mb-6">
-    <table class="table table-zebra">
-        <thead>
-            <tr>
-                <th>Categoría</th>
-                <th class="text-center">Inscritos</th>
-                <th class="text-center">% M</th>
-                <th class="text-center">% F</th>
-                <th class="text-center">Base colegio (M/F)</th>
-                <th class="text-center">Desviación</th>
-                <th class="text-center">Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in bias_report.gender_bias %}
-                <tr>
-                    <td class="font-medium">{{ item.category }}</td>
-                    <td class="text-center">{{ item.total_enrolled }}</td>
-                    <td class="text-center">{{ item.male_pct }}%</td>
-                    <td class="text-center">{{ item.female_pct }}%</td>
-                    <td class="text-center text-sm text-base-content/60">
-                        {{ item.school_male_pct }}% / {{ item.school_female_pct }}%
-                    </td>
-                    <td class="text-center">
-                        <span class="font-mono {{ item.deviation > 20 ? 'text-warning font-bold' : '' }}">
-                            {{ item.deviation }} pp
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        {% if item.flagged %}
-                            <span class="badge badge-warning">Sesgo</span>
-                        {% else %}
-                            <span class="badge badge-success">OK</span>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="7" class="text-center text-base-content/50 py-8">
-                        No hay inscripciones para analizar.
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<h3 class="text-base font-semibold text-gray-900 dark:text-white mb-2">Distribución por Género</h3>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto mb-6">
+	<table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+		<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+			<tr>
+				<th class="px-4 py-3">Categoría</th>
+				<th class="px-4 py-3 text-center">Inscritos</th>
+				<th class="px-4 py-3 text-center">% M</th>
+				<th class="px-4 py-3 text-center">% F</th>
+				<th class="px-4 py-3 text-center">Base colegio (M/F)</th>
+				<th class="px-4 py-3 text-center">Desviación</th>
+				<th class="px-4 py-3 text-center">Estado</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for item in bias_report.gender_bias %}
+				<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+					<td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ item.category }}</td>
+					<td class="px-4 py-3 text-center">{{ item.total_enrolled }}</td>
+					<td class="px-4 py-3 text-center">{{ item.male_pct }}%</td>
+					<td class="px-4 py-3 text-center">{{ item.female_pct }}%</td>
+					<td class="px-4 py-3 text-center text-xs text-gray-400">{{ item.school_male_pct }}% / {{ item.school_female_pct }}%</td>
+					<td class="px-4 py-3 text-center font-mono {{ item.deviation > 20 ? 'text-yellow-500 font-bold' : '' }}">{{ item.deviation }} pp</td>
+					<td class="px-4 py-3 text-center">
+						{% if item.flagged %}
+							<span class="bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">Sesgo</span>
+						{% else %}
+							<span class="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">OK</span>
+						{% endif %}
+					</td>
+				</tr>
+			{% else %}
+				<tr><td colspan="7" class="text-center text-gray-400 py-8">No hay inscripciones para analizar.</td></tr>
+			{% endfor %}
+		</tbody>
+	</table>
 </div>
 
-{# Grade bias table #}
-<h3 class="text-base font-semibold mb-2">Distribución por Grado</h3>
-<div class="overflow-x-auto bg-base-100 shadow rounded-box mb-8">
-    <table class="table table-zebra">
-        <thead>
-            <tr>
-                <th>Categoría</th>
-                <th class="text-center">Inscritos</th>
-                <th>Grado dominante</th>
-                <th class="text-center">% Dominante</th>
-                <th>Distribución</th>
-                <th class="text-center">Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in bias_report.grade_bias %}
-                <tr>
-                    <td class="font-medium">{{ item.category }}</td>
-                    <td class="text-center">{{ item.total_enrolled }}</td>
-                    <td>{{ item.dominant_grade }}</td>
-                    <td class="text-center">
-                        <span class="font-mono {{ item.dominant_pct > 70 ? 'text-warning font-bold' : '' }}">
-                            {{ item.dominant_pct }}%
-                        </span>
-                    </td>
-                    <td>
-                        <div class="flex flex-wrap gap-1">
-                            {% for grade, pct in item.grade_distribution %}
-                                <span class="badge badge-ghost badge-sm">{{ grade }}: {{ pct }}%</span>
-                            {% endfor %}
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        {% if item.flagged %}
-                            <span class="badge badge-warning">Sesgo</span>
-                        {% else %}
-                            <span class="badge badge-success">OK</span>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="6" class="text-center text-base-content/50 py-8">
-                        No hay inscripciones para analizar.
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<h3 class="text-base font-semibold text-gray-900 dark:text-white mb-2">Distribución por Grado</h3>
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto mb-8">
+	<table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+		<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+			<tr>
+				<th class="px-4 py-3">Categoría</th>
+				<th class="px-4 py-3 text-center">Inscritos</th>
+				<th class="px-4 py-3">Grado dominante</th>
+				<th class="px-4 py-3 text-center">% Dominante</th>
+				<th class="px-4 py-3">Distribución</th>
+				<th class="px-4 py-3 text-center">Estado</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for item in bias_report.grade_bias %}
+				<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+					<td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ item.category }}</td>
+					<td class="px-4 py-3 text-center">{{ item.total_enrolled }}</td>
+					<td class="px-4 py-3">{{ item.dominant_grade }}</td>
+					<td class="px-4 py-3 text-center font-mono {{ item.dominant_pct > 70 ? 'text-yellow-500 font-bold' : '' }}">{{ item.dominant_pct }}%</td>
+					<td class="px-4 py-3">
+						<div class="flex flex-wrap gap-1">
+							{% for grade, pct in item.grade_distribution %}
+								<span class="bg-gray-100 text-gray-700 text-xs px-1.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">{{ grade }}: {{ pct }}%</span>
+							{% endfor %}
+						</div>
+					</td>
+					<td class="px-4 py-3 text-center">
+						{% if item.flagged %}
+							<span class="bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">Sesgo</span>
+						{% else %}
+							<span class="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">OK</span>
+						{% endif %}
+					</td>
+				</tr>
+			{% else %}
+				<tr><td colspan="6" class="text-center text-gray-400 py-8">No hay inscripciones para analizar.</td></tr>
+			{% endfor %}
+		</tbody>
+	</table>
 </div>
 
 {% endif %}

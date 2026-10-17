@@ -1,51 +1,54 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Registrar Colegio — ElectivoIA{% endblock %}
 
 {% block content %}
 <div class="flex items-center gap-4 mb-6">
-	<a href="{{ path('super_admin_dashboard') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<a href="{{ path('super_admin_dashboard') }}" class="text-blue-600 hover:underline text-sm dark:text-blue-400">← Volver</a>
 	<div>
-		<h1 class="text-2xl font-bold">Registrar Nuevo Colegio</h1>
-		<p class="text-sm text-base-content/60">Se creará el colegio y su administrador inicial. Se enviará un email de bienvenida.</p>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Registrar Nuevo Colegio</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">Se creará el colegio y su administrador inicial. Se enviará un email de bienvenida.</p>
 	</div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
 
-	{# School data #}
-	<form method="post" id="onboard-form">
-		<div class="card bg-base-100 shadow">
-			<div class="card-body">
-				<h2 class="card-title text-base mb-4">🏫 Datos del Colegio</h2>
+	<form method="post" id="onboard-form" class="space-y-4">
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+			<h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">🏫 Datos del Colegio</h2>
 
-				<div class="form-control mb-3">
-					<label class="label"><span class="label-text font-medium">Nombre del colegio *</span></label>
-					<input type="text" name="schoolName" class="input input-bordered" required
+			<div class="space-y-3">
+				<div>
+					<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Nombre del colegio *</label>
+					<input type="text" name="schoolName" required
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
 						placeholder="Colegio San Ignacio"
 						oninput="autoSlug(this.value)">
 				</div>
 
-				<div class="form-control mb-3">
-					<label class="label">
-						<span class="label-text font-medium">Slug *</span>
-						<span class="label-text-alt text-base-content/50">Identificador URL único</span>
-					</label>
-					<input type="text" name="slug" id="slug-field" class="input input-bordered input-sm font-mono" required
+				<div>
+					<div class="flex justify-between mb-1">
+						<label class="text-sm font-medium text-gray-900 dark:text-white">Slug *</label>
+						<span class="text-xs text-gray-500 dark:text-gray-400">Identificador URL único</span>
+					</div>
+					<input type="text" name="slug" id="slug-field" required
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-white"
 						placeholder="san-ignacio">
 				</div>
 
-				<div class="form-control mb-3">
-					<label class="label">
-						<span class="label-text font-medium">RBD</span>
-						<span class="label-text-alt text-base-content/50">Opcional</span>
-					</label>
-					<input type="text" name="rbd" class="input input-bordered input-sm" placeholder="12345-6">
+				<div>
+					<div class="flex justify-between mb-1">
+						<label class="text-sm font-medium text-gray-900 dark:text-white">RBD</label>
+						<span class="text-xs text-gray-500 dark:text-gray-400">Opcional</span>
+					</div>
+					<input type="text" name="rbd"
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+						placeholder="12345-6">
 				</div>
 
-				<div class="form-control mb-4">
-					<label class="label"><span class="label-text font-medium">Plan</span></label>
-					<select name="plan" class="select select-bordered">
+				<div>
+					<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Plan</label>
+					<select name="plan"
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
 						<option value="free">Free</option>
 						<option value="basic">Basic</option>
 						<option value="premium">Premium</option>
@@ -54,63 +57,61 @@
 			</div>
 		</div>
 
-		<div class="card bg-base-100 shadow mt-4">
-			<div class="card-body">
-				<h2 class="card-title text-base mb-4">👤 Administrador Inicial</h2>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+			<h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">👤 Administrador Inicial</h2>
 
-				<div class="form-control mb-3">
-					<label class="label"><span class="label-text font-medium">Nombre completo *</span></label>
-					<input type="text" name="adminFullName" class="input input-bordered" required placeholder="Juan Pérez González">
+			<div class="space-y-3">
+				<div>
+					<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Nombre completo *</label>
+					<input type="text" name="adminFullName" required
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+						placeholder="Juan Pérez González">
 				</div>
 
-				<div class="form-control mb-3">
-					<label class="label"><span class="label-text font-medium">RUT *</span></label>
-					<input type="text" name="adminRut" class="input input-bordered" required placeholder="12345678K">
+				<div>
+					<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">RUT *</label>
+					<input type="text" name="adminRut" required
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+						placeholder="12345678K">
 				</div>
 
-				<div class="form-control mb-4">
-					<label class="label"><span class="label-text font-medium">Email *</span></label>
-					<input type="email" name="adminEmail" class="input input-bordered" required placeholder="admin@colegio.cl">
-					<label class="label">
-						<span class="label-text-alt text-base-content/50">Se enviará el email de bienvenida con la contraseña temporal.</span>
-					</label>
+				<div>
+					<label class="block mb-1 text-sm font-medium text-gray-900 dark:text-white">Email *</label>
+					<input type="email" name="adminEmail" required
+						class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+						placeholder="admin@colegio.cl">
+					<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Se enviará el email de bienvenida con la contraseña temporal.</p>
 				</div>
 			</div>
 		</div>
 
-		<div class="mt-4">
-			<button type="submit" class="btn btn-primary w-full">
-				Crear colegio y enviar bienvenida
-			</button>
-		</div>
+		<button type="submit"
+			class="w-full text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+			Crear colegio y enviar bienvenida
+		</button>
 	</form>
 
-	{# Info panel #}
 	<div class="space-y-4">
-		<div class="card bg-base-200">
-			<div class="card-body">
-				<h3 class="font-semibold mb-2">¿Qué ocurre al crear el colegio?</h3>
-				<ul class="space-y-2 text-sm text-base-content/70">
-					<li>✅ Se registra el colegio con el slug único</li>
-					<li>✅ Se crea el usuario administrador vinculado al colegio</li>
-					<li>✅ Se genera una contraseña segura aleatoria</li>
-					<li>✅ Se envía un email de bienvenida con las credenciales</li>
-					<li>✅ Si no hay categorías de cursos, se crean las 7 por defecto del currículo chileno</li>
-				</ul>
-			</div>
+		<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-5">
+			<h3 class="font-semibold text-gray-900 dark:text-white mb-3">¿Qué ocurre al crear el colegio?</h3>
+			<ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+				<li>✅ Se registra el colegio con el slug único</li>
+				<li>✅ Se crea el usuario administrador vinculado al colegio</li>
+				<li>✅ Se genera una contraseña segura aleatoria</li>
+				<li>✅ Se envía un email de bienvenida con las credenciales</li>
+				<li>✅ Si no hay categorías de cursos, se crean las 7 por defecto del currículo chileno</li>
+			</ul>
 		</div>
 
-		<div class="card bg-info/10 border border-info/30">
-			<div class="card-body text-sm">
-				<p class="font-semibold text-info mb-1">📋 Próximos pasos</p>
-				<p class="text-base-content/70">El administrador del colegio deberá:</p>
-				<ol class="list-decimal list-inside mt-2 space-y-1 text-base-content/60">
-					<li>Iniciar sesión con las credenciales recibidas</li>
-					<li>Importar los estudiantes desde CSV</li>
-					<li>Crear los cursos electivos</li>
-					<li>Configurar el período de inscripción</li>
-				</ol>
-			</div>
+		<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-5 text-sm">
+			<p class="font-semibold text-blue-700 dark:text-blue-400 mb-2">📋 Próximos pasos</p>
+			<p class="text-gray-600 dark:text-gray-400">El administrador del colegio deberá:</p>
+			<ol class="list-decimal list-inside mt-2 space-y-1 text-gray-500 dark:text-gray-400">
+				<li>Iniciar sesión con las credenciales recibidas</li>
+				<li>Importar los estudiantes desde CSV</li>
+				<li>Crear los cursos electivos</li>
+				<li>Configurar el período de inscripción</li>
+			</ol>
 		</div>
 	</div>
 </div>
@@ -119,7 +120,7 @@
 function autoSlug(val) {
 	const slug = val
 		.toLowerCase()
-		.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+		.normalize('NFD').replace(/[̀-ͯ]/g, '')
 		.replace(/[^a-z0-9\s-]/g, '')
 		.trim()
 		.replace(/\s+/g, '-');

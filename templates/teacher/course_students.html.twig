@@ -1,106 +1,102 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Alumnos inscritos — {{ course.name }}{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
 	<div>
-		<h1 class="text-2xl font-bold">Alumnos inscritos</h1>
-		<p class="text-base-content/60 text-sm">{{ course.name }}</p>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Alumnos inscritos</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">{{ course.name }}</p>
 	</div>
-	<a href="{{ path('teacher_courses') }}" class="btn btn-ghost btn-sm">← Volver</a>
+	<a href="{{ path('teacher_courses') }}" class="text-blue-600 hover:underline text-sm dark:text-blue-400">← Volver</a>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
 	<div class="lg:col-span-1">
-		<div class="card bg-base-100 shadow sticky top-20">
-			<div class="card-body p-4">
-				<h3 class="font-semibold text-sm">{{ course.name }}</h3>
-				{% if course.category %}
-					<p class="text-xs text-base-content/60">{{ course.category.name }}</p>
-				{% endif %}
-				<div class="stats stats-vertical shadow mt-3 w-full">
-					<div class="stat py-2 px-3">
-						<div class="stat-title text-xs">Inscritos</div>
-						<div class="stat-value text-lg">{{ enrollments|length }}/{{ course.maxCapacity }}</div>
-					</div>
-					<div class="stat py-2 px-3">
-						<div class="stat-title text-xs">Estado</div>
-						<div class="stat-value text-sm {{ course.isActive ? 'text-success' : 'text-error' }}">
-							{{ course.isActive ? 'Activo' : 'Inactivo' }}
-						</div>
-					</div>
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sticky top-20">
+			<h3 class="font-semibold text-sm text-gray-900 dark:text-white">{{ course.name }}</h3>
+			{% if course.category %}
+				<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ course.category.name }}</p>
+			{% endif %}
+			<hr class="my-3 border-gray-200 dark:border-gray-700">
+			<div class="grid grid-cols-2 gap-2 mb-3">
+				<div class="bg-gray-50 dark:bg-gray-700 rounded p-2 text-center">
+					<p class="text-xs text-gray-500 dark:text-gray-400">Inscritos</p>
+					<p class="text-lg font-bold text-gray-900 dark:text-white">{{ enrollments|length }}/{{ course.maxCapacity }}</p>
 				</div>
-				<div class="space-y-2 mt-3">
-					<a href="{{ path('teacher_export_students', {id: course.id}) }}" class="btn btn-outline btn-sm w-full">
-						Exportar Excel
-					</a>
-					<a href="{{ path('teacher_report', {id: course.id}) }}" class="btn btn-primary btn-sm w-full">
-						Reporte asistencia
-					</a>
+				<div class="bg-gray-50 dark:bg-gray-700 rounded p-2 text-center">
+					<p class="text-xs text-gray-500 dark:text-gray-400">Estado</p>
+					<p class="text-sm font-bold {{ course.isActive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+						{{ course.isActive ? 'Activo' : 'Inactivo' }}
+					</p>
 				</div>
+			</div>
+			<div class="space-y-2">
+				<a href="{{ path('teacher_export_students', {id: course.id}) }}"
+					class="block text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+					Exportar Excel
+				</a>
+				<a href="{{ path('teacher_report', {id: course.id}) }}"
+					class="block text-center text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700">
+					Reporte asistencia
+				</a>
 			</div>
 		</div>
 	</div>
 
 	<div class="lg:col-span-3">
-		<div class="card bg-base-100 shadow">
-			<div class="card-body p-4">
-				<h4 class="font-semibold mb-4">
-					Listado de alumnos
-					<span class="badge badge-neutral ml-2">{{ enrollments|length }}</span>
-				</h4>
-
-				{% if enrollments|length == 0 %}
-					<p class="text-base-content/60 text-sm">Aún no hay alumnos inscritos en este curso.</p>
-				{% else %}
-					<div class="overflow-x-auto">
-						<table class="table table-sm">
-							<thead>
-								<tr>
-									<th></th>
-									<th>Nombre</th>
-									<th>RUT</th>
-									<th>Grado</th>
-									<th>Promedio</th>
-									<th>Inscrito el</th>
-								</tr>
-							</thead>
-							<tbody>
-								{% for enrollment in enrollments %}
-									{% set student = enrollment.student %}
-									<tr class="hover">
-										<td>
-											<div class="avatar">
-												<div class="w-8 rounded-full">
-													<img src="{{ student.avatarUrl }}" alt="{{ student.fullName }}">
-												</div>
-											</div>
-										</td>
-										<td class="font-medium">{{ student.fullName }}</td>
-										<td class="text-base-content/60">{{ student.rut }}</td>
-										<td>{{ student.grade }}</td>
-										<td>
-											{% if student.averageGrade is not null %}
-												<span class="badge badge-sm
-													{% if student.averageGrade >= 6.0 %}badge-success
-													{% elseif student.averageGrade >= 5.0 %}badge-primary
-													{% else %}badge-warning{% endif %}">
-													{{ student.averageGrade|number_format(1) }}
-												</span>
-											{% else %}
-												<span class="text-base-content/40">—</span>
-											{% endif %}
-										</td>
-										<td class="text-xs text-base-content/60">{{ enrollment.enrolledAt|date('d/m/Y H:i') }}</td>
-									</tr>
-								{% endfor %}
-							</tbody>
-						</table>
-					</div>
-				{% endif %}
+		<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+			<div class="flex items-center gap-2 mb-4">
+				<h4 class="font-semibold text-gray-900 dark:text-white">Listado de alumnos</h4>
+				<span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">{{ enrollments|length }}</span>
 			</div>
+
+			{% if enrollments|length == 0 %}
+				<p class="text-sm text-gray-500 dark:text-gray-400">Aún no hay alumnos inscritos en este curso.</p>
+			{% else %}
+				<div class="overflow-x-auto">
+					<table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+						<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+							<tr>
+								<th class="px-3 py-3"></th>
+								<th class="px-3 py-3">Nombre</th>
+								<th class="px-3 py-3">RUT</th>
+								<th class="px-3 py-3">Grado</th>
+								<th class="px-3 py-3">Promedio</th>
+								<th class="px-3 py-3">Inscrito el</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for enrollment in enrollments %}
+								{% set student = enrollment.student %}
+								<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+									<td class="px-3 py-3">
+										<img src="{{ student.avatarUrl }}" alt="{{ student.fullName }}"
+											class="w-8 h-8 rounded-full object-cover">
+									</td>
+									<td class="px-3 py-3 font-medium text-gray-900 dark:text-white">{{ student.fullName }}</td>
+									<td class="px-3 py-3">{{ student.rut }}</td>
+									<td class="px-3 py-3">{{ student.grade }}</td>
+									<td class="px-3 py-3">
+										{% if student.averageGrade is not null %}
+											{% if student.averageGrade >= 6.0 %}
+												<span class="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">{{ student.averageGrade|number_format(1) }}</span>
+											{% elseif student.averageGrade >= 5.0 %}
+												<span class="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">{{ student.averageGrade|number_format(1) }}</span>
+											{% else %}
+												<span class="bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">{{ student.averageGrade|number_format(1) }}</span>
+											{% endif %}
+										{% else %}
+											<span class="text-gray-400">—</span>
+										{% endif %}
+									</td>
+									<td class="px-3 py-3 text-xs">{{ enrollment.enrolledAt|date('d/m/Y H:i') }}</td>
+								</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+			{% endif %}
 		</div>
 	</div>
 
