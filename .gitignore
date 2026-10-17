@@ -16,7 +16,7 @@
 
 ###> symfony/asset-mapper ###
 /public/assets/
-/assets/vendor/
+# /assets/vendor/ — tracked so Docker build doesn't need network for importmap
 ###< symfony/asset-mapper ###
 
 ###> symfony/webpack-encore-bundle ###
