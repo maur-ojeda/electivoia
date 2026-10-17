@@ -50,6 +50,9 @@ ENV DATABASE_URL="postgresql://localhost:5432/dummy"
 RUN mkdir -p var/cache var/log \
     && chmod -R 775 var/
 
+# Install importmap vendor assets (required by EasyAdmin AssetMapper)
+RUN php bin/console importmap:install 2>/dev/null || true
+
 # Warm up the Symfony cache (production)
 RUN php bin/console cache:warmup --env=prod --no-debug 2>/dev/null || true
 
