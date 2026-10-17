@@ -1,100 +1,106 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Mis Cursos — ElectivoIA{% endblock %}
 
 {% block content %}
 {% set category_map = {
-	'Filosofía': '01',
-	'Matemática': '02',
-	'Educación física y salud': '03',
-	'Historia, geografía y ciencias sociales': '04',
-	'Ciencias': '05',
-	'Lengua y literatura': '07',
-	'Artes': '06'
+	'Filosofía': '01', 'Matemática': '02', 'Educación física y salud': '03',
+	'Historia, geografía y ciencias sociales': '04', 'Ciencias': '05',
+	'Lengua y literatura': '07', 'Artes': '06'
 } %}
 
 <div class="flex items-center justify-between mb-6">
 	<div>
-		<h1 class="text-2xl font-bold">Mis Cursos</h1>
-		<p class="text-base-content/60 text-sm">{{ app.user.fullName }}</p>
+		<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Mis Cursos</h1>
+		<p class="text-sm text-gray-500 dark:text-gray-400">{{ app.user.fullName }}</p>
 	</div>
-	<a href="{{ path('teacher_course_new') }}" class="btn btn-primary btn-sm gap-1">
-		<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+	<a href="{{ path('teacher_course_new') }}"
+		class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-4 py-2 flex items-center gap-2 dark:bg-blue-600 dark:hover:bg-blue-700">
+		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
 		Nuevo curso
 	</a>
 </div>
 
-{# Search bar #}
-<form method="GET" class="mb-6">
-	<div class="flex gap-3 flex-wrap">
-		<select name="category" class="select select-bordered select-sm" onchange="this.form.submit()">
-			<option value="">Todas las categorías</option>
-			{% for cat in allCategories %}
-				<option value="{{ cat.id }}" {% if cat.id == selectedCategory %}selected{% endif %}>
-					{{ cat.name }}
-				</option>
-			{% endfor %}
-		</select>
-		<div class="join flex-1">
-			<input type="text" name="q" value="{{ searchQuery }}" placeholder="Buscar curso…" class="input input-bordered input-sm join-item flex-1">
-			<button type="submit" class="btn btn-sm btn-neutral join-item">Buscar</button>
-		</div>
+<form method="GET" class="mb-6 flex flex-wrap gap-3">
+	<select name="category" onchange="this.form.submit()"
+		class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+		<option value="">Todas las categorías</option>
+		{% for cat in allCategories %}
+			<option value="{{ cat.id }}" {% if cat.id == selectedCategory %}selected{% endif %}>{{ cat.name }}</option>
+		{% endfor %}
+	</select>
+	<div class="flex flex-1 gap-0">
+		<input type="text" name="q" value="{{ searchQuery }}" placeholder="Buscar curso…"
+			class="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-l-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+		<button type="submit"
+			class="text-white bg-gray-700 hover:bg-gray-800 rounded-r-lg text-sm px-4 py-2.5 dark:bg-gray-600 dark:hover:bg-gray-500">
+			Buscar
+		</button>
 	</div>
 </form>
 
 {% if courses|length == 0 %}
-	<div class="text-center py-16 text-base-content/50">
+	<div class="text-center py-16 text-gray-500 dark:text-gray-400">
 		<p>No tienes cursos aún.</p>
-		<a href="{{ path('teacher_course_new') }}" class="btn btn-primary btn-sm mt-4">Crear mi primer curso</a>
+		<a href="{{ path('teacher_course_new') }}"
+			class="mt-4 inline-block text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+			Crear mi primer curso
+		</a>
 	</div>
 {% else %}
 	<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 		{% for course in courses %}
 			{% set img = course.category ? category_map[course.category.name]|default('01') : '01' %}
-			<div class="card bg-base-100 shadow hover:shadow-md transition-shadow {% if not course.isActive %}opacity-70{% endif %}">
-				<figure class="h-36 overflow-hidden relative">
-					<img src="{{ asset('build/images/course/' ~ img ~ '.png') }}" alt="{{ course.name }}" class="object-cover w-full h-full">
+			<div class="bg-white border border-gray-200 rounded-lg shadow hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700 {{ not course.isActive ? 'opacity-70' : '' }}">
+				<div class="relative">
+					<img src="{{ asset('build/images/course/' ~ img ~ '.png') }}" alt="{{ course.name }}" class="rounded-t-lg w-full h-36 object-cover">
 					{% if not course.isActive %}
-						<div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-							<span class="badge badge-error">Inactivo</span>
+						<div class="absolute inset-0 bg-black/40 rounded-t-lg flex items-center justify-center">
+							<span class="bg-red-100 text-red-700 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300">Inactivo</span>
 						</div>
 					{% endif %}
-				</figure>
-				<div class="card-body p-4">
-					<div class="flex gap-1 flex-wrap mb-1">
+				</div>
+				<div class="p-4">
+					<div class="flex gap-1 flex-wrap mb-2">
 						{% if course.category %}
-							<span class="badge badge-ghost badge-xs">{{ course.category.area }}</span>
-							<span class="badge badge-outline badge-xs">{{ course.category.name }}</span>
+							<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">{{ course.category.area }}</span>
+							<span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">{{ course.category.name }}</span>
 						{% else %}
-							<span class="badge badge-ghost badge-xs">Sin categoría</span>
+							<span class="bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">Sin categoría</span>
 						{% endif %}
 					</div>
-					<h3 class="card-title text-sm font-bold leading-tight">{{ course.name }}</h3>
-					<p class="text-xs text-base-content/60 line-clamp-2">{{ course.description|default('Sin descripción.') }}</p>
+					<h3 class="font-bold text-sm text-gray-900 dark:text-white leading-tight mb-1">{{ course.name }}</h3>
+					<p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2">{{ course.description|default('Sin descripción.') }}</p>
 					{% if course.schedule %}
-						<p class="text-xs text-base-content/60 mt-1">🕐 {{ course.schedule }}</p>
+						<p class="text-xs text-gray-500 dark:text-gray-400 mb-1">🕐 {{ course.schedule }}</p>
 					{% endif %}
-					<p class="text-xs text-base-content/70 mt-1">
+					<p class="text-xs text-gray-600 dark:text-gray-300 mb-3">
 						{{ enrollmentsByCourse[course.id]|length }} / {{ course.maxCapacity }} alumnos
-						{% if course.enrollmentDeadline %}
-							· Cierre: {{ course.enrollmentDeadline|date('d/m/Y') }}
-						{% endif %}
+						{% if course.enrollmentDeadline %}· Cierre: {{ course.enrollmentDeadline|date('d/m/Y') }}{% endif %}
 					</p>
-					<div class="card-actions mt-3 flex-col gap-2">
-						<div class="flex gap-1 w-full">
-							<a href="{{ path('teacher_course_students', {id: course.id}) }}" class="btn btn-xs btn-ghost flex-1">Alumnos</a>
-							<a href="{{ path('teacher_report', {id: course.id}) }}" class="btn btn-xs btn-ghost flex-1">Reporte</a>
-							<a href="{{ path('teacher_course_edit', {id: course.id}) }}" class="btn btn-xs btn-ghost flex-1">Editar</a>
-						</div>
-						<form method="post" action="{{ path('teacher_course_toggle_active', {id: course.id}) }}" class="w-full"
-							data-controller="confirm"
-							data-action="submit->confirm#confirm"
-							data-confirm-message-value="{{ course.isActive ? 'Desactivar' : 'Activar' }} '{{ course.name }}'?">
-							<button type="submit" class="btn btn-xs w-full {{ course.isActive ? 'btn-error btn-outline' : 'btn-success btn-outline' }}">
-								{{ course.isActive ? 'Desactivar' : 'Activar' }}
-							</button>
-						</form>
+					<div class="flex gap-1 mb-2">
+						<a href="{{ path('teacher_course_students', {id: course.id}) }}"
+							class="flex-1 text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg py-1.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+							Alumnos
+						</a>
+						<a href="{{ path('teacher_report', {id: course.id}) }}"
+							class="flex-1 text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg py-1.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+							Reporte
+						</a>
+						<a href="{{ path('teacher_course_edit', {id: course.id}) }}"
+							class="flex-1 text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg py-1.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
+							Editar
+						</a>
 					</div>
+					<form method="post" action="{{ path('teacher_course_toggle_active', {id: course.id}) }}">
+						<button type="submit"
+							onclick="return confirm('{{ course.isActive ? 'Desactivar' : 'Activar' }} \'{{ course.name }}\'?')"
+							class="w-full text-xs font-medium rounded-lg py-1.5 border
+								{{ course.isActive
+									? 'text-red-700 border-red-300 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-gray-700'
+									: 'text-green-700 border-green-300 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-gray-700' }}">
+							{{ course.isActive ? 'Desactivar' : 'Activar' }}
+						</button>
+					</form>
 				</div>
 			</div>
 		{% endfor %}

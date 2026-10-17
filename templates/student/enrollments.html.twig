@@ -1,47 +1,48 @@
 {% extends 'base.html.twig' %}
-
 {% block title %}Mis Cursos Inscritos — ElectivoIA{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
-	<h1 class="text-2xl font-bold">Mis Cursos Inscritos</h1>
-	<a href="{{ path('student_attendance') }}" class="btn btn-outline btn-sm">📅 Ver asistencia</a>
+	<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Mis Cursos Inscritos</h1>
+	<a href="{{ path('student_attendance') }}"
+		class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 font-medium rounded-lg text-sm px-4 py-2 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+		📅 Ver asistencia
+	</a>
 </div>
 
 {% if enrollments|length == 0 %}
-	<div class="card bg-base-100 shadow text-center py-12">
-		<div class="card-body">
-			<p class="text-base-content/60 mb-4">No estás inscrito en ningún curso aún.</p>
-			<a href="{{ path('student_courses') }}" class="btn btn-primary btn-sm">Explorar cursos disponibles</a>
-		</div>
+	<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
+		<p class="text-gray-500 dark:text-gray-400 mb-4">No estás inscrito en ningún curso aún.</p>
+		<a href="{{ path('student_courses') }}"
+			class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
+			Explorar cursos disponibles
+		</a>
 	</div>
 {% else %}
 	<div class="space-y-4">
 		{% for enrollment in enrollments %}
-			<div class="card bg-base-100 shadow border-l-4 border-success">
-				<div class="card-body p-4 flex-row items-center justify-between">
-					<div>
-						<h3 class="font-bold text-base">{{ enrollment.course.name }}</h3>
-						{% if enrollment.course.teacher %}
-							<p class="text-xs text-base-content/60">Prof. {{ enrollment.course.teacher.fullName }}</p>
-						{% endif %}
-						<p class="text-xs text-base-content/50 mt-1">
-							Inscrito el {{ enrollment.enrolledAt|date('d/m/Y H:i') }}
-						</p>
-					</div>
-					<form method="post" action="{{ path('student_unenroll', {id: enrollment.course.id}) }}"
-						data-controller="confirm"
-						data-action="submit->confirm#confirm"
-						data-confirm-message-value="¿Dar de baja de '{{ enrollment.course.name }}'?">
-						<button type="submit" class="btn btn-error btn-xs btn-outline">Dar de baja</button>
-					</form>
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow border-l-4 border-green-500 p-4 flex items-center justify-between">
+				<div>
+					<h3 class="font-bold text-base text-gray-900 dark:text-white">{{ enrollment.course.name }}</h3>
+					{% if enrollment.course.teacher %}
+						<p class="text-xs text-gray-500 dark:text-gray-400">Prof. {{ enrollment.course.teacher.fullName }}</p>
+					{% endif %}
+					<p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+						Inscrito el {{ enrollment.enrolledAt|date('d/m/Y H:i') }}
+					</p>
 				</div>
+				<form method="post" action="{{ path('student_unenroll', {id: enrollment.course.id}) }}">
+					<button type="submit"
+						class="text-red-700 border border-red-300 hover:bg-red-50 text-xs font-medium rounded-lg px-3 py-1.5 dark:border-red-700 dark:text-red-400 dark:hover:bg-gray-700"
+						onclick="return confirm('¿Dar de baja de \'{{ enrollment.course.name }}\'?')">
+						Dar de baja
+					</button>
+				</form>
 			</div>
 		{% endfor %}
 	</div>
-
 	<div class="mt-6">
-		<a href="{{ path('student_courses') }}" class="btn btn-ghost btn-sm">← Explorar más cursos</a>
+		<a href="{{ path('student_courses') }}" class="text-blue-600 hover:underline text-sm dark:text-blue-400">← Explorar más cursos</a>
 	</div>
 {% endif %}
 {% endblock %}
