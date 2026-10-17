@@ -7,7 +7,8 @@ RUN composer install \
     --no-interaction \
     --no-scripts \
     --optimize-autoloader \
-    --prefer-dist
+    --prefer-dist \
+    --ignore-platform-reqs
 
 # Stage 2: Node build (needs vendor/symfony/stimulus-bundle for webpack alias)
 FROM node:20-alpine AS assets
