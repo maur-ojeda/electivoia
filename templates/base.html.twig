@@ -220,7 +220,7 @@
 {% else %}
 {# Sin sesión: layout mínimo para login/register #}
 <div class="min-h-screen">
-	{% block content %}{% endblock %}
+	{{ block('content') }}
 </div>
 {% endif %}
 
