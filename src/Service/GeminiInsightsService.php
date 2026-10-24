@@ -27,6 +27,10 @@ class GeminiInsightsService
     {
         $prompt = $this->buildPrompt($stats);
 
+        if (empty($this->geminiApiKey)) {
+            return $this->fallbackInsights($stats);
+        }
+
         try {
             $response = $this->httpClient->request('POST', self::GEMINI_API_URL, [
                 'query' => ['key' => $this->geminiApiKey],
