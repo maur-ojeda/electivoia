@@ -34,7 +34,7 @@ class GeminiInsightsService
 
         try {
             $response = $this->httpClient->request('POST', self::AI_API_URL, [
-                'timeout' => 60,
+                'timeout' => 30,
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->aiApiKey,
                     'Content-Type'  => 'application/json',
@@ -44,13 +44,36 @@ class GeminiInsightsService
                     'messages' => [
                         ['role' => 'user', 'content' => $prompt],
                     ],
-                    'temperature'      => 0.4,
-                    'max_tokens'       => 512,
+                    'temperature' => 0.4,
+                    'max_tokens'  => 512,
+                    'stream'      => true,
                 ],
             ]);
 
-            $data = $response->toArray();
-            $text = $data['choices'][0]['message']['content'] ?? '';
+            $text = '';
+            foreach ($this->httpClient->stream($response, 30) as $chunk) {
+                if ($chunk->isTimeout()) {
+                    continue;
+                }
+                if ($chunk->isLast()) {
+                    break;
+                }
+                foreach (explode("\n", $chunk->getContent()) as $line) {
+                    $line = trim($line);
+                    if (!str_starts_with($line, 'data: ')) {
+                        continue;
+                    }
+                    $json = ltrim(substr($line, 6));
+                    if ($json === '[DONE]') {
+                        break 2;
+                    }
+                    $data = json_decode($json, true);
+                    if ($data === null) {
+                        continue;
+                    }
+                    $text .= $data['choices'][0]['delta']['content'] ?? '';
+                }
+            }
 
             if (empty($text)) {
                 return $this->fallbackInsights($stats);

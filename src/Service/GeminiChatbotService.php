@@ -118,12 +118,9 @@ class GeminiChatbotService
             $lastTextResponse = null;
 
             for ($iteration = 0; $iteration < self::MAX_TOOL_ITERATIONS; $iteration++) {
-                $response = $this->callAIApi($messages);
-                $data = $response->toArray();
-
-                $message   = $data['choices'][0]['message'] ?? [];
-                $content   = $message['content'] ?? null;
-                $toolCalls = $message['tool_calls'] ?? [];
+                $message   = $this->callAIApi($messages);
+                $content   = $message['content'];
+                $toolCalls = $message['tool_calls'];
 
                 if (!empty($content)) {
                     $lastTextResponse = $content;
@@ -209,14 +206,14 @@ class GeminiChatbotService
         return $context;
     }
 
-    private function callAIApi(array $messages): ResponseInterface
+    private function callAIApi(array $messages): array
     {
-        return $this->httpClient->request('POST', self::AI_API_URL, [
+        $response = $this->httpClient->request('POST', self::AI_API_URL, [
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->aiApiKey,
                 'Content-Type'  => 'application/json',
             ],
-            'timeout' => 90,
+            'timeout' => 30,
             'json' => [
                 'model'       => self::AI_MODEL,
                 'messages'    => $messages,
@@ -224,8 +221,70 @@ class GeminiChatbotService
                 'tool_choice' => 'auto',
                 'temperature' => 0.7,
                 'max_tokens'  => 1024,
+                'stream'      => true,
             ],
         ]);
+
+        return $this->collectStream($response);
+    }
+
+    private function collectStream(\Symfony\Contracts\HttpClient\ResponseInterface $response): array
+    {
+        $content   = '';
+        $toolCalls = [];
+
+        foreach ($this->httpClient->stream($response, 30) as $chunk) {
+            if ($chunk->isTimeout()) {
+                continue;
+            }
+            if ($chunk->isLast()) {
+                break;
+            }
+
+            foreach (explode("\n", $chunk->getContent()) as $line) {
+                $line = trim($line);
+                if (!str_starts_with($line, 'data: ')) {
+                    continue;
+                }
+                $json = ltrim(substr($line, 6));
+                if ($json === '[DONE]') {
+                    break 2;
+                }
+                $data = json_decode($json, true);
+                if ($data === null) {
+                    continue;
+                }
+
+                $delta = $data['choices'][0]['delta'] ?? [];
+
+                if (isset($delta['content']) && $delta['content'] !== null) {
+                    $content .= $delta['content'];
+                }
+
+                foreach ($delta['tool_calls'] ?? [] as $tcDelta) {
+                    $idx = $tcDelta['index'];
+                    if (!isset($toolCalls[$idx])) {
+                        $toolCalls[$idx] = ['id' => '', 'type' => 'function', 'function' => ['name' => '', 'arguments' => '']];
+                    }
+                    if (!empty($tcDelta['id'])) {
+                        $toolCalls[$idx]['id'] = $tcDelta['id'];
+                    }
+                    if (!empty($tcDelta['function']['name'] ?? '')) {
+                        $toolCalls[$idx]['function']['name'] .= $tcDelta['function']['name'];
+                    }
+                    if (isset($tcDelta['function']['arguments'])) {
+                        $toolCalls[$idx]['function']['arguments'] .= $tcDelta['function']['arguments'];
+                    }
+                }
+            }
+        }
+
+        ksort($toolCalls);
+
+        return [
+            'content'    => $content !== '' ? $content : null,
+            'tool_calls' => array_values($toolCalls),
+        ];
     }
 
     /**
