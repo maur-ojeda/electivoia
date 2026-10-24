@@ -34,6 +34,7 @@ class GeminiInsightsService
 
         try {
             $response = $this->httpClient->request('POST', self::AI_API_URL, [
+                'timeout' => 60,
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->aiApiKey,
                     'Content-Type'  => 'application/json',

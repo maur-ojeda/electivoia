@@ -216,6 +216,7 @@ class GeminiChatbotService
                 'Authorization' => 'Bearer ' . $this->aiApiKey,
                 'Content-Type'  => 'application/json',
             ],
+            'timeout' => 90,
             'json' => [
                 'model'       => self::AI_MODEL,
                 'messages'    => $messages,
