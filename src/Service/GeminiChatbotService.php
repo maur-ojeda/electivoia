@@ -213,7 +213,7 @@ class GeminiChatbotService
                 'Authorization' => 'Bearer ' . $this->aiApiKey,
                 'Content-Type'  => 'application/json',
             ],
-            'timeout' => 30,
+            'timeout' => 90,
             'json' => [
                 'model'       => self::AI_MODEL,
                 'messages'    => $messages,
@@ -233,7 +233,7 @@ class GeminiChatbotService
         $content   = '';
         $toolCalls = [];
 
-        foreach ($this->httpClient->stream($response, 30) as $chunk) {
+        foreach ($this->httpClient->stream($response, 90) as $chunk) {
             if ($chunk->isTimeout()) {
                 continue;
             }

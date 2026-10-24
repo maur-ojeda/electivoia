@@ -34,7 +34,7 @@ class GeminiInsightsService
 
         try {
             $response = $this->httpClient->request('POST', self::AI_API_URL, [
-                'timeout' => 30,
+                'timeout' => 90,
                 'headers' => [
                     'Authorization' => 'Bearer ' . $this->aiApiKey,
                     'Content-Type'  => 'application/json',
@@ -51,7 +51,7 @@ class GeminiInsightsService
             ]);
 
             $text = '';
-            foreach ($this->httpClient->stream($response, 30) as $chunk) {
+            foreach ($this->httpClient->stream($response, 90) as $chunk) {
                 if ($chunk->isTimeout()) {
                     continue;
                 }

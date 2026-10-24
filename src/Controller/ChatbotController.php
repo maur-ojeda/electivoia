@@ -25,7 +25,7 @@ class ChatbotController extends AbstractController
     #[Route('/api/chatbot', name: 'api_chatbot', methods: ['POST'])]
     public function chat(Request $request, GeminiChatbotService $chatbotService): JsonResponse
     {
-        set_time_limit(120);
+        set_time_limit(180);
 
         $data = json_decode($request->getContent(), true);
 
