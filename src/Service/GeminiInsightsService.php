@@ -12,7 +12,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class GeminiInsightsService
 {
     private const AI_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
-    private const AI_MODEL = 'google/gemma-4-31b-it';
+    private const AI_MODEL = 'z-ai/glm-5-3-flash';
 
     public function __construct(
         private HttpClientInterface $httpClient,
