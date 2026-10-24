@@ -11,9 +11,9 @@ services:
     App\Service\GeminiChatbotService:
         arguments:
             $httpClient: '@App\Tests\Double\GeminiMockHttpClient'
-            $geminiApiKey: 'test-gemini-key'
+            $aiApiKey: 'test-ai-key'
 
     App\Service\GeminiInsightsService:
         arguments:
             $httpClient: '@App\Tests\Double\GeminiMockHttpClient'
-            $geminiApiKey: 'test-gemini-key'
+            $aiApiKey: 'test-ai-key'

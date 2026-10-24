@@ -14,7 +14,7 @@ services:
       DATABASE_URL: "postgresql://electivoia:electivoia2024@database:5432/electivoia?serverVersion=16&charset=utf8"
       MESSENGER_TRANSPORT_DSN: "doctrine://default?auto_setup=0"
       MAILER_DSN: ${MAILER_DSN:-null://null}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      AI_API_KEY: ${AI_API_KEY}
       TRUSTED_PROXIES: "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
       TRUSTED_HOSTS: ".*"
       MAILER_FROM: ${MAILER_FROM:-noreply@electivoia.cl}
@@ -50,7 +50,7 @@ services:
       APP_SECRET: ${APP_SECRET}
       DATABASE_URL: "postgresql://electivoia:electivoia2024@database:5432/electivoia?serverVersion=16&charset=utf8"
       MESSENGER_TRANSPORT_DSN: "doctrine://default?auto_setup=0"
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      AI_API_KEY: ${AI_API_KEY}
       TRUSTED_PROXIES: "127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
       TRUSTED_HOSTS: ".*"
       MAILER_FROM: ${MAILER_FROM:-noreply@electivoia.cl}

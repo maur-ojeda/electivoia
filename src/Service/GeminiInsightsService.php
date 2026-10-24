@@ -11,12 +11,13 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 class GeminiInsightsService
 {
-    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+    private const AI_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
+    private const AI_MODEL = 'google/gemma-4-31b-it';
 
     public function __construct(
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
-        private string $geminiApiKey
+        private string $aiApiKey
     ) {}
 
     /**
@@ -27,24 +28,28 @@ class GeminiInsightsService
     {
         $prompt = $this->buildPrompt($stats);
 
-        if (empty($this->geminiApiKey)) {
+        if (empty($this->aiApiKey)) {
             return $this->fallbackInsights($stats);
         }
 
         try {
-            $response = $this->httpClient->request('POST', self::GEMINI_API_URL, [
-                'query' => ['key' => $this->geminiApiKey],
-                'json'  => [
-                    'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
-                    'generationConfig' => [
-                        'temperature'     => 0.4,
-                        'maxOutputTokens' => 512,
+            $response = $this->httpClient->request('POST', self::AI_API_URL, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->aiApiKey,
+                    'Content-Type'  => 'application/json',
+                ],
+                'json' => [
+                    'model'    => self::AI_MODEL,
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt],
                     ],
+                    'temperature'      => 0.4,
+                    'max_tokens'       => 512,
                 ],
             ]);
 
             $data = $response->toArray();
-            $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            $text = $data['choices'][0]['message']['content'] ?? '';
 
             if (empty($text)) {
                 return $this->fallbackInsights($stats);

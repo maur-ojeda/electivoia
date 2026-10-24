@@ -10,68 +10,81 @@ use Psr\Log\LoggerInterface;
 
 class GeminiChatbotService
 {
-    private const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+    private const AI_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
+    private const AI_MODEL = 'google/gemma-4-31b-it';
     private const MAX_TOOL_ITERATIONS = 3;
 
-    /** @var array<int, array{name: string, description: string, parameters: array}> */
+    /** @var array<int, array{type: string, function: array}> */
     private const TOOL_DECLARATIONS = [
         [
-            'name' => 'get_available_courses',
-            'description' => 'Lista los cursos electivos disponibles. Usa esta función cuando el estudiante quiera ver cursos, buscar por categoría, o ver opciones.',
-            'parameters' => [
-                'type' => 'OBJECT',
-                'properties' => [
-                    'category' => [
-                        'type' => 'STRING',
-                        'description' => "Filtrar por área (ej: 'Filosofía', 'Artes', 'Ciencias'). Opcional.",
-                    ],
-                    'search' => [
-                        'type' => 'STRING',
-                        'description' => 'Buscar por nombre o descripción. Opcional.',
+            'type' => 'function',
+            'function' => [
+                'name' => 'get_available_courses',
+                'description' => 'Lista los cursos electivos disponibles. Usa esta función cuando el estudiante quiera ver cursos, buscar por categoría, o ver opciones.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'category' => [
+                            'type' => 'string',
+                            'description' => "Filtrar por área (ej: 'Filosofía', 'Artes', 'Ciencias'). Opcional.",
+                        ],
+                        'search' => [
+                            'type' => 'string',
+                            'description' => 'Buscar por nombre o descripción. Opcional.',
+                        ],
                     ],
                 ],
             ],
         ],
         [
-            'name' => 'get_course_details',
-            'description' => 'Muestra detalles completos de un curso específico: descripción, profesor, horario, cupos, y si el estudiante ya está inscrito.',
-            'parameters' => [
-                'type' => 'OBJECT',
-                'properties' => [
-                    'course_id' => [
-                        'type' => 'INTEGER',
-                        'description' => 'ID numérico del curso',
+            'type' => 'function',
+            'function' => [
+                'name' => 'get_course_details',
+                'description' => 'Muestra detalles completos de un curso específico: descripción, profesor, horario, cupos, y si el estudiante ya está inscrito.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'course_id' => [
+                            'type' => 'integer',
+                            'description' => 'ID numérico del curso',
+                        ],
                     ],
+                    'required' => ['course_id'],
                 ],
-                'required' => ['course_id'],
             ],
         ],
         [
-            'name' => 'enroll_in_course',
-            'description' => "Muestra los detalles de inscripción de un curso y verifica si el estudiante puede inscribirse. NO inscribe directamente — solo muestra información para que el estudiante confirme.",
-            'parameters' => [
-                'type' => 'OBJECT',
-                'properties' => [
-                    'course_id' => [
-                        'type' => 'INTEGER',
-                        'description' => 'ID numérico del curso a inscribir',
+            'type' => 'function',
+            'function' => [
+                'name' => 'enroll_in_course',
+                'description' => 'Muestra los detalles de inscripción de un curso y verifica si el estudiante puede inscribirse. NO inscribe directamente — solo muestra información para que el estudiante confirme.',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'course_id' => [
+                            'type' => 'integer',
+                            'description' => 'ID numérico del curso a inscribir',
+                        ],
                     ],
+                    'required' => ['course_id'],
                 ],
-                'required' => ['course_id'],
             ],
         ],
         [
-            'name' => 'confirm_enrollment',
-            'description' => "Confirma la inscripción del estudiante en un curso DESPUÉS de que el estudiante dio confirmación explícita (dijo 'sí', 'quiero', 'dale', etc.).",
-            'parameters' => [
-                'type' => 'OBJECT',
-                'properties' => [
-                    'course_id' => [
-                        'type' => 'INTEGER',
-                        'description' => 'ID numérico del curso a confirmar inscripción',
+            'type' => 'function',
+            'function' => [
+                'name' => 'confirm_enrollment',
+                'description' => "Confirma la inscripción del estudiante en un curso DESPUÉS de que el estudiante dio confirmación explícita (dijo 'sí', 'quiero', 'dale', etc.).",
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'course_id' => [
+                            'type' => 'integer',
+                            'description' => 'ID numérico del curso a confirmar inscripción',
+                        ],
                     ],
+                    'required' => ['course_id'],
                 ],
-                'required' => ['course_id'],
             ],
         ],
     ];
@@ -83,7 +96,7 @@ class GeminiChatbotService
         private CourseRepository $courseRepository,
         private EnrollmentService $enrollmentService,
         private LoggerInterface $logger,
-        private string $geminiApiKey
+        private string $aiApiKey
     ) {
     }
 
@@ -95,39 +108,28 @@ class GeminiChatbotService
             $coursesContext = $this->buildCoursesContext();
             $systemPrompt = $this->buildSystemPrompt($coursesContext, $studentContext);
 
-            $contents = [['parts' => [['text' => $systemPrompt]]]];
+            $messages = [['role' => 'system', 'content' => $systemPrompt]];
             foreach ($history as $turn) {
-                $contents[] = ['role' => 'user', 'parts' => [['text' => $turn['user']]]];
-                $contents[] = ['role' => 'model', 'parts' => [['text' => $turn['bot']]]];
+                $messages[] = ['role' => 'user',      'content' => $turn['user']];
+                $messages[] = ['role' => 'assistant', 'content' => $turn['bot']];
             }
-            $contents[] = ['role' => 'user', 'parts' => [['text' => $userMessage]]];
+            $messages[] = ['role' => 'user', 'content' => $userMessage];
 
             $lastTextResponse = null;
 
             for ($iteration = 0; $iteration < self::MAX_TOOL_ITERATIONS; $iteration++) {
-                $response = $this->callGeminiApi($contents);
+                $response = $this->callAIApi($messages);
                 $data = $response->toArray();
 
-                $parts = $data['candidates'][0]['content']['parts'] ?? [];
+                $message   = $data['choices'][0]['message'] ?? [];
+                $content   = $message['content'] ?? null;
+                $toolCalls = $message['tool_calls'] ?? [];
 
-                // Extract text response if present
-                foreach ($parts as $part) {
-                    if (isset($part['text'])) {
-                        $lastTextResponse = $part['text'];
-                    }
+                if (!empty($content)) {
+                    $lastTextResponse = $content;
                 }
 
-                // Check for function call
-                $functionCall = null;
-                foreach ($parts as $part) {
-                    if (isset($part['functionCall'])) {
-                        $functionCall = $part['functionCall'];
-                        break;
-                    }
-                }
-
-                if ($functionCall === null) {
-                    // No function call — return text response
+                if (empty($toolCalls)) {
                     if ($lastTextResponse !== null) {
                         return ['success' => true, 'message' => $lastTextResponse];
                     }
@@ -138,30 +140,30 @@ class GeminiChatbotService
                     ];
                 }
 
-                // Execute the tool
-                $toolName = $functionCall['name'];
-                $toolArgs = $functionCall['args'] ?? [];
-                $toolResult = $this->executeTool($toolName, $toolArgs);
+                // Append assistant message with tool_calls
+                $messages[] = [
+                    'role'       => 'assistant',
+                    'content'    => $content,
+                    'tool_calls' => $toolCalls,
+                ];
 
-                // Append function call + response to contents
-                $contents[] = [
-                    'role' => 'model',
-                    'parts' => [['functionCall' => $functionCall]],
-                ];
-                $contents[] = [
-                    'role' => 'user',
-                    'parts' => [[
-                        'functionResponse' => [
-                            'name' => $toolName,
-                            'response' => $toolResult,
-                        ],
-                    ]],
-                ];
+                // Execute each tool and append results
+                foreach ($toolCalls as $toolCall) {
+                    $toolName   = $toolCall['function']['name'];
+                    $toolArgs   = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?? [];
+                    $toolResult = $this->executeTool($toolName, $toolArgs);
+
+                    $messages[] = [
+                        'role'         => 'tool',
+                        'tool_call_id' => $toolCall['id'],
+                        'content'      => json_encode($toolResult),
+                    ];
+                }
             }
 
             // Loop cap reached
             $this->logger->warning(
-                'Gemini chatbot tool_call loop reached max iterations (' . self::MAX_TOOL_ITERATIONS . ')'
+                'AI chatbot tool_call loop reached max iterations (' . self::MAX_TOOL_ITERATIONS . ')'
             );
 
             return [
@@ -170,7 +172,7 @@ class GeminiChatbotService
             ];
 
         } catch (\Exception $e) {
-            $this->logger->error('Error en Gemini chatbot: ' . $e->getMessage());
+            $this->logger->error('Error en AI chatbot: ' . $e->getMessage());
 
             if (str_contains($e->getMessage(), '429') || str_contains($e->getMessage(), 'RESOURCE_EXHAUSTED')) {
                 return [
@@ -207,24 +209,20 @@ class GeminiChatbotService
         return $context;
     }
 
-    private function callGeminiApi(array $contents): ResponseInterface
+    private function callAIApi(array $messages): ResponseInterface
     {
-        return $this->httpClient->request('POST', self::GEMINI_API_URL, [
-            'query' => ['key' => $this->geminiApiKey],
+        return $this->httpClient->request('POST', self::AI_API_URL, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->aiApiKey,
+                'Content-Type'  => 'application/json',
+            ],
             'json' => [
-                'contents' => $contents,
-                'tools' => [['functionDeclarations' => self::TOOL_DECLARATIONS]],
-                'toolConfig' => [
-                    'functionCallingConfig' => [
-                        'mode' => 'AUTO',
-                    ],
-                ],
-                'generationConfig' => [
-                    'temperature' => 0.7,
-                    'topK' => 40,
-                    'topP' => 0.95,
-                    'maxOutputTokens' => 1024,
-                ],
+                'model'       => self::AI_MODEL,
+                'messages'    => $messages,
+                'tools'       => self::TOOL_DECLARATIONS,
+                'tool_choice' => 'auto',
+                'temperature' => 0.7,
+                'max_tokens'  => 1024,
             ],
         ]);
     }
