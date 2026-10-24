@@ -68,6 +68,13 @@ ENV TRUSTED_HOSTS=".*"
 EXPOSE 80
 EXPOSE 443
 
+# Startup entrypoint: re-runs cache:warmup with the real DATABASE_URL
+# (build-time warmup uses a dummy DB, so EasyAdmin route cache is incomplete)
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
+
 # Healthcheck against the built-in Caddy server
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD wget -qO- http://localhost/ || exit 1
