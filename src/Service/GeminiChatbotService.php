@@ -230,6 +230,13 @@ class GeminiChatbotService
 
     private function collectStream(\Symfony\Contracts\HttpClient\ResponseInterface $response): array
     {
+        $statusCode = $response->getStatusCode();
+        if ($statusCode !== 200) {
+            $body = $response->getContent(false);
+            $this->logger->error("OpenRouter error {$statusCode}: {$body}");
+            throw new \RuntimeException("HTTP/{$statusCode} from OpenRouter: {$body}");
+        }
+
         $content   = '';
         $toolCalls = [];
 
