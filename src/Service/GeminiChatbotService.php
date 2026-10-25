@@ -11,7 +11,7 @@ use Psr\Log\LoggerInterface;
 class GeminiChatbotService
 {
     private const AI_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-    private const AI_MODEL = 'google/gemma-4-26b-a4b:free';
+    private const AI_MODEL = 'google/gemma-4-26b-a4b-it:free';
     private const MAX_TOOL_ITERATIONS = 3;
 
     /** @var array<int, array{type: string, function: array}> */
@@ -234,7 +234,7 @@ class GeminiChatbotService
         if ($statusCode !== 200) {
             $body = $response->getContent(false);
             $this->logger->error("OpenRouter error {$statusCode}: {$body}");
-            throw new \RuntimeException("HTTP/{$statusCode} from OpenRouter: {$body}");
+            throw new \RuntimeException("HTTP/{$statusCode} from OpenRouter: " . substr($body, 0, 500));
         }
 
         $content   = '';
