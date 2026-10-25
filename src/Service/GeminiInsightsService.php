@@ -11,7 +11,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 class GeminiInsightsService
 {
-    private const AI_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
+    private const AI_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
     private const AI_MODEL = 'z-ai/glm-5.3-flash';
 
     public function __construct(
