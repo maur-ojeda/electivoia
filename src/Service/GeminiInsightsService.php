@@ -12,7 +12,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class GeminiInsightsService
 {
     private const AI_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-    private const AI_MODEL = 'deepseek/deepseek-chat-v3-0324:free';
+    private const AI_MODEL = 'thinkingmachines/inkling:free';
 
     public function __construct(
         private HttpClientInterface $httpClient,
