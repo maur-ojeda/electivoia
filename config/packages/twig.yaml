@@ -1,5 +1,14 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        category_image_map:
+            'Filosofía': '01'
+            'Matemática': '02'
+            'Educación física y salud': '03'
+            'Historia, geografía y ciencias sociales': '04'
+            'Ciencias': '05'
+            'Artes': '06'
+            'Lengua y literatura': '07'
 
 when@test:
     twig:
