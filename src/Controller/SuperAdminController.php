@@ -112,4 +112,40 @@ class SuperAdminController extends AbstractController
 
         return $this->render('super_admin/onboard.html.twig');
     }
+
+    #[Route('/school/{id}/edit', name: 'school_edit', methods: ['GET', 'POST'])]
+    public function editSchool(School $school, Request $request, EntityManagerInterface $em): Response
+    {
+        if ($request->isMethod('POST')) {
+            $school->setName($request->request->get('name'));
+            $school->setRbd($request->request->get('rbd') ?: null);
+            $school->setPlan($request->request->get('plan', 'free'));
+
+            $rawSlug = $request->request->get('slug') ?: $school->getName();
+            $school->setSlug(strtolower($this->slugger->slug($rawSlug)->toString()));
+
+            $startRaw = $request->request->get('enrollmentStart');
+            $endRaw   = $request->request->get('enrollmentEnd');
+            $school->setEnrollmentStart($startRaw ? new \DateTimeImmutable($startRaw) : null);
+            $school->setEnrollmentEnd($endRaw ? new \DateTimeImmutable($endRaw) : null);
+
+            $em->flush();
+
+            $this->addFlash('success', "Colegio \"{$school->getName()}\" actualizado.");
+            return $this->redirectToRoute('super_admin_dashboard');
+        }
+
+        return $this->render('super_admin/school_edit.html.twig', ['school' => $school]);
+    }
+
+    #[Route('/school/{id}/toggle', name: 'school_toggle', methods: ['POST'])]
+    public function toggleSchool(School $school, EntityManagerInterface $em): Response
+    {
+        $school->setActive(!$school->isActive());
+        $em->flush();
+
+        $state = $school->isActive() ? 'activado' : 'suspendido';
+        $this->addFlash('success', "Colegio \"{$school->getName()}\" {$state}.");
+        return $this->redirectToRoute('super_admin_dashboard');
+    }
 }
