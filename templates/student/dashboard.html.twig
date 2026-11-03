@@ -1,4 +1,5 @@
 {% extends 'base.html.twig' %}
+{% import 'macros/_attendance.html.twig' as att %}
 {% block title %}Mi Dashboard — ElectivoIA{% endblock %}
 
 {% block content %}
@@ -18,13 +19,9 @@
 	</div>
 	<div class="bg-white rounded-lg shadow p-5 dark:bg-gray-800">
 		<p class="text-sm text-gray-500 dark:text-gray-400">Asistencia promedio</p>
-		{% if avgAttendance is not null %}
-			<p class="text-3xl font-bold mt-1 {{ avgAttendance >= 75 ? 'text-green-600 dark:text-green-400' : (avgAttendance >= 50 ? 'text-yellow-500' : 'text-red-600 dark:text-red-400') }}">
-				{{ avgAttendance }}%
-			</p>
-		{% else %}
-			<p class="text-3xl font-bold text-gray-300 dark:text-gray-600 mt-1">—</p>
-		{% endif %}
+		<p class="text-3xl font-bold mt-1 {{ avgAttendance is not null ? att.text(avgAttendance) : 'text-gray-300 dark:text-gray-600' }}">
+			{{ avgAttendance is not null ? avgAttendance ~ '%' : '—' }}
+		</p>
 	</div>
 	<div class="bg-white rounded-lg shadow p-5 dark:bg-gray-800">
 		<p class="text-sm text-gray-500 dark:text-gray-400">Áreas de interés</p>
@@ -59,7 +56,7 @@
 	<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Estado de mis cursos</h2>
 	<div class="space-y-3">
 		{% for item in courseStats %}
-			{% set borderColor = item.percentage is null ? 'border-gray-200 dark:border-gray-700' : (item.percentage >= 75 ? 'border-green-500' : (item.percentage >= 50 ? 'border-yellow-400' : 'border-red-500')) %}
+			{% set borderColor = att.border(item.percentage) %}
 			<div class="bg-white dark:bg-gray-800 rounded-lg shadow border-l-4 {{ borderColor }} p-4 flex justify-between items-center">
 				<div>
 					<p class="font-medium text-gray-900 dark:text-white">{{ item.course.name }}</p>
@@ -68,13 +65,7 @@
 					{% endif %}
 				</div>
 				<div class="text-right">
-					{% if item.percentage is not null %}
-						{% set textColor = item.percentage >= 75 ? 'text-green-600 dark:text-green-400' : (item.percentage >= 50 ? 'text-yellow-500' : 'text-red-600 dark:text-red-400') %}
-						<p class="text-xl font-bold {{ textColor }}">{{ item.percentage }}%</p>
-						<p class="text-xs text-gray-400 dark:text-gray-500">{{ item.attended }}/{{ item.sessions }} sesiones</p>
-					{% else %}
-						<p class="text-xs text-gray-400 dark:text-gray-500">Sin sesiones aún</p>
-					{% endif %}
+					{{ att.badge(item.percentage, item.attended, item.sessions) }}
 				</div>
 			</div>
 		{% endfor %}

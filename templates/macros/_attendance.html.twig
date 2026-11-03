@@ -1,0 +1,42 @@
+{#
+  Shared attendance macros — import in any template:
+    {% import 'macros/_attendance.html.twig' as att %}
+
+  Usage:
+    border class:  {{ att.border(percentage) }}
+    text class:    {{ att.text(percentage) }}
+    full badge:    {{ att.badge(percentage, attended, total) }}
+#}
+
+{% macro border(percentage) -%}
+  {%- if percentage is null or percentage is same as false -%}
+    border-gray-200 dark:border-gray-700
+  {%- elseif percentage >= 75 -%}
+    border-green-500
+  {%- elseif percentage >= 50 -%}
+    border-yellow-400
+  {%- else -%}
+    border-red-500
+  {%- endif -%}
+{% endmacro %}
+
+{% macro text(percentage) -%}
+  {%- if percentage >= 75 -%}
+    text-green-600 dark:text-green-400
+  {%- elseif percentage >= 50 -%}
+    text-yellow-500
+  {%- else -%}
+    text-red-600 dark:text-red-400
+  {%- endif -%}
+{% endmacro %}
+
+{% macro badge(percentage, attended, total) %}
+  {% if percentage is not null %}
+    <span class="font-bold text-lg {{ _self.text(percentage) }}">{{ percentage }}%</span>
+    {% if attended is not null and total is not null %}
+      <p class="text-xs text-gray-400 dark:text-gray-500">{{ attended }}/{{ total }} sesiones</p>
+    {% endif %}
+  {% else %}
+    <span class="text-xs text-gray-400 dark:text-gray-500">—</span>
+  {% endif %}
+{% endmacro %}

@@ -1,5 +1,6 @@
 {# templates/guardian/dashboard.html.twig #}
 {% extends 'base.html.twig' %}
+{% import 'macros/_attendance.html.twig' as attMacro %}
 
 {% block title %}Mis Pupilos — ElectivoIA{% endblock %}
 
@@ -20,7 +21,7 @@
 
 			<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
 				<h2 class="font-bold text-lg text-gray-900 dark:text-white mb-1">{{ pupil.fullName }}</h2>
-				<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ pupil.grade }} — Promedio: {{ pupil.averageGrade ?? 'N/A' }}</p>
+				<p class="text-sm text-gray-500 dark:text-gray-400 mb-3">{{ pupil.grade }}{% if pupil.averageGrade %} — Promedio: {{ pupil.averageGrade }}{% endif %}</p>
 
 				{% if enrollments|length == 0 %}
 					<p class="text-sm text-gray-500 dark:text-gray-400">Sin cursos inscritos.</p>
@@ -29,7 +30,7 @@
 						{% for enrollment in enrollments %}
 							{% set courseId = enrollment.course.id %}
 							{% set att = attendanceByPupil[courseId] ?? null %}
-							{% set borderColor = (att is null or att.total == 0) ? 'border-gray-200 dark:border-gray-700' : (att.percentage >= 75 ? 'border-green-500' : (att.percentage >= 50 ? 'border-yellow-400' : 'border-red-500')) %}
+							{% set borderColor = (att is null or att.total == 0) ? 'border-gray-200 dark:border-gray-700' : attMacro.border(att.percentage) %}
 
 							<div class="border-l-4 {{ borderColor }} bg-gray-50 dark:bg-gray-700 rounded-r-lg p-3">
 								<div class="flex justify-between items-center">
@@ -43,13 +44,7 @@
 										{% endif %}
 									</div>
 									<div class="text-right">
-										{% if att is not null and att.total > 0 %}
-											{% set pctColor = att.percentage >= 75 ? 'text-green-600 dark:text-green-400' : (att.percentage >= 50 ? 'text-yellow-500' : 'text-red-600 dark:text-red-400') %}
-											<span class="font-bold text-lg {{ pctColor }}">{{ att.percentage }}%</span>
-											<p class="text-xs text-gray-400 dark:text-gray-500">{{ att.attended }}/{{ att.total }} sesiones</p>
-										{% else %}
-											<span class="text-xs text-gray-400 dark:text-gray-500">Sin sesiones</span>
-										{% endif %}
+										{{ attMacro.badge(att is not null and att.total > 0 ? att.percentage : null, att is not null ? att.attended : null, att is not null ? att.total : null) }}
 									</div>
 								</div>
 
