@@ -91,9 +91,12 @@
 							Editar
 						</a>
 					</div>
-					<form method="post" action="{{ path('teacher_course_toggle_active', {id: course.id}) }}">
+					<form method="post" action="{{ path('teacher_course_toggle_active', {id: course.id}) }}"
+						data-controller="confirm"
+						data-confirm-message-value="{{ course.isActive ? 'Desactivar' : 'Activar' }} '{{ course.name }}'?"
+						data-action="submit->confirm#confirm">
+						<input type="hidden" name="_token" value="{{ csrf_token('toggle_course_' ~ course.id) }}">
 						<button type="submit"
-							onclick="return confirm('{{ course.isActive ? 'Desactivar' : 'Activar' }} \'{{ course.name }}\'?')"
 							class="w-full text-xs font-medium rounded-lg py-1.5 border
 								{{ course.isActive
 									? 'text-red-700 border-red-300 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-gray-700'

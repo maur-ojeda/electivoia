@@ -86,10 +86,13 @@
 						<td class="px-4 py-3 flex items-center gap-3">
 							<a href="{{ path('super_admin_school_edit', {id: school.id}) }}"
 								class="text-blue-600 hover:underline text-xs dark:text-blue-400">Editar</a>
-							<form method="post" action="{{ path('super_admin_school_toggle', {id: school.id}) }}" class="inline">
+							<form method="post" action="{{ path('super_admin_school_toggle', {id: school.id}) }}" class="inline"
+								data-controller="confirm"
+								data-confirm-message-value="{{ school.active ? '¿Suspender' : '¿Activar' }} el colegio «{{ school.name }}»?"
+								data-action="submit->confirm#confirm">
+								<input type="hidden" name="_token" value="{{ csrf_token('toggle_school_' ~ school.id) }}">
 								<button type="submit"
-									class="text-xs {{ school.active ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800' }} hover:underline"
-									onclick="return confirm('{{ school.active ? '¿Suspender' : '¿Activar' }} el colegio «{{ school.name }}»?')">
+									class="text-xs {{ school.active ? 'text-red-500 hover:text-red-700' : 'text-green-600 hover:text-green-800' }} hover:underline">
 									{{ school.active ? 'Suspender' : 'Activar' }}
 								</button>
 							</form>

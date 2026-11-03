@@ -454,10 +454,14 @@ class TeacherController extends AbstractController
     // ── HDU-S2-03: Activar / desactivar curso ────────────────────────────────
 
     #[Route('/courses/{id}/toggle-active', name: 'course_toggle_active', methods: ['POST'])]
-    public function courseToggleActive(Course $course, EntityManagerInterface $em): Response
+    public function courseToggleActive(Course $course, Request $request, EntityManagerInterface $em): Response
     {
         if ($course->getTeacher() !== $this->getUser()) {
             throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('toggle_course_' . $course->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
         $course->setIsActive(!$course->isActive());

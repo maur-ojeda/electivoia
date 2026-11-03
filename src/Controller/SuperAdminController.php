@@ -139,8 +139,12 @@ class SuperAdminController extends AbstractController
     }
 
     #[Route('/school/{id}/toggle', name: 'school_toggle', methods: ['POST'])]
-    public function toggleSchool(School $school, EntityManagerInterface $em): Response
+    public function toggleSchool(School $school, Request $request, EntityManagerInterface $em): Response
     {
+        if (!$this->isCsrfTokenValid('toggle_school_' . $school->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Invalid CSRF token.');
+        }
+
         $school->setActive(!$school->isActive());
         $em->flush();
 
