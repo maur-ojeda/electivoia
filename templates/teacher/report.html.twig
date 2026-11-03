@@ -1,4 +1,5 @@
 {% extends 'base.html.twig' %}
+{% import 'macros/_attendance.html.twig' as att %}
 {% block title %}Reporte — {{ course.name }}{% endblock %}
 
 {% block content %}
@@ -72,17 +73,7 @@
 										<span class="bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">{{ item.justified }}</span>
 									</td>
 									<td class="px-3 py-3 text-center">
-										{% if item.percentage is not null %}
-											{% if item.percentage >= 75 %}
-												<span class="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">{{ item.percentage }}%</span>
-											{% elseif item.percentage >= 50 %}
-												<span class="bg-yellow-100 text-yellow-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-300">{{ item.percentage }}%</span>
-											{% else %}
-												<span class="bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-red-900 dark:text-red-300">{{ item.percentage }}%</span>
-											{% endif %}
-										{% else %}
-											<span class="text-gray-400">—</span>
-										{% endif %}
+										{{ att.badge(item.percentage) }}
 									</td>
 								</tr>
 							{% endfor %}
