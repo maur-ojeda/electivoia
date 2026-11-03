@@ -10,8 +10,8 @@ use Doctrine\Persistence\ManagerRegistry;
 /**
  * Base repository that provides tenant-aware query helpers.
  *
- * Sprint 5: Infrastructure only — existing repositories don't extend this yet.
- * Sprint 6: Migrate each repository to extend this class and call withTenant().
+ * Sprint 5: Infrastructure — CourseRepository and UserRepository extended this.
+ * Sprint 6: RecommendationService fixed to use CourseRepository::findActiveForContext().
  *
  * Usage in child repositories:
  *   $qb = $this->createQueryBuilder('c');

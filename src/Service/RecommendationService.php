@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Course;
 use App\Entity\User;
 use App\Repository\AiSignalRepository;
+use App\Repository\CourseRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\InterestProfileRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,6 +22,7 @@ class RecommendationService
 
     public function __construct(
         private EntityManagerInterface $em,
+        private CourseRepository $courseRepository,
         private EnrollmentRepository $enrollmentRepository,
         private InterestProfileRepository $interestProfileRepository,
         private AiSignalRepository $signalRepository,
@@ -65,7 +67,7 @@ class RecommendationService
             return [];
         }
 
-        $courses = $this->em->getRepository(Course::class)->findBy(['isActive' => true]);
+        $courses = $this->courseRepository->findActiveForContext();
         $results = [];
 
         foreach ($courses as $course) {
