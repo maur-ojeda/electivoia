@@ -192,83 +192,12 @@
 	</div>
 </div>
 
-{# Interests modal #}
-<div id="interestModal" tabindex="-1" aria-hidden="true"
-	class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full h-full bg-gray-900/50 dark:bg-gray-900/80">
-	<div class="relative p-4 w-full max-w-2xl">
-		<div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-			<div class="flex items-center justify-between p-4 border-b dark:border-gray-600">
-				<h3 class="text-lg font-semibold text-gray-900 dark:text-white">¿Qué te gusta? 🌟</h3>
-				<button type="button" onclick="document.getElementById('interestModal').classList.add('hidden')"
-					class="text-gray-400 hover:text-gray-900 dark:hover:text-white">
-					<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-				</button>
-			</div>
-			<form method="post" action="{{ path('student_profile') }}" id="interests-form" class="p-4">
-				<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Indica tu nivel de interés en cada área (0 = Sin interés, 5 = Máximo).</p>
-				<div class="flex gap-2 flex-wrap mb-4">
-					<button type="button" onclick="boostInterests(['Artes','Educación física y salud'],['Matemática','Filosofía'])"
-						class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Más creativo</button>
-					<button type="button" onclick="boostInterests(['Ciencias','Matemática'],['Artes'])"
-						class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Más científico</button>
-					<button type="button" onclick="boostInterests(['Historia, geografía y ciencias sociales','Lengua y literatura'],['Matemática','Ciencias'])"
-						class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">Más humanista</button>
-					<button type="button" onclick="resetInterests()"
-						class="text-red-600 hover:underline text-xs font-medium px-2 dark:text-red-400">Limpiar todo</button>
-				</div>
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-					{% set categories = ['Filosofía','Historia, geografía y ciencias sociales','Lengua y literatura','Matemática','Ciencias','Artes','Educación física y salud'] %}
-					{% for category in categories %}
-						<div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-							<div class="flex justify-between mb-1">
-								<label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ category }}</label>
-								<span id="output-{{ loop.index }}" class="text-sm text-gray-500 dark:text-gray-400">{{ interests[category] ?? 0 }}/5</span>
-							</div>
-							<input type="range" name="interests[{{ category }}]" min="0" max="5" value="{{ interests[category] ?? 0 }}"
-								class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-								oninput="document.getElementById('output-{{ loop.index }}').textContent = this.value + '/5'">
-						</div>
-					{% endfor %}
-				</div>
-				<div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
-					<button type="button" onclick="document.getElementById('interestModal').classList.add('hidden')"
-						class="text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:bg-gray-600">
-						Cancelar
-					</button>
-					<button type="submit"
-						class="text-white bg-blue-700 hover:bg-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700">
-						Guardar cambios
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
-</div>
-
-{# Interests button #}
+{# Interests link — the form lives in /student/profile #}
 <div class="fixed bottom-6 left-6 z-40">
-	<button onclick="document.getElementById('interestModal').classList.remove('hidden')"
-		class="text-white bg-purple-700 hover:bg-purple-800 font-medium rounded-lg text-sm px-4 py-2.5 shadow-lg dark:bg-purple-600 dark:hover:bg-purple-700">
-		⭐ Mis intereses
-	</button>
+	<a href="{{ path('student_profile') }}"
+		class="inline-flex items-center gap-2 text-white bg-purple-700 hover:bg-purple-800 font-medium rounded-lg text-sm px-4 py-2.5 shadow-lg dark:bg-purple-600 dark:hover:bg-purple-700">
+		<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+		Mis intereses
+	</a>
 </div>
-
-<script>
-function boostInterests(boost, reduce) {
-	const form = document.getElementById('interests-form');
-	boost.forEach(cat => {
-		const el = form.querySelector(`input[name="interests[${cat}]"]`);
-		if (el) { el.value = Math.min(5, parseInt(el.value) + 2); el.dispatchEvent(new Event('input')); }
-	});
-	reduce.forEach(cat => {
-		const el = form.querySelector(`input[name="interests[${cat}]"]`);
-		if (el) { el.value = Math.max(0, parseInt(el.value) - 2); el.dispatchEvent(new Event('input')); }
-	});
-}
-function resetInterests() {
-	document.getElementById('interests-form').querySelectorAll('input[type="range"]').forEach(el => {
-		el.value = 0; el.dispatchEvent(new Event('input'));
-	});
-}
-</script>
 {% endblock %}

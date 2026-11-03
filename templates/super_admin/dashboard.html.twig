@@ -38,13 +38,9 @@
 			<thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
 				<tr>
 					<th class="px-4 py-3">Colegio</th>
-					<th class="px-4 py-3">Slug</th>
-					<th class="px-4 py-3">RBD</th>
 					<th class="px-4 py-3">Plan</th>
 					<th class="px-4 py-3">Usuarios</th>
 					<th class="px-4 py-3">Estado</th>
-					<th class="px-4 py-3">Inscripciones</th>
-					<th class="px-4 py-3">Creado</th>
 					<th class="px-4 py-3">Acciones</th>
 				</tr>
 			</thead>
@@ -52,9 +48,10 @@
 				{% for row in schoolStats %}
 					{% set school = row.school %}
 					<tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-						<td class="px-4 py-3 font-medium text-gray-900 dark:text-white">{{ school.name }}</td>
-						<td class="px-4 py-3 text-xs">{{ school.slug }}</td>
-						<td class="px-4 py-3 text-xs">{{ school.rbd ?? '—' }}</td>
+						<td class="px-4 py-3">
+							<p class="font-medium text-gray-900 dark:text-white">{{ school.name }}</p>
+							<p class="text-xs text-gray-400 dark:text-gray-500">{{ school.slug }}{% if school.rbd %} · RBD {{ school.rbd }}{% endif %}</p>
+						</td>
 						<td class="px-4 py-3">
 							{% if school.plan == 'premium' %}
 								<span class="bg-purple-100 text-purple-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">{{ school.plan }}</span>
@@ -71,18 +68,10 @@
 							{% else %}
 								<span class="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded dark:bg-gray-700 dark:text-gray-400">Inactivo</span>
 							{% endif %}
-						</td>
-						<td class="px-4 py-3 text-xs">
 							{% if school.enrollmentOpen %}
-								<span class="text-green-600 dark:text-green-400 font-medium">Abierto</span>
-							{% else %}
-								<span class="text-yellow-500 font-medium">Cerrado</span>
-							{% endif %}
-							{% if school.enrollmentEnd %}
-								<br><span class="text-gray-400 dark:text-gray-500">hasta {{ school.enrollmentEnd|date('d/m/Y') }}</span>
+								<span class="ml-1 text-xs text-green-600 dark:text-green-400">· Inscripciones abiertas</span>
 							{% endif %}
 						</td>
-						<td class="px-4 py-3 text-xs">{{ school.createdAt|date('d/m/Y') }}</td>
 						<td class="px-4 py-3 flex items-center gap-3">
 							<a href="{{ path('super_admin_school_edit', {id: school.id}) }}"
 								class="text-blue-600 hover:underline text-xs dark:text-blue-400">Editar</a>

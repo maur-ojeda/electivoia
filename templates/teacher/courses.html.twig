@@ -71,33 +71,35 @@
 						{{ enrollmentsByCourse[course.id]|length }} / {{ course.maxCapacity }} alumnos
 						{% if course.enrollmentDeadline %}· Cierre: {{ course.enrollmentDeadline|date('d/m/Y') }}{% endif %}
 					</p>
-					<div class="flex gap-1 mb-2">
+					<div class="flex gap-2 items-center">
 						<a href="{{ path('teacher_course_students', {id: course.id}) }}"
-							class="flex-1 text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg py-1.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
-							Alumnos
+							class="flex-1 text-center text-white bg-blue-700 hover:bg-blue-800 text-xs font-medium rounded-lg py-2 dark:bg-blue-600 dark:hover:bg-blue-700">
+							Pasar lista
 						</a>
-						<a href="{{ path('teacher_report', {id: course.id}) }}"
-							class="flex-1 text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg py-1.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
-							Reporte
-						</a>
-						<a href="{{ path('teacher_course_edit', {id: course.id}) }}"
-							class="flex-1 text-center text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg py-1.5 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:hover:bg-gray-600">
-							Editar
-						</a>
+						<div class="relative" data-controller="dropdown">
+							<button type="button" data-action="click->dropdown#toggle"
+								class="p-2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700">
+								<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
+							</button>
+							<div data-dropdown-target="menu"
+								class="hidden absolute right-0 mt-1 w-36 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-10 text-xs overflow-hidden">
+								<a href="{{ path('teacher_report', {id: course.id}) }}"
+									class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Reporte</a>
+								<a href="{{ path('teacher_course_edit', {id: course.id}) }}"
+									class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">Editar</a>
+								<form method="post" action="{{ path('teacher_course_toggle_active', {id: course.id}) }}"
+									data-controller="confirm"
+									data-confirm-message-value="{{ course.isActive ? 'Desactivar' : 'Activar' }} '{{ course.name }}'?"
+									data-action="submit->confirm#confirm">
+									<input type="hidden" name="_token" value="{{ csrf_token('toggle_course_' ~ course.id) }}">
+									<button type="submit"
+										class="w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-600 {{ course.isActive ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400' }}">
+										{{ course.isActive ? 'Desactivar' : 'Activar' }}
+									</button>
+								</form>
+							</div>
+						</div>
 					</div>
-					<form method="post" action="{{ path('teacher_course_toggle_active', {id: course.id}) }}"
-						data-controller="confirm"
-						data-confirm-message-value="{{ course.isActive ? 'Desactivar' : 'Activar' }} '{{ course.name }}'?"
-						data-action="submit->confirm#confirm">
-						<input type="hidden" name="_token" value="{{ csrf_token('toggle_course_' ~ course.id) }}">
-						<button type="submit"
-							class="w-full text-xs font-medium rounded-lg py-1.5 border
-								{{ course.isActive
-									? 'text-red-700 border-red-300 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-gray-700'
-									: 'text-green-700 border-green-300 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-gray-700' }}">
-							{{ course.isActive ? 'Desactivar' : 'Activar' }}
-						</button>
-					</form>
 				</div>
 			</div>
 		{% endfor %}

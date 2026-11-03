@@ -17,16 +17,37 @@
 	'Educación física y salud'
 ] %}
 
+<div class="flex gap-2 flex-wrap mb-6">
+	<button type="button" id="preset-creative"
+		class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+		Más creativo
+	</button>
+	<button type="button" id="preset-science"
+		class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+		Más científico
+	</button>
+	<button type="button" id="preset-humanist"
+		class="text-gray-900 bg-white border border-gray-300 hover:bg-gray-100 text-xs font-medium rounded-lg px-3 py-1.5 dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+		Más humanista
+	</button>
+	<button type="button" id="preset-reset"
+		class="text-red-600 hover:underline text-xs font-medium px-2 dark:text-red-400">
+		Limpiar todo
+	</button>
+</div>
+
 <form method="post" id="interestForm">
 	<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
 		{% for category in categories %}
 			<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-				<label class="block text-sm font-medium text-gray-900 dark:text-white mb-2">{{ category }}</label>
+				<div class="flex justify-between mb-2">
+					<label class="text-sm font-medium text-gray-900 dark:text-white">{{ category }}</label>
+					<span class="interest-output text-sm text-gray-500 dark:text-gray-400">{{ interests[category] ?? 0 }}/5</span>
+				</div>
 				<input type="range" name="interests[{{ category }}]" min="0" max="5"
 					value="{{ (interests[category] ?? 0) }}"
-					class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
-					oninput="this.nextElementSibling.textContent = this.value + '/5'">
-				<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ interests[category] ?? 0 }}/5</p>
+					data-category="{{ category }}"
+					class="interest-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600">
 			</div>
 		{% endfor %}
 	</div>
@@ -42,4 +63,34 @@
 		</a>
 	</div>
 </form>
+
+<script>
+(function () {
+	const sliders = document.querySelectorAll('.interest-slider');
+
+	sliders.forEach(s => {
+		s.addEventListener('input', () => {
+			s.closest('div.bg-white, div.dark\\:bg-gray-800').querySelector('.interest-output').textContent = s.value + '/5';
+		});
+	});
+
+	function adjust(boostCats, reduceCats) {
+		sliders.forEach(s => {
+			const cat = s.dataset.category;
+			if (boostCats.includes(cat))  { s.value = Math.min(5, +s.value + 2); s.dispatchEvent(new Event('input')); }
+			if (reduceCats.includes(cat)) { s.value = Math.max(0, +s.value - 2); s.dispatchEvent(new Event('input')); }
+		});
+	}
+
+	document.getElementById('preset-creative').addEventListener('click', () =>
+		adjust(['Artes','Educación física y salud'], ['Matemática','Filosofía']));
+	document.getElementById('preset-science').addEventListener('click', () =>
+		adjust(['Ciencias','Matemática'], ['Artes']));
+	document.getElementById('preset-humanist').addEventListener('click', () =>
+		adjust(['Historia, geografía y ciencias sociales','Lengua y literatura'], ['Matemática','Ciencias']));
+	document.getElementById('preset-reset').addEventListener('click', () => {
+		sliders.forEach(s => { s.value = 0; s.dispatchEvent(new Event('input')); });
+	});
+})();
+</script>
 {% endblock %}
