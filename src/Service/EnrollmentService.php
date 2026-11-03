@@ -21,7 +21,8 @@ class EnrollmentService
         EntityManagerInterface $entityManager,
         CourseRepository $courseRepository,
         EnrollmentRepository $enrollmentRepository,
-        UserRepository $userRepository
+        UserRepository $userRepository,
+        private NotificationService $notificationService,
     ) {
         $this->entityManager = $entityManager;
         $this->courseRepository = $courseRepository;
@@ -170,6 +171,8 @@ class EnrollmentService
             $course->setCurrentEnrollment($currentEnrollmentCount + 1);
             $this->entityManager->flush();
 
+            $this->notificationService->sendEnrollmentConfirmation($student, $course);
+
             return ['success' => true, 'message' => 'Inscripción exitosa.'];
         } else {
             // No hay cupo, aplicar regla de prioridad
@@ -213,12 +216,15 @@ class EnrollmentService
 
                 $this->entityManager->persist($newEnrollment);
 
-                $this->entityManager->flush(); // Aplica los cambios (eliminar y crear)
+                $this->entityManager->flush();
+
+                $this->notificationService->sendEnrollmentDisplaced($displacedStudent, $student, $course);
+                $this->notificationService->sendEnrollmentConfirmation($student, $course);
 
                 return [
                     'success' => true,
                     'message' => "Inscripción exitosa. Has reemplazado a {$displacedStudent->getUserIdentifier()} en el curso.",
-                    'displaced' => $displacedStudent->getUserIdentifier() // O ID
+                    'displaced' => $displacedStudent->getUserIdentifier(),
                 ];
             } else {
                 // Nadie tiene menor promedio, no se puede inscribir
