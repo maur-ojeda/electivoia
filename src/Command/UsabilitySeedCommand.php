@@ -113,17 +113,19 @@ class UsabilitySeedCommand extends Command
             );
         }
 
+        $allGrades = ['1M', '2M', '3M', '4M'];
+
         // --- Courses: Liceo Ficticio ---
-        $cFisica      = $this->makeCourse('Física',                                           30, $catCiencias,  $pR,  $liceo);
-        $cQuimica     = $this->makeCourse('Química',                                          30, $catCiencias,  $pR,  $liceo);
-        $cCalculo     = $this->makeCourse('Cálculo',                                          30, $catMatematica,$pR,  $liceo);
-        $cCiencias    = $this->makeCourse('Ciencias de la Salud',                             30, $catCiencias,  $p2,  $liceo);
-        $cHistoria    = $this->makeCourse('Comprensión Histórica del Presente',               40, $catHistoria,  $p1,  $liceo);
-        $cBiologia    = $this->makeCourse('Biología de los Ecosistemas',                      25, $catCiencias,  $pR,  $liceo);
-        $cArtes       = $this->makeCourse('Artes Visuales, Audiovisuales y Multimediales',   20, $catArtes,     $pR,  $liceo);
+        $cFisica      = $this->makeCourse('Física',                                           30, $catCiencias,  $pR,  $liceo, $allGrades);
+        $cQuimica     = $this->makeCourse('Química',                                          30, $catCiencias,  $pR,  $liceo, $allGrades);
+        $cCalculo     = $this->makeCourse('Cálculo',                                          30, $catMatematica,$pR,  $liceo, $allGrades);
+        $cCiencias    = $this->makeCourse('Ciencias de la Salud',                             30, $catCiencias,  $p2,  $liceo, $allGrades);
+        $cHistoria    = $this->makeCourse('Comprensión Histórica del Presente',               40, $catHistoria,  $p1,  $liceo, $allGrades);
+        $cBiologia    = $this->makeCourse('Biología de los Ecosistemas',                      25, $catCiencias,  $pR,  $liceo, $allGrades);
+        $cArtes       = $this->makeCourse('Artes Visuales, Audiovisuales y Multimediales',   20, $catArtes,     $pR,  $liceo, $allGrades);
 
         // --- Course: Colegio Aislamiento ---
-        $cAislamiento = $this->makeCourse('Electivo Aislamiento', 10, null, $aProf, $aislamiento);
+        $cAislamiento = $this->makeCourse('Electivo Aislamiento', 10, null, $aProf, $aislamiento, $allGrades);
 
         // --- Enrollments: Liceo Ficticio ---
         // Física: 29 relleno (0-28) + E2
@@ -293,7 +295,7 @@ class UsabilitySeedCommand extends Command
         return $user;
     }
 
-    private function makeCourse(string $name, int $cap, ?CourseCategory $cat, User $teacher, School $school): Course
+    private function makeCourse(string $name, int $cap, ?CourseCategory $cat, User $teacher, School $school, array $targetGrades = []): Course
     {
         $course = new Course();
         $course->setName($name);
@@ -303,6 +305,9 @@ class UsabilitySeedCommand extends Command
         $course->setSchool($school);
         if ($cat) {
             $course->setCategory($cat);
+        }
+        if (!empty($targetGrades)) {
+            $course->setTargetGrades($targetGrades);
         }
         $this->em->persist($course);
         return $course;
