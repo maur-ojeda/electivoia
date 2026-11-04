@@ -255,7 +255,7 @@ class StudentController extends AbstractController
                     SELECT e FROM App\Entity\Enrollment e
                     JOIN e.student s
                     WHERE e.course = :course
-                    ORDER BY COALESCE(s.averageGrade, 0) ASC
+                    ORDER BY CASE WHEN s.averageGrade IS NULL THEN 0 ELSE s.averageGrade END ASC
                 ')
                     ->setParameter('course', $course)
                     ->setMaxResults(1)
