@@ -6,6 +6,7 @@ use App\Entity\AiSignal;
 use App\Entity\Attendance;
 use App\Entity\Course;
 use App\Entity\Enrollment;
+use App\Entity\InterestProfile;
 use App\Entity\School;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -104,7 +105,13 @@ class UsabilityResetCommand extends Command
                     ->setParameter('ids', $schoolIds)->execute();
             }
 
-            // 6. Users — InterestProfile cascades automatically
+            // 6a. InterestProfile (DQL bulk delete bypasses ORM cascade)
+            if ($userIds) {
+                $this->em->createQuery('DELETE FROM ' . InterestProfile::class . ' ip WHERE ip.student IN (:ids)')
+                    ->setParameter('ids', $userIds)->execute();
+            }
+
+            // 6b. Users
             if ($userIds) {
                 $this->em->createQuery('DELETE FROM ' . User::class . ' u WHERE u.id IN (:ids)')
                     ->setParameter('ids', $userIds)->execute();
