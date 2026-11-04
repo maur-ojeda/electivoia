@@ -1,4 +1,8 @@
 
+###> usability testing (local only) ###
+/staging/
+###< usability testing ###
+
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
