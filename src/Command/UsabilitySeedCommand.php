@@ -75,7 +75,7 @@ class UsabilitySeedCommand extends Command
         $pR  = $this->makePersona(30500001, 'Roberto Muñoz',     ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p3.roberto');
         $p4  = $this->makePersona(30500002, 'Alejandra Soto',    ['ROLE_TEACHER'],      'F', null,  null, $liceo,  'p4.alejandra');
         $p5  = $this->makePersona(30500003, 'Martín Espinoza',   ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p5.martin');
-        $e1  = $this->makePersona(30600001, 'Catalina Rojas',    ['ROLE_STUDENT'],      'F', '1M',  6.6,  $liceo,  'e1.catalina');
+        $e1  = $this->makePersona(30600001, 'Catalina Rojas',    ['ROLE_STUDENT'],      'F', '4M',  6.6,  $liceo,  'e1.catalina');
         $e2  = $this->makePersona(30700001, 'Matías Fuentes',    ['ROLE_STUDENT'],      'M', '3M',  5.1,  $liceo,  'e2.matias');
         $e3  = $this->makePersona(30800001, 'Josefa Muñoz',      ['ROLE_STUDENT'],      'F', '2M',  6.1,  $liceo,  'e3.josefa');
         $e4  = $this->makePersona(30900001, 'Tomás Araya',       ['ROLE_STUDENT'],      'M', '4M',  5.5,  $liceo,  'e4.tomas');
@@ -97,7 +97,8 @@ class UsabilitySeedCommand extends Command
             $base  = 31500001 + $i;
             $grade = ($i % 2 === 0) ? '4M' : '3M';
             $avg   = $this->rellenoAvg($i);
-            $relleno[$i] = $this->makeRelleno($base, $avg, $grade, $liceo);
+            $name  = self::rellenoName($i);
+            $relleno[$i] = $this->makeRelleno($base, $name, $avg, $grade, $liceo);
         }
 
         // --- Relleno: Colegio Aislamiento ---
@@ -204,17 +205,17 @@ class UsabilitySeedCommand extends Command
         $cAislamiento->setCurrentEnrollment(5);
 
         // --- Attendance: Comprensión Histórica — E2 (20 sessions: 15 present, 3 absent, 2 justified) ---
-        $statuses = array_merge(array_fill(0, 15, 'presente'), array_fill(0, 3, 'ausente'), array_fill(0, 2, 'justificado'));
+        $statuses = array_merge(array_fill(0, 15, 'present'), array_fill(0, 3, 'absent'), array_fill(0, 2, 'justified'));
         $this->generateAttendance($e2, $cHistoria, $statuses);
 
         // --- Attendance: Ciencias de la Salud — 5 students <85%, rest ~90% ---
         for ($i = 64; $i < 94; $i++) {
             if ($i < 69) {
                 // 15/20 = 75%
-                $s = array_merge(array_fill(0, 15, 'presente'), array_fill(0, 5, 'ausente'));
+                $s = array_merge(array_fill(0, 15, 'present'), array_fill(0, 5, 'absent'));
             } else {
                 // 18/20 = 90%
-                $s = array_merge(array_fill(0, 18, 'presente'), array_fill(0, 2, 'ausente'));
+                $s = array_merge(array_fill(0, 18, 'present'), array_fill(0, 2, 'absent'));
             }
             $this->generateAttendance($relleno[$i], $cCiencias, $s);
         }
@@ -297,12 +298,12 @@ class UsabilitySeedCommand extends Command
         return $user;
     }
 
-    private function makeRelleno(int $base, ?float $avg, string $grade, School $school): User
+    private function makeRelleno(int $base, string $name, ?float $avg, string $grade, School $school): User
     {
         $rut = self::rut($base);
         $user = new User();
         $user->setRut($rut);
-        $user->setFullName('Relleno ' . number_format($base, 0, '', '.'));
+        $user->setFullName($name);
         $user->setGrade($grade);
         $user->setRoles(['ROLE_STUDENT']);
         $user->setGender($base % 2 === 0 ? 'F' : 'M');
@@ -354,6 +355,38 @@ class UsabilitySeedCommand extends Command
             $att->setStatus($status);
             $this->em->persist($att);
         }
+    }
+
+    private static function rellenoName(int $i): string
+    {
+        $male = [
+            'Alejandro', 'Andrés', 'Benjamín', 'Carlos', 'Cristóbal',
+            'Daniel', 'Diego', 'Eduardo', 'Felipe', 'Francisco',
+            'Gabriel', 'Iván', 'Jorge', 'Luis', 'Manuel',
+            'Miguel', 'Nicolás', 'Pablo', 'Roberto', 'Sebastián',
+        ];
+        $female = [
+            'Alejandra', 'Bárbara', 'Camila', 'Carolina', 'Claudia',
+            'Daniela', 'Francisca', 'Gabriela', 'Isabel', 'Javiera',
+            'Karen', 'Laura', 'Lorena', 'Magdalena', 'María',
+            'Nicole', 'Paula', 'Sofía', 'Valentina', 'Ximena',
+        ];
+        $surnames = [
+            'Acevedo', 'Álvarez', 'Araya', 'Bravo', 'Castro',
+            'Contreras', 'Delgado', 'Espinoza', 'Flores', 'García',
+            'González', 'Gutiérrez', 'Herrera', 'Ibáñez', 'Lagos',
+            'López', 'Martínez', 'Medina', 'Molina', 'Morales',
+            'Muñoz', 'Navarro', 'Ortega', 'Ramírez', 'Reyes',
+            'Rodríguez', 'Rojas', 'Silva', 'Torres', 'Vargas',
+        ];
+        // base = 31500001 + $i; odd base → M, even base → F; since 31500001 is odd: i-even → M, i-odd → F
+        $n = count($surnames); // 30 — gcd(6,30)=6 ∤ 11 so s1≠s2 always
+        $firstName = ($i % 2 === 0)
+            ? $male[($i >> 1) % count($male)]
+            : $female[(($i - 1) >> 1) % count($female)];
+        $s1 = $surnames[$i % $n];
+        $s2 = $surnames[($i * 7 + 11) % $n];
+        return "$firstName $s1 $s2";
     }
 
     private function rellenoAvg(int $i): float

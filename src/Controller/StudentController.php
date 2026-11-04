@@ -351,6 +351,8 @@ class StudentController extends AbstractController
             $present = count(array_filter($records, fn($a) => $a->getStatus() === 'present'));
             $absent = count(array_filter($records, fn($a) => $a->getStatus() === 'absent'));
             $justified = count(array_filter($records, fn($a) => $a->getStatus() === 'justified'));
+            $late = count(array_filter($records, fn($a) => $a->getStatus() === 'late'));
+            // 'late' reduces attendance% (counts in total but not as present/justified)
             $percentage = $total > 0 ? round(($present + $justified) / $total * 100) : null;
 
             $attendanceData[] = [
@@ -360,6 +362,7 @@ class StudentController extends AbstractController
                 'present' => $present,
                 'absent' => $absent,
                 'justified' => $justified,
+                'late' => $late,
                 'percentage' => $percentage,
             ];
         }

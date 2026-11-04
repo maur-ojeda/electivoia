@@ -9,6 +9,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: AttendanceRepository::class)]
 class Attendance
 {
+    public const VALID_STATUSES = ['present', 'absent', 'justified', 'late'];
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -74,6 +76,13 @@ class Attendance
 
     public function setStatus(string $status): static
     {
+        if (!in_array($status, self::VALID_STATUSES, true)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Estado de asistencia inválido "%s". Permitidos: %s',
+                $status,
+                implode(', ', self::VALID_STATUSES)
+            ));
+        }
         $this->status = $status;
 
         return $this;
