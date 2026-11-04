@@ -133,13 +133,13 @@ class StudentController extends AbstractController
         $enrollmentCounts = [];
         if (!empty($courseIds)) {
             $counts = $em->createQuery('
-            SELECT c.id, COUNT(e.id)
+            SELECT c.id AS courseId, COUNT(e.id) AS cnt
             FROM App\Entity\Course c
             LEFT JOIN c.enrollments e
             WHERE c.id IN (:ids)
             GROUP BY c.id
         ')->setParameter('ids', $courseIds)->getScalarResult();
-            $enrollmentCounts = array_column($counts, 1, 0);
+            $enrollmentCounts = array_column($counts, 'cnt', 'courseId');
         }
 
         // Recomendaciones

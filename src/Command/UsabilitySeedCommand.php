@@ -72,7 +72,9 @@ class UsabilitySeedCommand extends Command
         $ad2 = $this->makePersona(30200001, 'Felipe Navarro',    ['ROLE_ADMIN'],        'M', null,  null, $liceo,  'ad2.felipe');
         $p1  = $this->makePersona(30300001, 'Patricia Vergara',  ['ROLE_TEACHER'],      'F', null,  null, $liceo,  'p1.patricia');
         $p2  = $this->makePersona(30400001, 'Diego Herrera',     ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p2.diego');
-        $pR  = $this->makePersona(30500001, 'Profesor Relleno',  ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p.relleno');
+        $pR  = $this->makePersona(30500001, 'Roberto Muñoz',     ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p3.roberto');
+        $p4  = $this->makePersona(30500002, 'Alejandra Soto',    ['ROLE_TEACHER'],      'F', null,  null, $liceo,  'p4.alejandra');
+        $p5  = $this->makePersona(30500003, 'Martín Espinoza',   ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p5.martin');
         $e1  = $this->makePersona(30600001, 'Catalina Rojas',    ['ROLE_STUDENT'],      'F', '1M',  null, $liceo,  'e1.catalina');
         $e2  = $this->makePersona(30700001, 'Matías Fuentes',    ['ROLE_STUDENT'],      'M', '3M',  5.1,  $liceo,  'e2.matias');
         $e3  = $this->makePersona(30800001, 'Josefa Muñoz',      ['ROLE_STUDENT'],      'F', '2M',  6.1,  $liceo,  'e3.josefa');
@@ -116,13 +118,33 @@ class UsabilitySeedCommand extends Command
         $allGrades = ['1M', '2M', '3M', '4M'];
 
         // --- Courses: Liceo Ficticio ---
-        $cFisica      = $this->makeCourse('Física',                                           30, $catCiencias,  $pR,  $liceo, $allGrades);
-        $cQuimica     = $this->makeCourse('Química',                                          30, $catCiencias,  $pR,  $liceo, $allGrades);
-        $cCalculo     = $this->makeCourse('Cálculo',                                          30, $catMatematica,$pR,  $liceo, $allGrades);
-        $cCiencias    = $this->makeCourse('Ciencias de la Salud',                             30, $catCiencias,  $p2,  $liceo, $allGrades);
-        $cHistoria    = $this->makeCourse('Comprensión Histórica del Presente',               40, $catHistoria,  $p1,  $liceo, $allGrades);
-        $cBiologia    = $this->makeCourse('Biología de los Ecosistemas',                      25, $catCiencias,  $pR,  $liceo, $allGrades);
-        $cArtes       = $this->makeCourse('Artes Visuales, Audiovisuales y Multimediales',   20, $catArtes,     $pR,  $liceo, $allGrades);
+        $cFisica = $this->makeCourse('Física', 30, $catCiencias, $pR, $liceo, $allGrades);
+        $cFisica->setDescription('Exploración de mecánica, termodinámica y ondas a través de experimentos y problemas aplicados al mundo real.');
+        $cFisica->setSchedule('Martes y jueves 10:00–11:30');
+
+        $cQuimica = $this->makeCourse('Química', 30, $catCiencias, $pR, $liceo, $allGrades);
+        $cQuimica->setDescription('Estudio de la materia, sus transformaciones y aplicaciones en la industria y el medioambiente.');
+        $cQuimica->setSchedule('Lunes y miércoles 08:30–10:00');
+
+        $cCalculo = $this->makeCourse('Cálculo', 30, $catMatematica, $p4, $liceo, $allGrades);
+        $cCalculo->setDescription('Introducción a límites, derivadas e integrales con aplicaciones en ciencias e ingeniería.');
+        $cCalculo->setSchedule('Miércoles y viernes 14:00–15:30');
+
+        $cCiencias = $this->makeCourse('Ciencias de la Salud', 30, $catCiencias, $p2, $liceo, $allGrades);
+        $cCiencias->setDescription('Fundamentos de biología humana, salud pública y primeros auxilios básicos para la vida cotidiana.');
+        $cCiencias->setSchedule('Lunes, miércoles y viernes 11:00–12:00');
+
+        $cHistoria = $this->makeCourse('Comprensión Histórica del Presente', 40, $catHistoria, $p1, $liceo, $allGrades);
+        $cHistoria->setDescription('Análisis de procesos históricos del Chile contemporáneo y su conexión con el presente.');
+        $cHistoria->setSchedule('Martes y jueves 08:30–10:00');
+
+        $cBiologia = $this->makeCourse('Biología de los Ecosistemas', 25, $catCiencias, $p4, $liceo, $allGrades);
+        $cBiologia->setDescription('Ecología, biodiversidad y crisis medioambiental: explorando los ecosistemas de Chile.');
+        $cBiologia->setSchedule('Lunes y miércoles 15:30–17:00');
+
+        $cArtes = $this->makeCourse('Artes Visuales, Audiovisuales y Multimediales', 20, $catArtes, $p5, $liceo, $allGrades);
+        $cArtes->setDescription('Creación de proyectos visuales, audiovisuales y multimediales integrando técnicas análogas y digitales.');
+        $cArtes->setSchedule('Viernes 14:00–17:00');
 
         // --- Course: Colegio Aislamiento ---
         $cAislamiento = $this->makeCourse('Electivo Aislamiento', 10, null, $aProf, $aislamiento, $allGrades);
