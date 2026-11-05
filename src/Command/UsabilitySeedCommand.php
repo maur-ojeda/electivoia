@@ -77,9 +77,9 @@ class UsabilitySeedCommand extends Command
         $p5  = $this->makePersona(30500003, 'Martín Espinoza',   ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p5.martin');
         $e1  = $this->makePersona(30600001, 'Catalina Rojas',    ['ROLE_STUDENT'],      'F', '4M',  6.6,  $liceo,  'e1.catalina');
         $e2  = $this->makePersona(30700001, 'Matías Fuentes',    ['ROLE_STUDENT'],      'M', '3M',  5.1,  $liceo,  'e2.matias');
-        $e3  = $this->makePersona(30800001, 'Josefa Muñoz',      ['ROLE_STUDENT'],      'F', '2M',  6.1,  $liceo,  'e3.josefa');
-        $e4  = $this->makePersona(30900001, 'Tomás Araya',       ['ROLE_STUDENT'],      'M', '4M',  5.5,  $liceo,  'e4.tomas');
-        $e5  = $this->makePersona(31000001, 'Valentina Díaz',    ['ROLE_STUDENT'],      'F', '1M',  null, $liceo,  'e5.valentina');
+        $e3  = $this->makePersona(30800001, 'Josefa Muñoz',      ['ROLE_STUDENT'],      'F', '3M',  5.8,  $liceo,  'e3.josefa');
+        $e4  = $this->makePersona(30900001, 'Tomás Araya',       ['ROLE_STUDENT'],      'M', '4M',  6.0,  $liceo,  'e4.tomas');
+        $e5  = $this->makePersona(31000001, 'Valentina Díaz',    ['ROLE_STUDENT'],      'F', '4M',  null, $liceo,  'e5.valentina');
         $eE  = $this->makePersona(31050001, 'Relleno Empate',    ['ROLE_STUDENT'],      'M', '3M',  5.1,  $liceo,  'relleno.empate');
         $a1  = $this->makePersona(31100001, 'Rosa Contreras',    ['ROLE_GUARDIAN'],     'F', null,  null, $liceo,  'a1.rosa');
         $a2  = $this->makePersona(31200001, 'Andrés Lagos',      ['ROLE_GUARDIAN'],     'M', null,  null, $liceo,  'a2.andres');
