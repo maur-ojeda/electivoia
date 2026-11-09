@@ -1,5 +1,5 @@
 const nameCheck = /^[-_a-zA-Z0-9]{4,22}$/;
-const tokenCheck = /^[-_/+a-zA-Z0-9]{24,}$/;
+const tokenCheck = /^[-_a-zA-Z0-9]{24,}$/;
 
 // Generate and double-submit a CSRF token in a form field and a cookie, as defined by Symfony's SameOriginCsrfTokenManager
 document.addEventListener('submit', function (event) {
@@ -32,7 +32,7 @@ export function generateCsrfToken (formElement) {
 
     if (!csrfCookie && nameCheck.test(csrfToken)) {
         csrfField.setAttribute('data-csrf-protection-cookie-value', csrfCookie = csrfToken);
-        csrfField.defaultValue = csrfToken = btoa(String.fromCharCode.apply(null, (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(18))));
+        csrfField.defaultValue = csrfToken = btoa(String.fromCharCode.apply(null, (window.crypto || window.msCrypto).getRandomValues(new Uint8Array(18)))).replace(/\+/g, '-').replace(/\//g, '_');
     }
     csrfField.dispatchEvent(new Event('change', { bubbles: true }));
 
