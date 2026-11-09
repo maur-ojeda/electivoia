@@ -27,6 +27,7 @@ class AdminImportController extends AbstractController
         $result = null;
 
         if ($request->isMethod('POST')) {
+            set_time_limit(300);
             $file = $request->files->get('csv_file');
 
             if (!$file || $file->getClientOriginalExtension() !== 'csv') {

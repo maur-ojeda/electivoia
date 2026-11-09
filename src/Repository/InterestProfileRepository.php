@@ -37,23 +37,19 @@ class InterestProfileRepository extends ServiceEntityRepository
      * Counts students in a school whose interest in the given category
      * is at or above the specified level.
      *
-     * Uses JSON_EXTRACT to read the interest level from the JSON column.
+     * Uses PostgreSQL jsonb operator (->>) to read the interest level.
      * The interests column stores data as {"Category Name": level, ...}.
      */
     public function countStudentsInterestedInCategory(int $schoolId, string $categoryName, int $minLevel = 3): int
     {
-        $jsonPath = '$."' . $categoryName . '"';
-
-        return (int) $this->createQueryBuilder('ip')
-            ->select('COUNT(DISTINCT ip.id)')
-            ->innerJoin('ip.student', 's')
-            ->where('s.school = :schoolId')
-            ->andWhere('JSON_EXTRACT(ip.interests, :path) >= :minLevel')
-            ->setParameter('schoolId', $schoolId)
-            ->setParameter('path', $jsonPath)
-            ->setParameter('minLevel', $minLevel)
-            ->getQuery()
-            ->getSingleScalarResult();
+        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+            'SELECT COUNT(DISTINCT ip.id)'
+            . ' FROM interest_profile ip'
+            . ' INNER JOIN "user" s ON s.id = ip.student_id'
+            . ' WHERE s.school_id = :schoolId'
+            . ' AND (ip.interests::jsonb ->> :key)::float >= :minLevel',
+            ['schoolId' => $schoolId, 'key' => $categoryName, 'minLevel' => $minLevel]
+        );
     }
 
     /**

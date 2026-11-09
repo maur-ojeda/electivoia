@@ -17,6 +17,8 @@ use App\Entity\Attendance;
 use App\Entity\User;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\ExpressionLanguage\Expression;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 
 #[Route('/teacher', name: 'teacher_')]

@@ -59,7 +59,7 @@ class AdminBulkEnrollController extends AbstractController
                 return $this->redirectToRoute('admin_enrollments_bulk');
             }
 
-            // Students of the selected grade
+            // Students of the selected grade, ordered by average grade DESC (priority) then NULLS LAST.
             // NOTE: u.roles is a JSON column in PostgreSQL — LIKE on raw JSON is not supported.
             // We cast to TEXT so the LIKE operator works correctly.
             // Doctrine DQL does not support CAST(), so we use a native SQL query with
@@ -79,6 +79,8 @@ class AdminBulkEnrollController extends AbstractController
                 $params['schoolId'] = $this->tenantContext->getCurrentSchool()->getId();
             }
 
+            $sql .= ' ORDER BY u.average_grade DESC NULLS LAST';
+
             $students = $em->createNativeQuery($sql, $rsm)->setParameters($params)->getResult();
 
             $enrolled  = 0;
@@ -95,6 +97,9 @@ class AdminBulkEnrollController extends AbstractController
                     ->setLockMode(LockMode::PESSIMISTIC_WRITE)
                     ->getSingleResult();
 
+                // Track in-memory so pending persist()s count toward capacity.
+                $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
+
                 foreach ($students as $student) {
                     // Already enrolled?
                     $existing = $em->getRepository(Enrollment::class)->findOneBy([
@@ -106,8 +111,7 @@ class AdminBulkEnrollController extends AbstractController
                         continue;
                     }
 
-                    // Capacity check (now safe under pessimistic lock)
-                    $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
+                    // Once the course is full, skip students without a grade too.
                     if ($currentCount >= $course->getMaxCapacity()) {
                         $rejected++;
                         continue;
@@ -119,6 +123,7 @@ class AdminBulkEnrollController extends AbstractController
                     $enrollment->setEnrolledAt(new \DateTime());
                     $em->persist($enrollment);
                     $enrolled++;
+                    $currentCount++;
                 }
 
                 $em->flush();
