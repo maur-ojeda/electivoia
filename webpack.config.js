@@ -5,6 +5,7 @@ Encore
     .setOutputPath("public/build/")
     .setPublicPath("/build")
     .addEntry("app", "./assets/app.js")
+    .addEntry("admin_csrf", "./assets/admin_csrf.js")
     .splitEntryChunks()
     .enableSingleRuntimeChunk()
     .enableStimulusBridge("./assets/controllers.json")
