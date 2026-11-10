@@ -71,6 +71,13 @@ class CourseCrudController extends AbstractCrudController
         return Course::class;
     }
 
+    public function configureCrud(Crud $crud): Crud
+    {
+        return $crud
+            ->setEntityLabelInSingular('Curso')
+            ->setEntityLabelInPlural('Cursos')
+            ->setEntityPermission('SAME_SCHOOL');
+    }
 
     public function updateEntity(EntityManagerInterface $entityManager, $entity): void
     {

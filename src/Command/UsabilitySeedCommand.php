@@ -439,6 +439,6 @@ class UsabilitySeedCommand extends Command
 
     private static function rut(int $n): string
     {
-        return number_format($n, 0, '', '.') . '-' . self::dv($n);
+        return (string)$n . '-' . self::dv($n);
     }
 }

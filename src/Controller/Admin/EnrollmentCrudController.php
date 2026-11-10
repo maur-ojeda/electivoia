@@ -83,7 +83,8 @@ class EnrollmentCrudController extends AbstractCrudController
             ->setEntityLabelInSingular('Inscripción')
             ->setEntityLabelInPlural('Inscripciones')
             ->setPageTitle('index', 'Listado de Alumnos Inscritos')
-            ->setSearchFields(['student.fullName', 'course.name']);
+            ->setSearchFields(['student.fullName', 'course.name'])
+            ->setEntityPermission('SAME_SCHOOL');
     }
 
     public function configureFields(string $pageName): iterable
@@ -97,17 +98,35 @@ class EnrollmentCrudController extends AbstractCrudController
             // Forms: campos de asociación para seleccionar entidades
             AssociationField::new('student', 'Alumno')
                 ->onlyOnForms()
-                ->setFormTypeOption('query_builder', fn ($repo) => $repo->createQueryBuilder('u')
-                    ->where('json_array_contains(u.roles, :role) = true')
-                    ->setParameter('role', 'ROLE_STUDENT')
-                    ->orderBy('u.fullName', 'ASC'))
+                ->setFormTypeOption('query_builder', function ($repo) {
+                    $qb = $repo->createQueryBuilder('u')
+                        ->where('json_array_contains(u.roles, :role) = true')
+                        ->setParameter('role', 'ROLE_STUDENT')
+                        ->orderBy('u.fullName', 'ASC');
+                    $school = $this->tenantContext->getCurrentSchool();
+                    if ($school !== null && !$this->isGranted('ROLE_SUPER_ADMIN')) {
+                        $qb->andWhere('u.school = :school')->setParameter('school', $school);
+                    }
+                    return $qb;
+                })
                 ->setFormTypeOption('choice_label', function (?User $user) {
                     if ($user === null) {
                         return '';
                     }
                     return sprintf('%s (%s)', $user->getFullName() ?? 'Sin nombre', $user->getRut() ?? 'Sin RUT');
                 }),
-            AssociationField::new('course', 'Curso Inscrito')->onlyOnForms(),
+            AssociationField::new('course', 'Curso Inscrito')
+                ->onlyOnForms()
+                ->setFormTypeOption('query_builder', function ($repo) {
+                    $qb = $repo->createQueryBuilder('c')
+                        ->where('c.isActive = true')
+                        ->orderBy('c.name', 'ASC');
+                    $school = $this->tenantContext->getCurrentSchool();
+                    if ($school !== null && !$this->isGranted('ROLE_SUPER_ADMIN')) {
+                        $qb->andWhere('c.school = :school')->setParameter('school', $school);
+                    }
+                    return $qb;
+                }),
 
             DateTimeField::new('enrolledAt', 'Fecha de Inscripción')
                 ->setFormat('dd/MM/yyyy HH:mm')

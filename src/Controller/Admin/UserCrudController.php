@@ -88,7 +88,8 @@ class UserCrudController extends AbstractCrudController
             ->setEntityLabelInSingular('Usuario')
             ->setEntityLabelInPlural('Usuarios')
             ->setSearchFields(['fullName', 'rut'])
-            ->setDefaultSort(['fullName' => 'ASC']);
+            ->setDefaultSort(['fullName' => 'ASC'])
+            ->setEntityPermission('SAME_SCHOOL');
     }
 
     public function configureFilters(Filters $filters): Filters
@@ -229,15 +230,23 @@ class UserCrudController extends AbstractCrudController
         // Lógica condicional para 'Pupilos' (Guardians)
         if ($pageName !== Crud::PAGE_NEW) {
             if ($currentUser instanceof User && in_array('ROLE_GUARDIAN', $currentUser->getRoles())) {
-                $fields[] = AssociationField::new('guardianStudents', 'Pupilos')
+                $school = $this->tenantContext->getCurrentSchool();
+            $guardianQb = function ($repo) use ($school) {
+                $qb = $repo->createQueryBuilder('u')
+                    ->where('json_array_contains(u.roles, :role) = true')
+                    ->setParameter('role', 'ROLE_STUDENT')
+                    ->orderBy('u.fullName', 'ASC');
+                if ($school !== null) {
+                    $qb->andWhere('u.school = :school')->setParameter('school', $school);
+                }
+                return $qb;
+            };
+            $fields[] = AssociationField::new('guardianStudents', 'Pupilos')
                     ->setFormTypeOptions([
                         'by_reference' => false,
-                        'query_builder' => fn ($repo) => $repo->createQueryBuilder('u')
-                            ->where('json_array_contains(u.roles, :role) = true')
-                            ->setParameter('role', 'ROLE_STUDENT')
-                            ->orderBy('u.fullName', 'ASC'),
+                        'query_builder' => $guardianQb,
                     ])
-                    ->setHelp('Solo muestra usuarios con rol Estudiante.')
+                    ->setHelp('Solo muestra estudiantes del mismo colegio.')
                     ->onlyOnForms();
             }
         }

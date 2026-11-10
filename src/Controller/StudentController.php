@@ -195,6 +195,7 @@ class StudentController extends AbstractController
     }
 
     #[Route('/enroll/{id}', name: 'enroll', methods: ['POST'])]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function enroll(Course $course, EntityManagerInterface $em): Response
     {
         $student = $this->getUser();
@@ -374,6 +375,7 @@ class StudentController extends AbstractController
 
     #[Route('/unenroll/{id}', name: 'unenroll', methods: ['POST'])]
     #[IsGranted('ROLE_STUDENT')]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function unenroll(Course $course, EntityManagerInterface $em): Response
     {
         $student = $this->getUser();

@@ -33,6 +33,8 @@ class EnrollmentController extends AbstractController
 
     #[IsGranted('ROLE_STUDENT')]
 
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
+
     public function enroll(
 
         Course $course,

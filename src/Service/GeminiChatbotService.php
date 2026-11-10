@@ -171,10 +171,14 @@ class GeminiChatbotService
         } catch (\Exception $e) {
             $this->logger->error('Error en AI chatbot: ' . $e->getMessage());
 
-            if (str_contains($e->getMessage(), '429') || str_contains($e->getMessage(), 'RESOURCE_EXHAUSTED')) {
+            if ($e->getMessage() === 'openrouter_empty_stream'
+                || str_contains($e->getMessage(), '429')
+                || str_contains($e->getMessage(), 'RESOURCE_EXHAUSTED')
+            ) {
                 return [
                     'success' => false,
-                    'message' => 'El asistente IA está temporalmente ocupado. Por favor intenta de nuevo en unos segundos. 😊',
+                    'retry'   => true,
+                    'message' => 'El asistente IA está ocupado en este momento. Espera unos segundos y vuelve a intentarlo.',
                 ];
             }
 
@@ -287,6 +291,12 @@ class GeminiChatbotService
         }
 
         ksort($toolCalls);
+
+        // OpenRouter free tier silently returns HTTP 200 with an empty stream
+        // instead of a 429 when rate-limited. Surface it so callers can retry.
+        if ($content === '' && empty($toolCalls)) {
+            throw new \RuntimeException('openrouter_empty_stream');
+        }
 
         return [
             'content'    => $content !== '' ? $content : null,
