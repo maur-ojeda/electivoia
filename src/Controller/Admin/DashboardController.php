@@ -18,6 +18,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_ADMIN')]
@@ -26,6 +27,14 @@ class DashboardController extends AbstractDashboardController
 {
     public function index(): Response
     {
+        // Old EasyAdmin URL format (?crudAction=&crudControllerFqcn=) passes
+        // action/controller as query params instead of route params; EasyAdmin
+        // can't resolve entity context and throws TypeError. Return 404 early.
+        $request = $this->container->get('request_stack')->getCurrentRequest();
+        if ($request !== null && ($request->query->has('crudAction') || $request->query->has('crudControllerFqcn'))) {
+            throw new NotFoundHttpException('Legacy EasyAdmin URL format is not supported.');
+        }
+
         $adminUrlGenerator = $this->container->get(AdminUrlGenerator::class);
 
         return $this->redirect($adminUrlGenerator->setController(UserCrudController::class)->generateUrl());

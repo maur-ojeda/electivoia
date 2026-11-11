@@ -6,6 +6,7 @@ use App\Entity\Course;
 use App\Entity\School;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
@@ -17,13 +18,16 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  */
 class IsolationTest extends WebTestCase
 {
+    private KernelBrowser $client;
     private EntityManagerInterface $em;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $client = static::createClient();
-        $this->em = $client->getContainer()->get('doctrine.orm.entity_manager');
+        static::ensureKernelShutdown();
+        // Boot kernel once per test; reuse client across assertions within a test.
+        $this->client = static::createClient();
+        $this->em = static::getContainer()->get('doctrine.orm.entity_manager');
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -67,33 +71,45 @@ class IsolationTest extends WebTestCase
         $this->fail("No ROLE_STUDENT found for school {$school->getName()}.");
     }
 
+    // ── Old URL format ────────────────────────────────────────────────────────
+
+    /**
+     * The legacy ?crudAction= query-param URL format must return 404, not 500.
+     */
+    public function testLegacyUrlFormatReturns404(): void
+    {
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $this->client->loginUser($aisAdmin, 'main');
+
+        $url = '/admin?crudAction=edit'
+            . '&crudControllerFqcn=' . urlencode('App\\Controller\\Admin\\CourseCrudController')
+            . '&entityId=1';
+
+        $this->client->request('GET', $url);
+        $this->assertSame(404, $this->client->getResponse()->getStatusCode(),
+            'Legacy EasyAdmin URL format must return 404, not 500.');
+    }
+
     // ── EasyAdmin CRUD isolation ──────────────────────────────────────────────
 
     /**
      * AdminAislamiento tries to view (detail) a course from Liceo Ficticio.
+     * Expects 403 (voter blocks) or 404 (entity filtered from scope).
      */
     public function testAdminCannotViewCourseFromOtherSchool(): void
     {
-        $client = static::createClient();
-
-        $liceo = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-
-        $liceoAdmin  = $this->getAdminOf($liceo);        // used as target owner
-        $aisAdmin    = $this->getAdminOf($aislamiento);  // attacker
+        $aisAdmin    = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
-        $client->loginUser($aisAdmin, 'main');
-
-        $url = '/admin?crudAction=detail'
-            . '&crudControllerFqcn=' . urlencode('App\\Controller\\Admin\\CourseCrudController')
-            . '&entityId=' . $liceoCourse->getId();
-
-        $client->request('GET', $url);
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId() . '/detail');
 
         $this->assertContains(
-            $client->getResponse()->getStatusCode(),
-            [403, 302],
+            $this->client->getResponse()->getStatusCode(),
+            [403, 404, 302],
             'Admin from other school must not see a course detail from Liceo.'
         );
     }
@@ -103,21 +119,14 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotEditCourseFromOtherSchool(): void
     {
-        $client = static::createClient();
-
         $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $aisAdmin    = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
-        $client->loginUser($aisAdmin, 'main');
-
-        $url = '/admin?crudAction=edit'
-            . '&crudControllerFqcn=' . urlencode('App\\Controller\\Admin\\CourseCrudController')
-            . '&entityId=' . $liceoCourse->getId();
-
-        $client->request('GET', $url);
-        $this->assertContains($client->getResponse()->getStatusCode(), [403, 302]);
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId() . '/edit');
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
     }
 
     /**
@@ -125,21 +134,14 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotDeleteCourseFromOtherSchool(): void
     {
-        $client = static::createClient();
-
         $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $aisAdmin    = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
-        $client->loginUser($aisAdmin, 'main');
-
-        $url = '/admin?crudAction=delete'
-            . '&crudControllerFqcn=' . urlencode('App\\Controller\\Admin\\CourseCrudController')
-            . '&entityId=' . $liceoCourse->getId();
-
-        $client->request('POST', $url);
-        $this->assertContains($client->getResponse()->getStatusCode(), [403, 302]);
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('POST', '/admin/course/' . $liceoCourse->getId() . '/delete');
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
     }
 
     /**
@@ -147,21 +149,14 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotViewUserFromOtherSchool(): void
     {
-        $client = static::createClient();
-
         $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $aisAdmin    = $this->getAdminOf($aislamiento);
         $liceoUser   = $this->getStudentOf($liceo);
 
-        $client->loginUser($aisAdmin, 'main');
-
-        $url = '/admin?crudAction=detail'
-            . '&crudControllerFqcn=' . urlencode('App\\Controller\\Admin\\UserCrudController')
-            . '&entityId=' . $liceoUser->getId();
-
-        $client->request('GET', $url);
-        $this->assertContains($client->getResponse()->getStatusCode(), [403, 302]);
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/user/' . $liceoUser->getId() . '/detail');
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
     }
 
     /**
@@ -169,21 +164,14 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotEditUserFromOtherSchool(): void
     {
-        $client = static::createClient();
-
         $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $aisAdmin    = $this->getAdminOf($aislamiento);
         $liceoUser   = $this->getStudentOf($liceo);
 
-        $client->loginUser($aisAdmin, 'main');
-
-        $url = '/admin?crudAction=edit'
-            . '&crudControllerFqcn=' . urlencode('App\\Controller\\Admin\\UserCrudController')
-            . '&entityId=' . $liceoUser->getId();
-
-        $client->request('GET', $url);
-        $this->assertContains($client->getResponse()->getStatusCode(), [403, 302]);
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/user/' . $liceoUser->getId() . '/edit');
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
     }
 
     // ── Student enroll isolation ──────────────────────────────────────────────
@@ -193,26 +181,22 @@ class IsolationTest extends WebTestCase
      */
     public function testStudentCannotEnrollInCourseFromOtherSchool(): void
     {
-        $client = static::createClient();
-
         $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $aisStudent  = $this->getStudentOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
-        $client->loginUser($aisStudent, 'main');
-
-        $client->request('POST', '/student/enroll/' . $liceoCourse->getId());
+        $this->client->loginUser($aisStudent, 'main');
+        $this->client->request('POST', '/student/enroll/' . $liceoCourse->getId());
 
         $this->assertContains(
-            $client->getResponse()->getStatusCode(),
+            $this->client->getResponse()->getStatusCode(),
             [403, 302],
             'Student from other school must receive 403 or redirect on enroll attempt.'
         );
 
         // Verify no enrollment was created
-        $em = $client->getContainer()->get('doctrine.orm.entity_manager');
-        $enrollment = $em->getRepository(\App\Entity\Enrollment::class)->findOneBy([
+        $enrollment = $this->em->getRepository(\App\Entity\Enrollment::class)->findOneBy([
             'student' => $aisStudent,
             'course'  => $liceoCourse,
         ]);
@@ -224,17 +208,14 @@ class IsolationTest extends WebTestCase
      */
     public function testStudentCannotUnenrollFromCourseOfOtherSchool(): void
     {
-        $client = static::createClient();
-
         $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $aisStudent  = $this->getStudentOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
-        $client->loginUser($aisStudent, 'main');
+        $this->client->loginUser($aisStudent, 'main');
+        $this->client->request('POST', '/student/unenroll/' . $liceoCourse->getId());
 
-        $client->request('POST', '/student/unenroll/' . $liceoCourse->getId());
-
-        $this->assertContains($client->getResponse()->getStatusCode(), [403, 302]);
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 302]);
     }
 }
