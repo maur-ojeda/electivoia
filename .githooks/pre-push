@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# pre-push hook: runs LoginRedirectTest + IsolationTest before every push to main.
+# Install once per clone: git config core.hooksPath .githooks
+
+set -euo pipefail
+
+REMOTE="$1"
+URL="$2"
+
+# Only gate pushes that touch the main branch.
+while read -r local_ref local_sha remote_ref _remote_sha; do
+    if [[ "$remote_ref" != "refs/heads/main" ]]; then
+        continue
+    fi
+
+    if [[ "$local_sha" == "0000000000000000000000000000000000000000" ]]; then
+        # Branch is being deleted — no tests needed.
+        continue
+    fi
+
+    echo "▶ pre-push: running integration tests before push to main..."
+
+    if ! php bin/phpunit tests/Integration/LoginRedirectTest.php tests/Integration/IsolationTest.php \
+           --colors=always 2>&1; then
+        echo ""
+        echo "✗ Integration tests failed. Push blocked."
+        echo "  Fix the failures or push to a non-main branch."
+        exit 1
+    fi
+
+    echo "✓ Integration tests passed."
+done
+
+exit 0
