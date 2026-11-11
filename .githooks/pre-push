@@ -20,7 +20,17 @@ while read -r local_ref local_sha remote_ref _remote_sha; do
 
     echo "▶ pre-push: running integration tests before push to main..."
 
-    if ! php bin/phpunit tests/Integration/LoginRedirectTest.php tests/Integration/IsolationTest.php \
+    # DATABASE_URL must point to the base DB name; Symfony appends _test automatically.
+    # Load from .env.local if available, else use the local socket default.
+    if [[ -f .env.local ]]; then
+        DB_URL=$(grep '^DATABASE_URL=' .env.local | head -1 | cut -d= -f2- | tr -d '"')
+    fi
+    DB_URL=${DB_URL:-"postgresql://$(whoami)@localhost/electivoia"}
+    # Strip any trailing _test suffix the developer may have set.
+    DB_URL="${DB_URL/_test$/}"
+
+    if ! DATABASE_URL="$DB_URL" php bin/phpunit \
+           tests/Integration/LoginRedirectTest.php tests/Integration/IsolationTest.php \
            --colors=always 2>&1; then
         echo ""
         echo "✗ Integration tests failed. Push blocked."
