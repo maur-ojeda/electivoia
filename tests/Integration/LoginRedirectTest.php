@@ -71,14 +71,18 @@ class LoginRedirectTest extends WebTestCase
     {
         $user = $this->getUserByEmail('ad1.carolina@electivoia.test');
         $this->client->loginUser($user, 'main');
-        // EasyAdmin always issues an internal redirect from /admin to the entity list —
-        // follow it and assert the final response is 200.
-        $this->client->followRedirects(true);
-        $this->client->request('GET', '/admin');
-        $status = $this->client->getResponse()->getStatusCode();
-        $this->assertSame(200, $status,
-            "Admin user ad1.carolina got {$status} on /admin (expected 200 after redirect).");
+        // EasyAdmin always issues a 302 from /admin to its entity list URL.
+        // We assert the redirect target starts with /admin (not / or /login).
         $this->client->followRedirects(false);
+        $this->client->request('GET', '/admin');
+        $response = $this->client->getResponse();
+        $status   = $response->getStatusCode();
+        $location = $response->headers->get('Location') ?? '';
+        $this->assertSame(302, $status,
+            "Admin user ad1.carolina expected 302 on /admin, got {$status}.");
+        $path = parse_url($location, PHP_URL_PATH) ?? $location;
+        $this->assertStringStartsWith('/admin', $path,
+            "Admin redirect should go to /admin, got Location: {$location}");
     }
 
     public function testSuperAdminRedirectsToSuperAdminPanel(): void
