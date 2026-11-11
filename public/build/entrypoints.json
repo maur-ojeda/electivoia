@@ -4,10 +4,16 @@
       "js": [
         "/build/runtime.82b6fbfb.js",
         "/build/891.8d163921.js",
-        "/build/app.88f3e6b6.js"
+        "/build/app.a86f34bf.js"
       ],
       "css": [
-        "/build/app.a05cc9be.css"
+        "/build/app.97b61ead.css"
+      ]
+    },
+    "admin_csrf": {
+      "js": [
+        "/build/runtime.82b6fbfb.js",
+        "/build/admin_csrf.f97e4d6d.js"
       ]
     }
   }
