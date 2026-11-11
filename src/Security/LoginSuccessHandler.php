@@ -34,24 +34,25 @@ class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
 
         $targetUrl = '/'; // Ruta por defecto si no se encuentra ningún rol específico
 
-        // 1. Prioridad: ROLE_ADMIN
-        if (in_array('ROLE_ADMIN', $roles, true)) {
+        // 1. Prioridad: ROLE_SUPER_ADMIN
+        if (in_array('ROLE_SUPER_ADMIN', $roles, true)) {
+            $targetUrl = $this->router->generate('super_admin_dashboard');
+
+        // 2. Prioridad: ROLE_ADMIN
+        } elseif (in_array('ROLE_ADMIN', $roles, true)) {
             // Asegúrate de que esta ruta exista en tu archivo config/routes.yaml
             $targetUrl = $this->router->generate('admin');
 
-            // 2. Prioridad: ROLE_TEACHER
+            // 3. Prioridad: ROLE_TEACHER
         } elseif (in_array('ROLE_TEACHER', $roles, true)) {
-            // Asegúrate de que esta ruta exista
             $targetUrl = $this->router->generate('teacher_courses');
 
-            // 3. Prioridad: ROLE_STUDENT
+        // 4. Prioridad: ROLE_STUDENT
         } elseif (in_array('ROLE_STUDENT', $roles, true)) {
-            // Asegúrate de que esta ruta exista
             $targetUrl = $this->router->generate('student_courses');
 
-            // 4. Prioridad: ROLE_GUARDIAN
+        // 5. Prioridad: ROLE_GUARDIAN
         } elseif (in_array('ROLE_GUARDIAN', $roles, true)) {
-            // Asegúrate de que esta ruta exista
             $targetUrl = $this->router->generate('guardian_dashboard');
         }
 
