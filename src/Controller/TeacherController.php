@@ -125,9 +125,9 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/attendance/{id}', name: 'attendance')]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function attendance(Course $course, EntityManagerInterface $em): Response
     {
-        //$this->denyAccessUnlessGranted('view', $course); // Opcional: voter
         $teacher = $this->getUser();
         if ($course->getTeacher() !== $teacher) {
             throw $this->createAccessDeniedException('No tienes permiso para registrar asistencia en este curso.');
@@ -158,6 +158,7 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/attendance/{id}/save', name: 'attendance_save', methods: ['POST'])]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function saveAttendance(Course $course, Request $request, EntityManagerInterface $em): Response
     {
         $date = new \DateTime();
@@ -198,6 +199,7 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/report/{id}', name: 'report')]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function report(Course $course, EntityManagerInterface $em): Response
     {
         $teacher = $this->getUser();
@@ -254,6 +256,7 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/report/{id}/export', name: 'report_export')]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function exportReport(Course $course, EntityManagerInterface $em): StreamedResponse
     {
         $teacher = $this->getUser();
@@ -382,6 +385,7 @@ class TeacherController extends AbstractController
     // ── HDU-S2-02: Editar curso ───────────────────────────────────────────────
 
     #[Route('/courses/{id}/edit', name: 'course_edit')]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function courseEdit(Course $course, Request $request, EntityManagerInterface $em): Response
     {
         $teacher = $this->getUser();
@@ -456,6 +460,7 @@ class TeacherController extends AbstractController
     // ── HDU-S2-03: Activar / desactivar curso ────────────────────────────────
 
     #[Route('/courses/{id}/toggle-active', name: 'course_toggle_active', methods: ['POST'])]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function courseToggleActive(Course $course, Request $request, EntityManagerInterface $em): Response
     {
         if ($course->getTeacher() !== $this->getUser()) {
@@ -477,6 +482,7 @@ class TeacherController extends AbstractController
     // ── HDU-S2-04: Lista de inscritos ─────────────────────────────────────────
 
     #[Route('/courses/{id}/students', name: 'course_students')]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function courseStudents(Course $course, EntityManagerInterface $em): Response
     {
         if ($course->getTeacher() !== $this->getUser()) {
@@ -495,6 +501,7 @@ class TeacherController extends AbstractController
     }
 
     #[Route('/export/course/{id}/students.xlsx', name: 'export_students')]
+    #[IsGranted('SAME_SCHOOL', subject: 'course')]
     public function exportStudents(Course $course): StreamedResponse
     {
         if ($course->getTeacher() !== $this->getUser()) {

@@ -48,6 +48,13 @@ class AdminBulkEnrollController extends AbstractController
                 return $this->redirectToRoute('admin_enrollments_bulk');
             }
 
+            // Reject cross-school course_id manipulation.
+            if ($this->tenantContext->hasSchool() && !$this->isGranted('ROLE_SUPER_ADMIN')
+                && $course->getSchool()?->getId() !== $this->tenantContext->getCurrentSchool()->getId()
+            ) {
+                throw $this->createAccessDeniedException('Este curso no pertenece a tu colegio.');
+            }
+
             if (!in_array($grade, $grades)) {
                 $this->addFlash('error', 'Grado inválido.');
                 return $this->redirectToRoute('admin_enrollments_bulk');
