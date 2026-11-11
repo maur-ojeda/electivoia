@@ -151,10 +151,10 @@ class UserCrudController extends AbstractCrudController
                 ->setHelp('Formato chileno: 12345678-9')
                 ->setRequired(true)
                 ->setFormTypeOption('constraints', [
-                    new Regex([
-                        'pattern' => '/^\d{7,8}-[\dKk]$/',
-                        'message' => 'El RUT debe tener el formato 12345678-9 o 12345678-K.'
-                    ])
+                    new Regex(
+                        pattern: '/^\d{7,8}-[\dKk]$/',
+                        message: 'El RUT debe tener el formato 12345678-9 o 12345678-K.'
+                    )
                 ]),
 
             ChoiceField::new('gender', 'Género')->setChoices([

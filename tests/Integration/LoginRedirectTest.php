@@ -25,16 +25,16 @@ class LoginRedirectTest extends WebTestCase
         $this->em = static::getContainer()->get('doctrine.orm.entity_manager');
     }
 
-    private function getUserByUsername(string $username): User
+    private function getUserByEmail(string $email): User
     {
-        $user = $this->em->getRepository(User::class)->findOneBy(['username' => $username]);
-        $this->assertNotNull($user, "Seed user '{$username}' not found — run app:usability:seed first.");
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
+        $this->assertNotNull($user, "Seed user '{$email}' not found — run app:usability:seed first.");
         return $user;
     }
 
-    private function assertLoginRedirectsTo(string $username, string $expectedPath): void
+    private function assertLoginRedirectsTo(string $email, string $expectedPath): void
     {
-        $user = $this->getUserByUsername($username);
+        $user = $this->getUserByEmail($email);
         $this->client->loginUser($user, 'main');
         $this->client->request('GET', '/');
 
@@ -45,35 +45,44 @@ class LoginRedirectTest extends WebTestCase
         $status = $this->client->getResponse()->getStatusCode();
 
         $this->assertNotSame(302, $status,
-            "User {$username} was redirected away from {$expectedPath} (expected to reach it).");
+            "User {$email} was redirected away from {$expectedPath} (expected to reach it).");
         $this->assertNotSame(403, $status,
-            "User {$username} got 403 on {$expectedPath}.");
+            "User {$email} got 403 on {$expectedPath}.");
         $this->assertNotSame(404, $status,
-            "User {$username} got 404 on {$expectedPath}.");
+            "User {$email} got 404 on {$expectedPath}.");
     }
 
     public function testStudentRedirectsToStudentCourses(): void
     {
-        $this->assertLoginRedirectsTo('e1.camila', '/student/courses');
+        $this->assertLoginRedirectsTo('e1.catalina@electivoia.test', '/student/courses');
     }
 
     public function testTeacherRedirectsToTeacherCourses(): void
     {
-        $this->assertLoginRedirectsTo('p1.martin', '/teacher/courses');
+        $this->assertLoginRedirectsTo('p1.patricia@electivoia.test', '/teacher/courses');
     }
 
     public function testGuardianRedirectsToGuardianDashboard(): void
     {
-        $this->assertLoginRedirectsTo('a2.teresa', '/guardian/dashboard');
+        $this->assertLoginRedirectsTo('a2.andres@electivoia.test', '/guardian/dashboard');
     }
 
     public function testAdminRedirectsToAdminPanel(): void
     {
-        $this->assertLoginRedirectsTo('ad1.rodrigo', '/admin');
+        $user = $this->getUserByEmail('ad1.carolina@electivoia.test');
+        $this->client->loginUser($user, 'main');
+        // EasyAdmin always issues an internal redirect from /admin to the entity list —
+        // follow it and assert the final response is 200.
+        $this->client->followRedirects(true);
+        $this->client->request('GET', '/admin');
+        $status = $this->client->getResponse()->getStatusCode();
+        $this->assertSame(200, $status,
+            "Admin user ad1.carolina got {$status} on /admin (expected 200 after redirect).");
+        $this->client->followRedirects(false);
     }
 
     public function testSuperAdminRedirectsToSuperAdminPanel(): void
     {
-        $this->assertLoginRedirectsTo('sa1.ignacia', '/super-admin');
+        $this->assertLoginRedirectsTo('sa1.ignacia@electivoia.test', '/super-admin');
     }
 }
