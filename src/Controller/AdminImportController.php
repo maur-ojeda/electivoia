@@ -63,6 +63,7 @@ class AdminImportController extends AbstractController
                 }
 
                 [$rut, $fullName, $grade] = array_map('trim', $row);
+                $rut = \App\Security\AppUserProvider::normalizeRut($rut);
                 $averageGrade = isset($row[3]) && $row[3] !== '' ? (float) str_replace(',', '.', trim($row[3])) : null;
                 $email = isset($row[4]) && trim($row[4]) !== '' ? trim($row[4]) : null;
 

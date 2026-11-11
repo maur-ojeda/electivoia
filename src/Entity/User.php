@@ -446,7 +446,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setRut(string $rut): static
     {
-        $this->rut = $rut;
+        $this->rut = \App\Security\AppUserProvider::normalizeRut($rut);
 
         return $this;
     }
