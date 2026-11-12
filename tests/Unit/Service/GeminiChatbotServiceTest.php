@@ -10,6 +10,7 @@ use App\Service\EnrollmentService;
 use App\Service\GeminiChatbotService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\HttpClient\ChunkInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
@@ -70,80 +71,46 @@ class GeminiChatbotServiceTest extends TestCase
         return $course;
     }
 
-    private function mockSuccessfulGeminiResponse(string $text = '¡Hola! ¿En qué te puedo ayudar?'): void
+    private function makeTextChunk(string $text): \PHPUnit\Framework\MockObject\MockObject
     {
-        $response = $this->createMock(ResponseInterface::class);
-        $response->method('toArray')->willReturn([
-            'candidates' => [
-                [
-                    'content' => [
-                        'parts' => [
-                            ['text' => $text],
-                        ],
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->httpClient
-            ->method('request')
-            ->willReturn($response);
+        $data = json_encode(['choices' => [['delta' => ['content' => $text]]]]);
+        $chunk = $this->createMock(ChunkInterface::class);
+        $chunk->method('isTimeout')->willReturn(false);
+        $chunk->method('isLast')->willReturn(false);
+        $chunk->method('getContent')->willReturn("data: {$data}\ndata: [DONE]\n");
+        return $chunk;
     }
 
-    private function mockGeminiWithCapturedContents(): array
+    private function makeStreamResponse(): \PHPUnit\Framework\MockObject\MockObject
     {
-        $capturedContents = [];
-
         $response = $this->createMock(ResponseInterface::class);
-        $response->method('toArray')->willReturn([
-            'candidates' => [
-                [
-                    'content' => [
-                        'parts' => [
-                            ['text' => 'Respuesta del bot'],
-                        ],
-                    ],
-                ],
-            ],
-        ]);
+        $response->method('getStatusCode')->willReturn(200);
+        return $response;
+    }
 
+    private function mockStreamingText(string $text = '¡Hola! ¿En qué te puedo ayudar?'): void
+    {
+        $response = $this->makeStreamResponse();
+        $chunk    = $this->makeTextChunk($text);
+        $this->httpClient->method('request')->willReturn($response);
+        $this->httpClient->method('stream')->willReturn(new MockResponseStream([$chunk]));
+    }
+
+    /**
+     * Sets up httpClient to stream a text response and capture the outgoing messages array.
+     * Returns a reference — populate $capturedMessages BEFORE calling chat().
+     */
+    private function mockStreamingWithCapture(string $text, array &$capturedMessages): void
+    {
+        $response = $this->makeStreamResponse();
+        $chunk    = $this->makeTextChunk($text);
         $this->httpClient
             ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                return $this->createMock(ResponseInterface::class);
-            });
-
-        // We need to re-mock to also return the toArray properly
-        $this->httpClient = $this->createMock(HttpClientInterface::class);
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [
-                                    ['text' => 'Respuesta del bot'],
-                                ],
-                            ],
-                        ],
-                    ],
-                ]);
+            ->willReturnCallback(static function ($method, $url, $options) use (&$capturedMessages, $response) {
+                $capturedMessages = $options['json']['messages'] ?? [];
                 return $response;
             });
-
-        $this->service = new GeminiChatbotService(
-            $this->httpClient,
-            $this->courseRepository,
-            $this->enrollmentService,
-            $this->logger,
-            'test-api-key',
-        );
-
-        return $capturedContents;
+        $this->httpClient->method('stream')->willReturn(new MockResponseStream([$chunk]));
     }
 
     // --- Basic chat tests ---
@@ -154,7 +121,7 @@ class GeminiChatbotServiceTest extends TestCase
             ->method('findActiveForContext')
             ->willReturn([$this->createCourse()]);
 
-        $this->mockSuccessfulGeminiResponse('¡Hola! ¿Cómo estás?');
+        $this->mockStreamingText('¡Hola! ¿Cómo estás?');
 
         $result = $this->service->chat('Hola');
 
@@ -168,15 +135,20 @@ class GeminiChatbotServiceTest extends TestCase
             ->method('findActiveForContext')
             ->willReturn([]);
 
-        $response = $this->createMock(ResponseInterface::class);
-        $response->method('toArray')->willReturn(['candidates' => []]);
+        // An empty stream triggers the 'openrouter_empty_stream' exception path.
+        $response = $this->makeStreamResponse();
+        $emptyChunk = $this->createMock(ChunkInterface::class);
+        $emptyChunk->method('isTimeout')->willReturn(false);
+        $emptyChunk->method('isLast')->willReturn(false);
+        $emptyChunk->method('getContent')->willReturn("data: [DONE]\n");
 
         $this->httpClient->method('request')->willReturn($response);
+        $this->httpClient->method('stream')->willReturn(new MockResponseStream([$emptyChunk]));
 
         $result = $this->service->chat('Hola');
 
         $this->assertFalse($result['success']);
-        $this->assertStringContainsString('reformularlo', $result['message']);
+        $this->assertStringContainsString('ocupado', $result['message']);
     }
 
     public function testChatHandlesRateLimitError(): void
@@ -219,34 +191,8 @@ class GeminiChatbotServiceTest extends TestCase
             ->method('findActiveForContext')
             ->willReturn([]);
 
-        $capturedContents = [];
-        $response = $this->createMock(ResponseInterface::class);
-        $response->method('toArray')->willReturn([
-            'candidates' => [
-                [
-                    'content' => [
-                        'parts' => [['text' => 'Hola Juan!']],
-                    ],
-                ],
-            ],
-        ]);
-
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Hola Juan!']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Hola Juan!', $capturedMessages);
 
         $studentContext = [
             'name' => 'Juan Pérez',
@@ -262,8 +208,7 @@ class GeminiChatbotServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
 
-        // Verify the system prompt (first message) contains student context
-        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
+        $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringContainsString('Juan Pérez', $systemPrompt);
         $this->assertStringContainsString('3B', $systemPrompt);
         $this->assertStringContainsString('Filosofía (nivel 4)', $systemPrompt);
@@ -274,62 +219,26 @@ class GeminiChatbotServiceTest extends TestCase
 
     public function testChatWithoutStudentContextOmitsStudentBlock(): void
     {
-        $this->courseRepository
-            ->method('findActiveForContext')
-            ->willReturn([]);
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
 
-        $capturedContents = [];
-
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Hola!']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Hola!', $capturedMessages);
 
         $result = $this->service->chat('Hola', []);
 
         $this->assertTrue($result['success']);
 
-        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
+        $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringNotContainsString('CONTEXTO DEL ESTUDIANTE', $systemPrompt);
         $this->assertStringContainsString('ElectivoBot', $systemPrompt);
     }
 
     public function testChatWithEmptyEnrollmentsShowsNinguno(): void
     {
-        $this->courseRepository
-            ->method('findActiveForContext')
-            ->willReturn([]);
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
 
-        $capturedContents = [];
-
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Ok']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Ok', $capturedMessages);
 
         $studentContext = [
             'name' => 'María López',
@@ -339,9 +248,9 @@ class GeminiChatbotServiceTest extends TestCase
             'enrollmentOpen' => false,
         ];
 
-        $result = $this->service->chat('Hola', [], $studentContext);
+        $this->service->chat('Hola', [], $studentContext);
 
-        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
+        $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringContainsString('Sin intereses registrados aún', $systemPrompt);
         $this->assertStringContainsString('Ninguno', $systemPrompt);
         $this->assertStringContainsString('Cerrado', $systemPrompt);
@@ -349,28 +258,10 @@ class GeminiChatbotServiceTest extends TestCase
 
     public function testChatWithEnrollmentClosedShowsCerrado(): void
     {
-        $this->courseRepository
-            ->method('findActiveForContext')
-            ->willReturn([]);
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
 
-        $capturedContents = [];
-
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Ok']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Ok', $capturedMessages);
 
         $studentContext = [
             'name' => 'Carlos Ruiz',
@@ -382,40 +273,22 @@ class GeminiChatbotServiceTest extends TestCase
             'enrollmentOpen' => false,
         ];
 
-        $result = $this->service->chat('Hola', [], $studentContext);
+        $this->service->chat('Hola', [], $studentContext);
 
-        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
+        $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringContainsString('Cerrado', $systemPrompt);
     }
 
     public function testSystemPromptContainsOffTopicRefusalRule(): void
     {
-        $this->courseRepository
-            ->method('findActiveForContext')
-            ->willReturn([]);
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
 
-        $capturedContents = [];
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Ok', $capturedMessages);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Ok']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
+        $this->service->chat('Hola');
 
-        $result = $this->service->chat('Hola');
-
-        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
+        $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringContainsString('temas no relacionados', $systemPrompt);
         $this->assertStringContainsString('¡Ups!', $systemPrompt);
         $this->assertStringContainsString('cursos electivos', $systemPrompt);
@@ -423,28 +296,10 @@ class GeminiChatbotServiceTest extends TestCase
 
     public function testChatIncludesHistoryInContents(): void
     {
-        $this->courseRepository
-            ->method('findActiveForContext')
-            ->willReturn([]);
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
 
-        $capturedContents = [];
-
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Respuesta']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Respuesta', $capturedMessages);
 
         $history = [
             ['user' => 'Hola', 'bot' => '¡Hola! ¿En qué te puedo ayudar?'],
@@ -455,42 +310,22 @@ class GeminiChatbotServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
 
-        // system prompt + 2 history turns (user+model each) + current message = 6
-        $this->assertCount(6, $capturedContents);
-        $this->assertEquals('user', $capturedContents[1]['role']);
-        $this->assertEquals('Hola', $capturedContents[1]['parts'][0]['text']);
-        $this->assertEquals('model', $capturedContents[2]['role']);
-        $this->assertEquals('¡Hola! ¿En qué te puedo ayudar?', $capturedContents[2]['parts'][0]['text']);
+        // system + 2 history turns (user+assistant each) + current = 6
+        $this->assertCount(6, $capturedMessages);
+        $this->assertEquals('user', $capturedMessages[1]['role']);
+        $this->assertEquals('Hola', $capturedMessages[1]['content']);
+        $this->assertEquals('assistant', $capturedMessages[2]['role']);
+        $this->assertEquals('¡Hola! ¿En qué te puedo ayudar?', $capturedMessages[2]['content']);
     }
 
     public function testChatWithStudentContextAndHistory(): void
     {
-        $this->courseRepository
-            ->method('findActiveForContext')
-            ->willReturn([]);
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
 
-        $capturedContents = [];
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Respuesta', $capturedMessages);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Respuesta']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
-
-        $history = [
-            ['user' => 'Hola', 'bot' => '¡Hola Juan!'],
-        ];
+        $history = [['user' => 'Hola', 'bot' => '¡Hola Juan!']];
 
         $studentContext = [
             'name' => 'Juan Pérez',
@@ -504,43 +339,22 @@ class GeminiChatbotServiceTest extends TestCase
 
         $this->assertTrue($result['success']);
 
-        // system prompt + 1 history turn (user+model) + current message = 4
-        $this->assertCount(4, $capturedContents);
-
-        // Verify student name in system prompt
-        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
+        // system + 1 history turn (user+assistant) + current = 4
+        $this->assertCount(4, $capturedMessages);
+        $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringContainsString('Juan Pérez', $systemPrompt);
     }
 
     public function testSystemPromptContainsUnenrollRefusal(): void
     {
-        $this->courseRepository
-            ->method('findActiveForContext')
-            ->willReturn([]);
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
 
-        $capturedContents = [];
+        $capturedMessages = [];
+        $this->mockStreamingWithCapture('Ok', $capturedMessages);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'] ?? [];
-                $response = $this->createMock(ResponseInterface::class);
-                $response->method('toArray')->willReturn([
-                    'candidates' => [
-                        [
-                            'content' => [
-                                'parts' => [['text' => 'Ok']],
-                            ],
-                        ],
-                    ],
-                ]);
-                return $response;
-            });
+        $this->service->chat('Hola');
 
-        $result = $this->service->chat('Hola');
-
-        $systemPrompt = $capturedContents[0]['parts'][0]['text'];
-        // The prompt should contain instructions to NOT handle unenrollment
+        $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringContainsString('perfil', $systemPrompt);
     }
 }

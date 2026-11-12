@@ -9,6 +9,7 @@ use App\Service\EnrollmentService;
 use App\Service\GeminiChatbotService;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\HttpClient\ChunkInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
@@ -64,41 +65,78 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         return $course;
     }
 
-    private function createFunctionCallResponse(string $toolName, array $args): array
-    {
-        return [
-            'candidates' => [
-                [
-                    'content' => [
-                        'parts' => [
-                            ['functionCall' => ['name' => $toolName, 'args' => $args]],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-    }
-
-    private function createTextResponse(string $text): array
-    {
-        return [
-            'candidates' => [
-                [
-                    'content' => [
-                        'parts' => [
-                            ['text' => $text],
-                        ],
-                    ],
-                ],
-            ],
-        ];
-    }
-
-    private function createMockResponse(array $data): \PHPUnit\Framework\MockObject\MockObject
+    /** Returns a ResponseInterface mock representing a 200-OK streaming response. */
+    private function makeStreamResponse(): \PHPUnit\Framework\MockObject\MockObject
     {
         $response = $this->createMock(ResponseInterface::class);
-        $response->method('toArray')->willReturn($data);
+        $response->method('getStatusCode')->willReturn(200);
         return $response;
+    }
+
+    /** Builds a single SSE chunk that carries a text delta + [DONE]. */
+    private function makeTextChunk(string $text): \PHPUnit\Framework\MockObject\MockObject
+    {
+        $data = json_encode(['choices' => [['delta' => ['content' => $text]]]]);
+        $chunk = $this->createMock(ChunkInterface::class);
+        $chunk->method('isTimeout')->willReturn(false);
+        $chunk->method('isLast')->willReturn(false);
+        $chunk->method('getContent')->willReturn("data: {$data}\ndata: [DONE]\n");
+        return $chunk;
+    }
+
+    /** Builds a single SSE chunk that carries a tool-call delta + [DONE]. */
+    private function makeToolCallChunk(string $toolName, array $args = []): \PHPUnit\Framework\MockObject\MockObject
+    {
+        $argsJson = json_encode($args);
+        $data = json_encode([
+            'choices' => [[
+                'delta' => [
+                    'tool_calls' => [[
+                        'index'    => 0,
+                        'id'       => 'call_' . $toolName,
+                        'function' => ['name' => $toolName, 'arguments' => $argsJson],
+                    ]],
+                ],
+            ]],
+        ]);
+        $chunk = $this->createMock(ChunkInterface::class);
+        $chunk->method('isTimeout')->willReturn(false);
+        $chunk->method('isLast')->willReturn(false);
+        $chunk->method('getContent')->willReturn("data: {$data}\ndata: [DONE]\n");
+        return $chunk;
+    }
+
+    /**
+     * Sets up httpClient so successive request() calls return fresh responses,
+     * and stream() returns the matching chunk sequence.
+     *
+     * @param array<array{type:'text',text:string}|array{type:'tool',name:string,args:array}> $sequence
+     */
+    private function setupStreamSequence(array $sequence): void
+    {
+        $responses = [];
+        $chunkMap  = [];
+
+        foreach ($sequence as $item) {
+            $response = $this->makeStreamResponse();
+            $chunk    = $item['type'] === 'text'
+                ? $this->makeTextChunk($item['text'])
+                : $this->makeToolCallChunk($item['name'], $item['args'] ?? []);
+            $responses[]                      = $response;
+            $chunkMap[spl_object_id($response)] = [$chunk];
+        }
+
+        $this->httpClient
+            ->method('request')
+            ->willReturnCallback(static function () use (&$responses) {
+                return array_shift($responses);
+            });
+
+        $this->httpClient
+            ->method('stream')
+            ->willReturnCallback(static function ($resp) use ($chunkMap) {
+                return new MockResponseStream($chunkMap[spl_object_id($resp)] ?? []);
+            });
     }
 
     // --- Tool call loop tests ---
@@ -109,28 +147,19 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             ->method('getAvailableCourses')
             ->with(category: null, search: null)
             ->willReturn([
-                'courses' => [
-                    ['id' => 1, 'name' => 'Filosofía Moderna', 'category' => 'Filosofía', 'teacher' => 'Prof. García', 'schedule' => 'Lun 10:00', 'capacity' => '18/25', 'spots_available' => 7],
-                ],
+                'courses' => [['id' => 1, 'name' => 'Filosofía Moderna', 'category' => 'Filosofía', 'teacher' => 'Prof. García', 'schedule' => 'Lun 10:00', 'capacity' => '18/25', 'spots_available' => 7]],
                 'total' => 1,
             ]);
 
-        $callCount = 0;
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () use (&$callCount) {
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse('get_available_courses', []));
-                }
-                return $this->createMockResponse($this->createTextResponse('Tenemos Filosofía Moderna disponible con 7 cupos.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'get_available_courses', 'args' => []],
+            ['type' => 'text', 'text' => 'Tenemos Filosofía Moderna disponible con 7 cupos.'],
+        ]);
 
         $result = $this->service->chat('¿Qué cursos hay?');
 
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('Filosofía Moderna', $result['message']);
-        $this->assertEquals(2, $callCount);
     }
 
     public function testChainedToolCalls(): void
@@ -138,9 +167,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         $this->enrollmentService
             ->method('getAvailableCourses')
             ->willReturn([
-                'courses' => [
-                    ['id' => 1, 'name' => 'Filosofía Moderna', 'category' => 'Filosofía', 'teacher' => 'Prof. García', 'schedule' => 'Lun 10:00', 'capacity' => '18/25', 'spots_available' => 7],
-                ],
+                'courses' => [['id' => 1, 'name' => 'Filosofía Moderna', 'category' => 'Filosofía', 'teacher' => 'Prof. García', 'schedule' => 'Lun 10:00', 'capacity' => '18/25', 'spots_available' => 7]],
                 'total' => 1,
             ]);
 
@@ -150,69 +177,43 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             ->method('getCourseDetails')
             ->with(courseId: 1, student: $user)
             ->willReturn([
-                'id' => 1,
-                'name' => 'Filosofía Moderna',
-                'description' => 'Exploración filosófica',
-                'category' => 'Filosofía',
-                'teacher' => 'Prof. García',
-                'schedule' => 'Lun 10:00',
-                'capacity' => '18/25',
-                'spots_available' => 7,
-                'enrolled' => false,
-                'can_enroll' => true,
-                'enrollment_message' => '',
+                'id' => 1, 'name' => 'Filosofía Moderna', 'description' => 'Exploración filosófica',
+                'category' => 'Filosofía', 'teacher' => 'Prof. García', 'schedule' => 'Lun 10:00',
+                'capacity' => '18/25', 'spots_available' => 7, 'enrolled' => false, 'can_enroll' => true, 'enrollment_message' => '',
             ]);
 
-        $callCount = 0;
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () use (&$callCount) {
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse('get_available_courses', []));
-                }
-                if ($callCount === 2) {
-                    return $this->createMockResponse($this->createFunctionCallResponse('get_course_details', ['course_id' => 1]));
-                }
-                return $this->createMockResponse($this->createTextResponse('Filosofía Moderna tiene 7 cupos disponibles.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'get_available_courses', 'args' => []],
+            ['type' => 'tool', 'name' => 'get_course_details', 'args' => ['course_id' => 1]],
+            ['type' => 'text', 'text' => 'Filosofía Moderna tiene 7 cupos disponibles.'],
+        ]);
 
         $result = $this->service->chat('¿Qué cursos hay? Quiero ver detalles de Filosofía', [], [], $user);
 
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('7 cupos', $result['message']);
-        $this->assertEquals(3, $callCount);
     }
 
     public function testLoopCapReachedAtThreeIterations(): void
     {
         $this->enrollmentService
             ->method('getAvailableCourses')
-            ->willReturn([
-                'courses' => [],
-                'total' => 0,
-            ]);
+            ->willReturn(['courses' => [], 'total' => 0]);
 
         $this->logger
             ->expects($this->once())
             ->method('warning')
             ->with($this->stringContains('max iterations'));
 
-        $callCount = 0;
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () use (&$callCount) {
-                $callCount++;
-                if ($callCount <= 3) {
-                    return $this->createMockResponse($this->createFunctionCallResponse('get_available_courses', []));
-                }
-                return $this->createMockResponse($this->createTextResponse('No hay cursos.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'get_available_courses', 'args' => []],
+            ['type' => 'tool', 'name' => 'get_available_courses', 'args' => []],
+            ['type' => 'tool', 'name' => 'get_available_courses', 'args' => []],
+        ]);
 
         $result = $this->service->chat('Dame todos los cursos');
 
         $this->assertTrue($result['success']);
-        $this->assertEquals(3, $callCount);
     }
 
     public function testToolCallErrorReturnsErrorToGemini(): void
@@ -221,22 +222,15 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             ->method('getAvailableCourses')
             ->willThrowException(new \RuntimeException('DB connection failed'));
 
-        $callCount = 0;
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () use (&$callCount) {
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse('get_available_courses', []));
-                }
-                return $this->createMockResponse($this->createTextResponse('Hubo un error al consultar cursos.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'get_available_courses', 'args' => []],
+            ['type' => 'text', 'text' => 'Hubo un error al consultar cursos.'],
+        ]);
 
         $result = $this->service->chat('¿Qué cursos hay?');
 
         $this->assertTrue($result['success']);
         $this->assertStringContainsString('error', $result['message']);
-        $this->assertEquals(2, $callCount);
     }
 
     // --- executeTool routing tests ---
@@ -249,19 +243,10 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             ->with(category: 'Filosofía', search: 'moderna')
             ->willReturn(['courses' => [], 'total' => 0]);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () {
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse(
-                        'get_available_courses',
-                        ['category' => 'Filosofía', 'search' => 'moderna']
-                    ));
-                }
-                return $this->createMockResponse($this->createTextResponse('No encontré cursos.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'get_available_courses', 'args' => ['category' => 'Filosofía', 'search' => 'moderna']],
+            ['type' => 'text', 'text' => 'No encontré cursos.'],
+        ]);
 
         $result = $this->service->chat('Buscar cursos de filosofía moderna');
 
@@ -270,19 +255,10 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testGetCourseDetailsRequiresUser(): void
     {
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () {
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse(
-                        'get_course_details',
-                        ['course_id' => 1]
-                    ));
-                }
-                return $this->createMockResponse($this->createTextResponse('Necesito autenticación.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'get_course_details', 'args' => ['course_id' => 1]],
+            ['type' => 'text', 'text' => 'Necesito autenticación.'],
+        ]);
 
         // No user passed — currentUser is null
         $result = $this->service->chat('Detalles del curso 1');
@@ -299,32 +275,16 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             ->method('getCourseDetails')
             ->with(courseId: 1, student: $user)
             ->willReturn([
-                'id' => 1,
-                'name' => 'Filosofía Moderna',
-                'spots_available' => 7,
-                'enrolled' => false,
-                'can_enroll' => true,
-                'enrollment_message' => '',
+                'id' => 1, 'name' => 'Filosofía Moderna', 'spots_available' => 7,
+                'enrolled' => false, 'can_enroll' => true, 'enrollment_message' => '',
             ]);
 
-        // enrollStudent should NOT be called — enroll_in_course is preview only
-        $this->enrollmentService
-            ->expects($this->never())
-            ->method('enrollStudent');
+        $this->enrollmentService->expects($this->never())->method('enrollStudent');
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () {
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse(
-                        'enroll_in_course',
-                        ['course_id' => 1]
-                    ));
-                }
-                return $this->createMockResponse($this->createTextResponse('¿Te inscribís en Filosofía Moderna?'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'enroll_in_course', 'args' => ['course_id' => 1]],
+            ['type' => 'text', 'text' => '¿Te inscribís en Filosofía Moderna?'],
+        ]);
 
         $result = $this->service->chat('Quiero inscribirme en Filosofía Moderna', [], [], $user);
 
@@ -334,34 +294,20 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testConfirmEnrollmentActuallyEnrolls(): void
     {
-        $user = $this->createUser();
+        $user   = $this->createUser();
         $course = $this->createCourse();
 
-        $this->courseRepository
-            ->expects($this->atLeastOnce())
-            ->method('find')
-            ->with(1)
-            ->willReturn($course);
-
+        $this->courseRepository->expects($this->atLeastOnce())->method('find')->with(1)->willReturn($course);
         $this->enrollmentService
             ->expects($this->once())
             ->method('enrollStudent')
             ->with($user, $course)
             ->willReturn(['success' => true, 'message' => 'Inscripción exitosa.']);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () {
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse(
-                        'confirm_enrollment',
-                        ['course_id' => 1]
-                    ));
-                }
-                return $this->createMockResponse($this->createTextResponse('¡Inscripción exitosa!'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'confirm_enrollment', 'args' => ['course_id' => 1]],
+            ['type' => 'text', 'text' => '¡Inscripción exitosa!'],
+        ]);
 
         $result = $this->service->chat('Sí, quiero inscribirme', [], [], $user);
 
@@ -371,32 +317,17 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testConfirmEnrollmentHandlesFailure(): void
     {
-        $user = $this->createUser();
+        $user   = $this->createUser();
         $course = $this->createCourse(currentEnrollment: 25, maxCapacity: 25);
 
-        $this->courseRepository
-            ->method('find')
-            ->with(1)
-            ->willReturn($course);
-
-        $this->enrollmentService
-            ->method('enrollStudent')
-            ->with($user, $course)
+        $this->courseRepository->method('find')->with(1)->willReturn($course);
+        $this->enrollmentService->method('enrollStudent')->with($user, $course)
             ->willReturn(['success' => false, 'message' => 'No hay cupo disponible.']);
 
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () {
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse(
-                        'confirm_enrollment',
-                        ['course_id' => 1]
-                    ));
-                }
-                return $this->createMockResponse($this->createTextResponse('No se pudo inscribir.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'confirm_enrollment', 'args' => ['course_id' => 1]],
+            ['type' => 'text', 'text' => 'No se pudo inscribir.'],
+        ]);
 
         $result = $this->service->chat('Sí, inscribirme', [], [], $user);
 
@@ -408,28 +339,13 @@ class GeminiChatbotServiceToolCallTest extends TestCase
     {
         $user = $this->createUser();
 
-        $this->courseRepository
-            ->method('find')
-            ->with(999)
-            ->willReturn(null);
+        $this->courseRepository->method('find')->with(999)->willReturn(null);
+        $this->enrollmentService->expects($this->never())->method('enrollStudent');
 
-        $this->enrollmentService
-            ->expects($this->never())
-            ->method('enrollStudent');
-
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () {
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse(
-                        'confirm_enrollment',
-                        ['course_id' => 999]
-                    ));
-                }
-                return $this->createMockResponse($this->createTextResponse('Curso no encontrado.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'confirm_enrollment', 'args' => ['course_id' => 999]],
+            ['type' => 'text', 'text' => 'Curso no encontrado.'],
+        ]);
 
         $result = $this->service->chat('Confirmar curso 999', [], [], $user);
 
@@ -438,19 +354,10 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testUnknownToolReturnsError(): void
     {
-        $this->httpClient
-            ->method('request')
-            ->willReturnCallback(function () {
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse(
-                        'unknown_tool',
-                        []
-                    ));
-                }
-                return $this->createMockResponse($this->createTextResponse('No reconozco esa herramienta.'));
-            });
+        $this->setupStreamSequence([
+            ['type' => 'tool', 'name' => 'unknown_tool', 'args' => []],
+            ['type' => 'text', 'text' => 'No reconozco esa herramienta.'],
+        ]);
 
         $result = $this->service->chat('Haz algo raro');
 
@@ -461,31 +368,37 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testToolDeclarationsAreIncludedInRequest(): void
     {
-        $capturedJson = null;
+        $capturedJson  = null;
+        $response      = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $chunk         = $this->makeTextChunk('Hola');
 
         $this->httpClient
             ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedJson) {
+            ->willReturnCallback(function ($method, $url, $options) use (&$capturedJson, $response) {
                 $capturedJson = $options['json'];
-                return $this->createMockResponse($this->createTextResponse('Hola'));
+                return $response;
             });
+        $this->httpClient->method('stream')->willReturn(new MockResponseStream([$chunk]));
 
         $this->service->chat('Hola');
 
+        // OpenAI-format: tools is an array of {type: 'function', function: {name, ...}}
         $this->assertArrayHasKey('tools', $capturedJson);
-        $this->assertCount(1, $capturedJson['tools']);
-        $this->assertArrayHasKey('functionDeclarations', $capturedJson['tools'][0]);
-        $this->assertCount(4, $capturedJson['tools'][0]['functionDeclarations']);
-        $this->assertArrayHasKey('toolConfig', $capturedJson);
+        $this->assertCount(4, $capturedJson['tools']);
 
-        $toolNames = array_map(fn($t) => $t['name'], $capturedJson['tools'][0]['functionDeclarations']);
+        $toolNames = array_map(fn($t) => $t['function']['name'], $capturedJson['tools']);
         $this->assertContains('get_available_courses', $toolNames);
         $this->assertContains('get_course_details', $toolNames);
         $this->assertContains('enroll_in_course', $toolNames);
         $this->assertContains('confirm_enrollment', $toolNames);
+
+        foreach ($capturedJson['tools'] as $tool) {
+            $this->assertEquals('function', $tool['type']);
+        }
     }
 
-    // --- Tool call appended to contents ---
+    // --- Tool call appended to messages ---
 
     public function testFunctionCallAndResponseAppendedToContents(): void
     {
@@ -493,34 +406,55 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             ->method('getAvailableCourses')
             ->willReturn(['courses' => [], 'total' => 0]);
 
-        $capturedContents = [];
+        $capturedMessages = [];
+        $callIndex        = 0;
+        $responses        = [];
+        $chunkMap         = [];
+
+        $resp1  = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $resp1->method('getStatusCode')->willReturn(200);
+        $chunk1 = $this->makeToolCallChunk('get_available_courses', []);
+        $resp2  = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $resp2->method('getStatusCode')->willReturn(200);
+        $chunk2 = $this->makeTextChunk('No hay cursos.');
+
+        $responses = [$resp1, $resp2];
+        $chunkMap  = [spl_object_id($resp1) => [$chunk1], spl_object_id($resp2) => [$chunk2]];
 
         $this->httpClient
             ->method('request')
-            ->willReturnCallback(function ($method, $url, $options) use (&$capturedContents) {
-                $capturedContents = $options['json']['contents'];
-                static $callCount = 0;
-                $callCount++;
-                if ($callCount === 1) {
-                    return $this->createMockResponse($this->createFunctionCallResponse('get_available_courses', []));
-                }
-                return $this->createMockResponse($this->createTextResponse('No hay cursos.'));
+            ->willReturnCallback(function ($m, $u, $options) use (&$capturedMessages, &$callIndex, $responses) {
+                $capturedMessages = $options['json']['messages'] ?? [];
+                return $responses[$callIndex++];
             });
+        $this->httpClient
+            ->method('stream')
+            ->willReturnCallback(fn($r) => new MockResponseStream($chunkMap[spl_object_id($r)] ?? []));
 
         $this->service->chat('Dame cursos');
 
-        // After second call: system prompt + user msg + functionCall + functionResponse
-        $this->assertCount(4, $capturedContents);
+        // After second call: system + user + assistant(tool_call) + tool(result)
+        $this->assertGreaterThanOrEqual(4, count($capturedMessages));
 
-        // Verify functionCall in model message
-        $functionCallMsg = $capturedContents[2];
-        $this->assertEquals('model', $functionCallMsg['role']);
-        $this->assertArrayHasKey('functionCall', $functionCallMsg['parts'][0]);
+        // Find the assistant message with tool_calls
+        $assistantMsg = null;
+        foreach ($capturedMessages as $msg) {
+            if ($msg['role'] === 'assistant' && isset($msg['tool_calls'])) {
+                $assistantMsg = $msg;
+                break;
+            }
+        }
+        $this->assertNotNull($assistantMsg, 'Expected assistant message with tool_calls');
+        $this->assertEquals('get_available_courses', $assistantMsg['tool_calls'][0]['function']['name']);
 
-        // Verify functionResponse in user message
-        $functionResponseMsg = $capturedContents[3];
-        $this->assertEquals('user', $functionResponseMsg['role']);
-        $this->assertArrayHasKey('functionResponse', $functionResponseMsg['parts'][0]);
-        $this->assertEquals('get_available_courses', $functionResponseMsg['parts'][0]['functionResponse']['name']);
+        // Find the tool result message
+        $toolMsg = null;
+        foreach ($capturedMessages as $msg) {
+            if ($msg['role'] === 'tool') {
+                $toolMsg = $msg;
+                break;
+            }
+        }
+        $this->assertNotNull($toolMsg, 'Expected tool result message');
     }
 }

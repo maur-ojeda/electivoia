@@ -43,6 +43,7 @@ class RecommendationServiceCollaborativeTest extends TestCase
 
         $this->service = new RecommendationService(
             $this->entityManager,
+            $this->courseRepository,
             $this->enrollmentRepository,
             $this->interestProfileRepository,
             $this->signalRepository,
@@ -308,9 +309,9 @@ class RecommendationServiceCollaborativeTest extends TestCase
             isActive: true,
         );
 
-        // Content-based: EM returns the course
+        // Content-based: courseRepository returns the course
         $this->courseRepository
-            ->method('findBy')
+            ->method('findActiveForContext')
             ->willReturn([$course]);
 
         // Collaborative: peer profiles and enrollments

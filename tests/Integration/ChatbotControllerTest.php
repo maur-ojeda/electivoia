@@ -16,6 +16,8 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 
 class ChatbotControllerTest extends TestCase
 {
+    private Request $controllerRequest;
+
     public function testUnauthenticatedRequestReturns401(): void
     {
         $controller = $this->createController(user: null);
@@ -81,8 +83,10 @@ class ChatbotControllerTest extends TestCase
 
     public function testHistoryIsStoredInSession(): void
     {
-        $controller = $this->createController();
-        
+        $user = $this->createMock(User::class);
+        $user->method('getFullName')->willReturn('Test User');
+        $controller = $this->createController(user: $user);
+
         $chatbotService = $this->createMock(GeminiChatbotService::class);
         $chatbotService
             ->method('chat')
@@ -94,7 +98,7 @@ class ChatbotControllerTest extends TestCase
         $controller->chat($request1, $chatbotService);
         
         // Verify history stored
-        $session = $controller->getRequestStack()->getSession();
+        $session = $this->controllerRequest->getSession();
         $history = $session->get('chatbot_history', []);
         $this->assertCount(1, $history);
         $this->assertEquals('Hola', $history[0]['user']);
@@ -106,7 +110,7 @@ class ChatbotControllerTest extends TestCase
         $controller = $this->createController();
         
         // Add some history first
-        $session = $controller->getRequestStack()->getSession();
+        $session = $this->controllerRequest->getSession();
         $session->set('chatbot_history', [['user' => 'Hola', 'bot' => 'Hola!']]);
         
         $response = $controller->clearHistory();
@@ -181,30 +185,33 @@ class ChatbotControllerTest extends TestCase
         ?EnrollmentRepository $enrollmentRepo = null
     ): ChatbotController {
         $requestStack = new RequestStack();
-        $request = new Request();
-        $request->setSession(new \Symfony\Component\HttpFoundation\Session\Session());
-        $requestStack->push($request);
-        
+        $this->controllerRequest = new Request();
+        $this->controllerRequest->setSession(new \Symfony\Component\HttpFoundation\Session\Session(
+            new \Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage()
+        ));
+        $requestStack->push($this->controllerRequest);
+
         if ($tenantContext === null) {
             $tenantContext = $this->createMock(TenantContext::class);
             $tenantContext->method('getCurrentSchool')->willReturn(null);
         }
-        
+
         if ($enrollmentRepo === null) {
             $enrollmentRepo = $this->createMock(EnrollmentRepository::class);
             $enrollmentRepo->method('findBy')->willReturn([]);
         }
-        
+
         $controller = new ChatbotController($requestStack, $tenantContext, $enrollmentRepo);
-        
+
+        // AbstractController::getUser() requires a container — always set one.
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
         if ($user !== null) {
-            $tokenStorage = $this->createMock(TokenStorageInterface::class);
             $token = $this->createMock(TokenInterface::class);
             $token->method('getUser')->willReturn($user);
             $tokenStorage->method('getToken')->willReturn($token);
-            $controller->setContainer($this->createContainerWithTokenStorage($tokenStorage));
         }
-        
+        $controller->setContainer($this->createContainerWithTokenStorage($tokenStorage));
+
         return $controller;
     }
 

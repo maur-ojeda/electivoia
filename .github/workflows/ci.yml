@@ -82,6 +82,16 @@ jobs:
           bin/console doctrine:schema:create --env=test
           bin/console app:usability:seed --env=test
 
+      - name: Run unit tests
+        run: |
+          php bin/phpunit \
+            tests/Unit/Service/EnrollmentServiceTest.php \
+            tests/Unit/Service/RecommendationServiceCollaborativeTest.php \
+            tests/Unit/Service/GeminiChatbotServiceTest.php \
+            tests/Unit/Service/GeminiChatbotServiceToolCallTest.php \
+            tests/Integration/ChatbotControllerTest.php \
+            --colors=always
+
       - name: Run integration tests
         run: |
           php bin/phpunit \

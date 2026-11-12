@@ -10,6 +10,7 @@ use App\Repository\CourseRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\UserRepository;
 use App\Service\EnrollmentService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 
@@ -33,6 +34,7 @@ class EnrollmentServiceTest extends TestCase
             $this->courseRepository,
             $this->enrollmentRepository,
             $this->userRepository,
+            $this->createMock(NotificationService::class),
         );
     }
 
