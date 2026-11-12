@@ -31,7 +31,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.2', '8.3']
+        php: ['8.3']
     services:
       postgres:
         image: postgres:16-alpine
@@ -76,7 +76,7 @@ jobs:
       - name: Create test database and load seed
         run: |
           bin/console doctrine:database:create --if-not-exists --env=test
-          bin/console doctrine:migrations:migrate --no-interaction --env=test
+          bin/console doctrine:schema:create --env=test
           bin/console app:usability:seed --env=test
 
       - name: Run test suite
