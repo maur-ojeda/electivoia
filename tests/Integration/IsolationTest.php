@@ -362,10 +362,10 @@ class IsolationTest extends WebTestCase
     // ── Guardian isolation ────────────────────────────────────────────────────
 
     /**
-     * A guardian from Colegio Aislamiento sees only their own students on the
-     * dashboard; they must not see students from Liceo Ficticio.
-     * (Guardians access students via direct relationship, not school scoping,
-     * so a cross-school student linked to a different guardian is unreachable.)
+     * A guardian from Colegio Aislamiento sees only their own linked pupils:
+     *  - their own pupil appears
+     *  - a student from Liceo Ficticio does NOT appear
+     *  - a student from the SAME school who is NOT their pupil does NOT appear
      */
     public function testGuardianDashboardDoesNotLeakStudentsFromOtherSchool(): void
     {
@@ -373,11 +373,13 @@ class IsolationTest extends WebTestCase
         $aislamiento = $this->getSchool('colegio-aislamiento');
 
         // This test creates its own data so it never depends on seed guardians.
-        $guardian      = $this->createTestUser('test-guardian-iso@test.local', ['ROLE_GUARDIAN'], $aislamiento);
-        $pupil         = $this->createTestUser('test-pupil-iso@test.local',    ['ROLE_STUDENT'],  $aislamiento);
-        $foreignStudent = $this->createTestUser('test-foreign-iso@test.local', ['ROLE_STUDENT'],  $liceo);
+        $guardian        = $this->createTestUser('test-guardian-iso@test.local',    ['ROLE_GUARDIAN'], $aislamiento);
+        $pupil           = $this->createTestUser('test-pupil-iso@test.local',       ['ROLE_STUDENT'],  $aislamiento);
+        $foreignStudent  = $this->createTestUser('test-foreign-iso@test.local',     ['ROLE_STUDENT'],  $liceo);
+        $sameSchoolNonPupil = $this->createTestUser('test-sameschool-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
 
         $guardian->addGuardianStudent($pupil);
+        // sameSchoolNonPupil is NOT linked to this guardian
         $this->em->flush();
 
         $this->client->loginUser($guardian, 'main');
@@ -396,6 +398,11 @@ class IsolationTest extends WebTestCase
             (string) $foreignStudent->getFullName(),
             $content,
             'Guardian dashboard must not expose students from another school.'
+        );
+        $this->assertStringNotContainsString(
+            (string) $sameSchoolNonPupil->getFullName(),
+            $content,
+            'Guardian dashboard must not expose same-school students who are not their pupils.'
         );
     }
 
