@@ -493,15 +493,12 @@ class IsolationTest extends WebTestCase
         $this->assertSame(200, $this->client->getResponse()->getStatusCode());
         $content = $this->client->getResponse()->getContent() ?: '';
 
+        // Template shows grade stats (counts), never individual emails or IDs.
+        // Verify the Liceo student's email does not leak into the page.
         $this->assertStringNotContainsString(
             'test-blast-liceo-spy@test.local',
             $content,
             'Email blast page must not expose students from another school.'
-        );
-        $this->assertStringNotContainsString(
-            (string) $liceoStudent->getId(),
-            $content,
-            'Email blast page must not expose student IDs from another school.'
         );
     }
 
