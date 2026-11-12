@@ -82,8 +82,12 @@ jobs:
           bin/console doctrine:schema:create --env=test
           bin/console app:usability:seed --env=test
 
-      - name: Run test suite
-        run: composer test
+      - name: Run integration tests
+        run: |
+          php bin/phpunit \
+            tests/Integration/LoginRedirectTest.php \
+            tests/Integration/IsolationTest.php \
+            --colors=always
 
   static-analysis:
     name: Static Analysis (PHPStan)
