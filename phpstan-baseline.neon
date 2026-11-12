@@ -7,6 +7,18 @@ parameters:
 			path: src/Command/CreateAdminUserCommand.php
 
 		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: src/Command/UsabilityResetCommand.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: src/Command/UsabilitySeedCommand.php
+
+		-
 			message: '#^Property App\\Controller\\Admin\\AiDashboardController\:\:\$enrollmentRepository is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
@@ -125,30 +137,6 @@ parameters:
 			identifier: property.onlyWritten
 			count: 1
 			path: src/Controller/StudentController.php
-
-		-
-			message: '#^Call to method getActiveSheet\(\) on an unknown class App\\Controller\\Spreadsheet\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Controller/TeacherController.php
-
-		-
-			message: '#^Call to method save\(\) on an unknown class App\\Controller\\Xlsx\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Controller/TeacherController.php
-
-		-
-			message: '#^Instantiated class App\\Controller\\Spreadsheet not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Controller/TeacherController.php
-
-		-
-			message: '#^Instantiated class App\\Controller\\Xlsx not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: src/Controller/TeacherController.php
 
 		-
 			message: '#^Parameter \#1 \$teacher of method App\\Entity\\Course\:\:setTeacher\(\) expects App\\Entity\\User\|null, Symfony\\Component\\Security\\Core\\User\\UserInterface\|null given\.$#'
@@ -287,3 +275,15 @@ parameters:
 			identifier: property.onlyWritten
 			count: 1
 			path: src/Service/EnrollmentService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: src/Service/GeminiChatbotService.php
+
+		-
+			message: '#^Property App\\Service\\RecommendationService\:\:\$em is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: src/Service/RecommendationService.php
