@@ -73,10 +73,11 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Create test database schema
+      - name: Create test database and load seed
         run: |
           bin/console doctrine:database:create --if-not-exists --env=test
-          bin/console doctrine:schema:create --env=test
+          bin/console doctrine:migrations:migrate --no-interaction --env=test
+          bin/console app:usability:seed --env=test
 
       - name: Run test suite
         run: composer test
@@ -152,8 +153,16 @@ jobs:
           { echo '### php-cs-fixer (advisory — does not fail CI)'; echo '```diff'; cat cs.out; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           exit $status
 
-# TODO(future change): gate Coolify deploys on this workflow's conclusion once
-# the pipeline has proven stable over time. Coolify deploys are currently
-# webhook-driven and intentionally NOT coupled to CI status — see the
-# ci-static-analysis change's non-goals for context. Do not add gating here
-# without a follow-up SDD change defining that coupling.
+  deploy:
+    name: Deploy to Dokploy
+    needs: tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Dokploy deploy
+        run: |
+          curl -fsS -X POST \
+            "https://dokploy.mojeda.site/api/trpc/application.deploy?batch=1" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
+            -d '{"0":{"json":{"applicationId":"abkpgAERWTHYe83QNhpKH"}}}'

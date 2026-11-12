@@ -3,6 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Entity\Course;
+use App\Entity\CourseCategory;
 use App\Entity\School;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,14 +21,64 @@ class IsolationTest extends WebTestCase
 {
     private KernelBrowser $client;
     private EntityManagerInterface $em;
+    /** @var object[] Entities created by a test, deleted in tearDown. */
+    private array $entitiesToDelete = [];
 
     protected function setUp(): void
     {
         parent::setUp();
         static::ensureKernelShutdown();
-        // Boot kernel once per test; reuse client across assertions within a test.
         $this->client = static::createClient();
         $this->em = static::getContainer()->get('doctrine.orm.entity_manager');
+        $this->entitiesToDelete = [];
+    }
+
+    protected function tearDown(): void
+    {
+        foreach (array_reverse($this->entitiesToDelete) as $entity) {
+            $refreshed = $this->em->find($entity::class, $entity->getId());
+            if ($refreshed !== null) {
+                $this->em->remove($refreshed);
+            }
+        }
+        if ($this->entitiesToDelete !== []) {
+            $this->em->flush();
+        }
+        $this->entitiesToDelete = [];
+        parent::tearDown();
+    }
+
+    /**
+     * Creates a transient test user and schedules it for deletion in tearDown.
+     */
+    private function createTestUser(
+        string $email,
+        array  $roles,
+        School $school,
+        string $grade = '',
+    ): User {
+        $user = new User();
+        $user->setEmail($email);
+        $user->setRoles($roles);
+        $user->setSchool($school);
+        $user->setActive(true);
+        $user->setFullName('Test ' . substr(md5($email), 0, 12));
+        // Fake RUT: use a range (99.000.XXX-X) unlikely to collide with seed data.
+        $n = abs(crc32($email)) % 900 + 100;
+        $user->setRut("99.000.{$n}-" . ($n % 9 + 1));
+
+        /** @var \Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface $hasher */
+        $hasher = static::getContainer()->get('security.user_password_hasher');
+        $user->setPassword($hasher->hashPassword($user, 'Test1234!'));
+
+        if ($grade !== '') {
+            $user->setGrade($grade);
+        }
+
+        $this->em->persist($user);
+        $this->em->flush();
+        $this->entitiesToDelete[] = $user;
+        return $user;
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -81,18 +132,6 @@ class IsolationTest extends WebTestCase
             }
         }
         $this->fail("No ROLE_TEACHER found for school {$school->getName()}.");
-    }
-
-    /** Return first ROLE_GUARDIAN user of $school. */
-    private function getGuardianOf(School $school): User
-    {
-        $users = $this->em->getRepository(User::class)->findBy(['school' => $school]);
-        foreach ($users as $user) {
-            if (in_array('ROLE_GUARDIAN', $user->getRoles(), true)) {
-                return $user;
-            }
-        }
-        $this->markTestSkipped("No ROLE_GUARDIAN found for school {$school->getName()} — seed does not include one.");
     }
 
     /** Return first active course owned by $teacher. */
@@ -332,18 +371,31 @@ class IsolationTest extends WebTestCase
     {
         $liceo       = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisGuardian = $this->getGuardianOf($aislamiento);
-        $liceoStudent = $this->getStudentOf($liceo);
 
-        $this->client->loginUser($aisGuardian, 'main');
+        // This test creates its own data so it never depends on seed guardians.
+        $guardian      = $this->createTestUser('test-guardian-iso@test.local', ['ROLE_GUARDIAN'], $aislamiento);
+        $pupil         = $this->createTestUser('test-pupil-iso@test.local',    ['ROLE_STUDENT'],  $aislamiento);
+        $foreignStudent = $this->createTestUser('test-foreign-iso@test.local', ['ROLE_STUDENT'],  $liceo);
+
+        $guardian->addGuardianStudent($pupil);
+        $this->em->flush();
+
+        $this->client->loginUser($guardian, 'main');
         $this->client->request('GET', '/guardian/dashboard');
 
         $this->assertSame(200, $this->client->getResponse()->getStatusCode());
-        $content = $this->client->getResponse()->getContent();
+        $content = $this->client->getResponse()->getContent() ?: '';
+
+        // Template renders fullName, not ID.
+        $this->assertStringContainsString(
+            (string) $pupil->getFullName(),
+            $content,
+            'Guardian dashboard must show their own pupil.'
+        );
         $this->assertStringNotContainsString(
-            (string) $liceoStudent->getId(),
-            $content ?: '',
-            'Guardian dashboard must not expose student IDs from another school.'
+            (string) $foreignStudent->getFullName(),
+            $content,
+            'Guardian dashboard must not expose students from another school.'
         );
     }
 
@@ -398,6 +450,106 @@ class IsolationTest extends WebTestCase
             );
         }
         // A 403/404/302 also satisfies the requirement.
+    }
+
+    // ── Email blast isolation ─────────────────────────────────────────────────
+
+    /**
+     * ROLE_ADMIN can access /admin/email/blast and the page loads without error.
+     */
+    public function testEmailBlastAccessibleByAdmin(): void
+    {
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/email/blast');
+
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode(),
+            'ROLE_ADMIN must be able to GET /admin/email/blast.');
+    }
+
+    /**
+     * The email blast page (GET) must not expose data belonging to another school.
+     * We create a Liceo Ficticio student with a recognizable test email and verify
+     * that email does not appear anywhere in the Aislamiento admin's blast page.
+     */
+    public function testEmailBlastFiltersScopeBySchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+
+        $liceoStudent = $this->createTestUser(
+            'test-blast-liceo-spy@test.local',
+            ['ROLE_STUDENT'],
+            $liceo,
+            '3M'
+        );
+
+        $aisAdmin = $this->getAdminOf($aislamiento);
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/email/blast');
+
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode());
+        $content = $this->client->getResponse()->getContent() ?: '';
+
+        $this->assertStringNotContainsString(
+            'test-blast-liceo-spy@test.local',
+            $content,
+            'Email blast page must not expose students from another school.'
+        );
+        $this->assertStringNotContainsString(
+            (string) $liceoStudent->getId(),
+            $content,
+            'Email blast page must not expose student IDs from another school.'
+        );
+    }
+
+    // ── Course category ROLE_ADMIN restrictions ───────────────────────────────
+
+    /**
+     * ROLE_ADMIN must receive 403 when trying to create, edit, or delete a
+     * CourseCategory via direct URL — only ROLE_SUPER_ADMIN may manage categories.
+     */
+    public function testAdminCannotManageCategoryViaUrl(): void
+    {
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+
+        $this->client->loginUser($aisAdmin, 'main');
+
+        // 1. Create — no entity ID required.
+        $this->client->request('GET', '/admin/course-category/new');
+        $this->assertSame(
+            403,
+            $this->client->getResponse()->getStatusCode(),
+            'ROLE_ADMIN must receive 403 on GET /admin/course-category/new.'
+        );
+
+        // 2. Edit / Delete — need an existing category ID.
+        $category = $this->em->getRepository(CourseCategory::class)->findOneBy([]);
+        if ($category === null) {
+            // Create a minimal category just for this assertion.
+            $category = new CourseCategory();
+            $category->setName('__test_cat__');
+            $this->em->persist($category);
+            $this->em->flush();
+            $this->entitiesToDelete[] = $category;
+        }
+
+        $this->client->request('GET', '/admin/course-category/' . $category->getId() . '/edit');
+        $this->assertSame(
+            403,
+            $this->client->getResponse()->getStatusCode(),
+            'ROLE_ADMIN must receive 403 on GET /admin/course-category/{id}/edit.'
+        );
+
+        $this->client->request('POST', '/admin/course-category/' . $category->getId() . '/delete');
+        $this->assertContains(
+            $this->client->getResponse()->getStatusCode(),
+            [403, 404],
+            'ROLE_ADMIN must receive 403/404 on POST /admin/course-category/{id}/delete.'
+        );
     }
 
     // ── Helpers (extra) ───────────────────────────────────────────────────────

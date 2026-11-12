@@ -18,13 +18,19 @@ while read -r local_ref local_sha remote_ref _remote_sha; do
         continue
     fi
 
-    echo "▶ pre-push: running integration tests before push to main..."
+    echo "▶ pre-push: ensuring electivoia_test DB is ready..."
 
-    # DATABASE_URL must point to the base DB name; Symfony appends _test automatically.
-    # We always use the local socket so the hook is independent of .env.local
-    # (which may point to a remote or differently-named production DB).
-    # Prerequisite: electivoia_test must exist locally (run app:usability:seed first).
+    # DATABASE_URL must point to the BASE name; Symfony appends _test automatically
+    # making it postgresql://$USER@localhost/electivoia_test.
+    # This URL is intentionally independent of .env.local (which may point to prod).
     TEST_DB_URL="postgresql://$(whoami)@localhost/electivoia"
+
+    DATABASE_URL="$TEST_DB_URL" php bin/console doctrine:database:create \
+        --env=test --if-not-exists -q
+    DATABASE_URL="$TEST_DB_URL" php bin/console doctrine:migrations:migrate \
+        --env=test --no-interaction -q
+
+    echo "▶ pre-push: running integration tests..."
 
     if ! DATABASE_URL="$TEST_DB_URL" php bin/phpunit \
            tests/Integration/LoginRedirectTest.php tests/Integration/IsolationTest.php \
