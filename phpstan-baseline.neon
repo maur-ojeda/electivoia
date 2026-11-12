@@ -169,12 +169,6 @@ parameters:
 			path: src/DataFixtures/AppFixtures.php
 
 		-
-			message: '#^Method Doctrine\\Common\\DataFixtures\\AbstractFixture\:\:getReference\(\) invoked with 1 parameter, 2 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: src/DataFixtures/CourseFixtures.php
-
-		-
 			message: '#^Access to undefined constant Doctrine\\ORM\\Query\\Lexer\:\:T_CLOSE_PARENTHESIS\.$#'
 			identifier: classConstant.notFound
 			count: 1
