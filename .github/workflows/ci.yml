@@ -19,6 +19,7 @@ concurrency:
 env:
   APP_ENV: test
   APP_SECRET: 'ci-test-secret-do-not-use-in-prod'
+  DATABASE_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
   MESSENGER_TRANSPORT_DSN: 'in-memory://'
   MAILER_DSN: 'null://null'
   DEFAULT_URI: 'http://localhost'
@@ -74,6 +75,8 @@ jobs:
         run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Create test database and load seed
+        env:
+          USABILITY_SEED_ENABLED: '1'
         run: |
           bin/console doctrine:database:create --if-not-exists --env=test
           bin/console doctrine:schema:create --env=test
