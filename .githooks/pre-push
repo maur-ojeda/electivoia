@@ -27,6 +27,10 @@ while read -r local_ref local_sha remote_ref _remote_sha; do
 
     DATABASE_URL="$TEST_DB_URL" php bin/console doctrine:database:create \
         --env=test --if-not-exists -q
+    # If the DB has tables but no migration history (e.g. created with schema:create),
+    # mark all migrations as applied before running migrate.
+    DATABASE_URL="$TEST_DB_URL" php bin/console doctrine:migrations:version \
+        --add --all --env=test --no-interaction -q 2>/dev/null || true
     DATABASE_URL="$TEST_DB_URL" php bin/console doctrine:migrations:migrate \
         --env=test --no-interaction -q
 
