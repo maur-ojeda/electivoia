@@ -31,6 +31,10 @@ class IsolationTest extends WebTestCase
         $this->client = static::createClient();
         $this->em = static::getContainer()->get('doctrine.orm.entity_manager');
         $this->entitiesToDelete = [];
+        // Purge any test users left by a previously interrupted run.
+        $this->em->createQuery('DELETE FROM App\Entity\User u WHERE u.email LIKE :pattern')
+            ->setParameter('pattern', '%-iso@test.local')
+            ->execute();
     }
 
     protected function tearDown(): void
@@ -376,7 +380,7 @@ class IsolationTest extends WebTestCase
         $guardian        = $this->createTestUser('test-guardian-iso@test.local',    ['ROLE_GUARDIAN'], $aislamiento);
         $pupil           = $this->createTestUser('test-pupil-iso@test.local',       ['ROLE_STUDENT'],  $aislamiento);
         $foreignStudent  = $this->createTestUser('test-foreign-iso@test.local',     ['ROLE_STUDENT'],  $liceo);
-        $sameSchoolNonPupil = $this->createTestUser('test-sameschool-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $sameSchoolNonPupil = $this->createTestUser('test-nopupil-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
 
         $guardian->addGuardianStudent($pupil);
         // sameSchoolNonPupil is NOT linked to this guardian
