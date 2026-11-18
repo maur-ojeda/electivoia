@@ -34,3 +34,23 @@ yarn-error.log
 /.php-cs-fixer.php
 /var/.php-cs-fixer.cache
 ###< friendsofphp/php-cs-fixer ###
+
+###> os artifacts ###
+.DS_Store
+###< os artifacts ###
+
+###> playwright artifacts (local only) ###
+/results/
+/test-results/
+/.playwright-mcp/
+###< playwright artifacts (local only) ###
+
+###> local logs and deploy dumps ###
+*.log
+/deploy-log-*.md
+/deploy-history-*.md
+###< local logs and deploy dumps ###
+
+###> gentle-ai local artifacts (generated per machine) ###
+/.atl/
+###< gentle-ai local artifacts (generated per machine) ###
