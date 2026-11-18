@@ -166,11 +166,57 @@ jobs:
     needs: tests
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DOKPLOY_URL: https://dokploy.mojeda.site
+      DOKPLOY_APPLICATION_ID: abkpgAERWTHYe83QNhpKH
+      DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
     steps:
       - name: Trigger Dokploy deploy
+        id: trigger
         run: |
+          set -euo pipefail
+          echo "started=$(date -u +%Y-%m-%dT%H:%M:%S)" >> "$GITHUB_OUTPUT"
           curl -fsS -X POST \
-            "https://dokploy.mojeda.site/api/trpc/application.deploy?batch=1" \
+            "$DOKPLOY_URL/api/trpc/application.deploy?batch=1" \
             -H "Content-Type: application/json" \
-            -H "x-api-key: ${{ secrets.DOKPLOY_API_KEY }}" \
-            -d '{"0":{"json":{"applicationId":"abkpgAERWTHYe83QNhpKH"}}}'
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            -d "{\"0\":{\"json\":{\"applicationId\":\"$DOKPLOY_APPLICATION_ID\"}}}"
+          echo "Deploy triggered; waiting for Dokploy to report a terminal status."
+
+      # A trigger that returns 200 only means the deployment was queued. Without
+      # this gate the job went green while the container could still fail to
+      # build, leaving a broken release reported as a successful deploy.
+      - name: Wait for Dokploy to finish
+        run: |
+          set -euo pipefail
+          started='${{ steps.trigger.outputs.started }}'
+          input="%7B%220%22%3A%7B%22json%22%3A%7B%22applicationId%22%3A%22$DOKPLOY_APPLICATION_ID%22%7D%7D%7D"
+          deadline=$((SECONDS + 1200))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            sleep 15
+            resp=$(curl -fsS --max-time 30 \
+              "$DOKPLOY_URL/api/trpc/deployment.all?batch=1&input=$input" \
+              -H "x-api-key: $DOKPLOY_API_KEY") || { echo "poll failed, retrying"; continue; }
+            row=$(printf '%s' "$resp" | jq -r --arg since "$started" '
+              [.[0].result.data.json[]]
+              | map(select(.createdAt >= $since))
+              | sort_by(.createdAt)
+              | last
+              | "\(.deploymentId // "?") \(.status // "?")"' 2>/dev/null) || row="? ?"
+            id=${row%% *}
+            status=${row##* }
+            echo "deployment=$id status=$status"
+            case "$status" in
+              done)
+                echo "Dokploy deployment $id finished: done"
+                exit 0
+                ;;
+              error|failed|cancelled)
+                echo "::error::Dokploy deployment $id finished with status=$status"
+                exit 1
+                ;;
+            esac
+          done
+          echo "::error::Timed out (20 min) waiting for Dokploy to report a terminal status"
+          exit 1
