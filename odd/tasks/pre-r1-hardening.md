@@ -99,3 +99,15 @@ Detalle de datos: quedaron 39 usuarios huérfanos (37 student, 1 teacher, 1 supe
 
 `playwright.config.ts`: `baseURL` ahora es `process.env.BASE_URL ?? 'https://electivoia.mojeda.site'` (commit cd01bfe), para poder apuntar a otro entorno sin editar el archivo cuando exista staging.
 
+L19 (2026-11-18): Residual de T5 ejecutado: `.env.dev`, `.env.production` y `.env.test` desversionados (`git rm --cached`) y `/.env.*` agregado al `.gitignore` como línea propia. Queda versionado solo `.env` (plantilla de Symfony, sin secretos). Verificado que el Dockerfile no se rompe: el `cache:warmup` del build tiene `|| true` y el entrypoint lo rehace con el env real.
+
+REGRESIÓN que introduje, y cómo se arregló: el CI pasó a fallar con 26 errores `LogicException: You must set the KERNEL_CLASS environment variable`. Causa: `KERNEL_CLASS` lo aportaba `.env.test`; el comentario del workflow decía que no dependía de ese archivo pero solo cubría `APP_ENV`, `APP_SECRET` y `DATABASE_URL`. El pre-push local no lo detectó porque `.env.test` seguía en disco.
+
+Hallazgo de paso: `phpunit.dist.xml` **nunca se carga**. PHPUnit busca `phpunit.xml` o `phpunit.xml.dist`, y el CI corre `php bin/phpunit tests/Unit` sin `-c`. O sea que ese archivo es peso muerto: sus `APP_ENV=test` y `failOn*/cacheDirectory` no aplican. Es una trampa latente (alguien podría tocarlo esperando efecto). No lo renombré a `phpunit.xml.dist` porque activaría `failOnDeprecation/failOnNotice/failOnWarning` y cambiaría el resultado de la suite; queda como pendiente consciente.
+
+Fix: `tests/bootstrap.php` define `KERNEL_CLASS=App\Kernel` con `??=` en `$_SERVER` y `$_ENV` después de `bootEnv()`. Es el único punto que corre en CI, local y pre-push por igual. Verificado escondiendo `.env.test`: el error pasó de `KERNEL_CLASS` a `connection refused` contra una base inexistente, lo que prueba que el kernel arranca sin ese archivo.
+
+Validación: run 44403770903 verde (PHPStan ok, Tests ok, Deploy ok), gate `Previous deployment: ZaNGCNVsJnwSuWMnUpvu0` → `Dokploy deployment ACs0VpC9_f7AqSrVNq0J5 finished: done`, login 200. El deploy exitoso es además la prueba de que el build funciona sin los `.env` versionados.
+
+Lección: antes de desversionar un archivo de entorno hay que buscar qué provee realmente, no asumir que solo son secretos. `grep -r KERNEL_CLASS` habría mostrado el problema en 5 segundos.
+
