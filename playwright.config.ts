@@ -7,7 +7,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'https://electivoia.mojeda.site',
+    baseURL: process.env.BASE_URL ?? 'https://electivoia.mojeda.site',
     ignoreHTTPSErrors: false,
     locale: 'es-CL',
     timezoneId: 'America/Santiago',
