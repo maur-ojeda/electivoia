@@ -13,6 +13,10 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
+###> local env files (secrets never versioned) ###
+/.env.*
+###< local env files ###
+
 ###> phpunit/phpunit ###
 /phpunit.xml
 /.phpunit.cache/
