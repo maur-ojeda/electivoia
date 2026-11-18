@@ -357,4 +357,38 @@ class GeminiChatbotServiceTest extends TestCase
         $systemPrompt = $capturedMessages[0]['content'];
         $this->assertStringContainsString('perfil', $systemPrompt);
     }
+
+    public function testMissingApiKeyReturnsControlledError(): void
+    {
+        $service = new GeminiChatbotService(
+            $this->httpClient,
+            $this->courseRepository,
+            $this->enrollmentService,
+            $this->logger,
+            '',
+        );
+
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
+        $this->httpClient->expects($this->never())->method('request');
+
+        $result = $service->chat('Hola');
+
+        $this->assertFalse($result['success']);
+        $this->assertTrue($result['retry']);
+        $this->assertStringContainsString('El asistente está ocupado', $result['message']);
+    }
+
+    public function testUnexpectedErrorReturnsControlledMessageInsteadOf5xx(): void
+    {
+        $this->courseRepository->method('findActiveForContext')->willReturn([]);
+        $this->httpClient
+            ->method('request')
+            ->willThrowException(new \TypeError('boom'));
+
+        $result = $this->service->chat('Hola');
+
+        $this->assertFalse($result['success']);
+        $this->assertArrayHasKey('message', $result);
+        $this->assertIsString($result['message']);
+    }
 }

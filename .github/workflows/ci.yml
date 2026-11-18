@@ -84,20 +84,11 @@ jobs:
 
       - name: Run unit tests
         run: |
-          php bin/phpunit \
-            tests/Unit/Service/EnrollmentServiceTest.php \
-            tests/Unit/Service/RecommendationServiceCollaborativeTest.php \
-            tests/Unit/Service/GeminiChatbotServiceTest.php \
-            tests/Unit/Service/GeminiChatbotServiceToolCallTest.php \
-            tests/Integration/ChatbotControllerTest.php \
-            --colors=always
+          php bin/phpunit tests/Unit --colors=always
 
       - name: Run integration tests
         run: |
-          php bin/phpunit \
-            tests/Integration/LoginRedirectTest.php \
-            tests/Integration/IsolationTest.php \
-            --colors=always
+          php bin/phpunit tests/Integration --colors=always
 
   static-analysis:
     name: Static Analysis (PHPStan)

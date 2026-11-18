@@ -189,11 +189,13 @@ class SignalCollectionServiceTest extends TestCase
     private function createRecommendationService(): \App\Service\RecommendationService
     {
         $em = $this->createMock(EntityManagerInterface::class);
+        $courseRepo = $this->createMock(\App\Repository\CourseRepository::class);
         $enrollmentRepo = $this->createMock(\App\Repository\EnrollmentRepository::class);
         $interestRepo = $this->createMock(\App\Repository\InterestProfileRepository::class);
 
         return new \App\Service\RecommendationService(
             $em,
+            $courseRepo,
             $enrollmentRepo,
             $interestRepo,
             $this->signalRepository,

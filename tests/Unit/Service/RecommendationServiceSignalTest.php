@@ -46,6 +46,7 @@ class RecommendationServiceSignalTest extends TestCase
 
         $this->service = new RecommendationService(
             $this->entityManager,
+            $this->courseRepository,
             $this->enrollmentRepository,
             $this->interestProfileRepository,
             $this->signalRepository,
@@ -133,7 +134,7 @@ class RecommendationServiceSignalTest extends TestCase
 
         // Content-based returns the course
         $this->courseRepository
-            ->method('findBy')
+            ->method('findActiveForContext')
             ->willReturn([$course]);
 
         // No peers → collaborative returns empty
@@ -150,6 +151,7 @@ class RecommendationServiceSignalTest extends TestCase
 
         $this->service = new RecommendationService(
             $this->entityManager,
+            $this->courseRepository,
             $this->enrollmentRepository,
             $this->interestProfileRepository,
             $this->signalRepository,
@@ -184,7 +186,7 @@ class RecommendationServiceSignalTest extends TestCase
         );
 
         $this->courseRepository
-            ->method('findBy')
+            ->method('findActiveForContext')
             ->willReturn([$course]);
 
         $this->interestProfileRepository
@@ -200,6 +202,7 @@ class RecommendationServiceSignalTest extends TestCase
 
         $this->service = new RecommendationService(
             $this->entityManager,
+            $this->courseRepository,
             $this->enrollmentRepository,
             $this->interestProfileRepository,
             $this->signalRepository,
@@ -238,7 +241,7 @@ class RecommendationServiceSignalTest extends TestCase
         $course->method('getCategory')->willReturn($category);
 
         $this->courseRepository
-            ->method('findBy')
+            ->method('findActiveForContext')
             ->willReturn([$course]);
 
         $this->interestProfileRepository
@@ -254,6 +257,7 @@ class RecommendationServiceSignalTest extends TestCase
 
         $this->service = new RecommendationService(
             $this->entityManager,
+            $this->courseRepository,
             $this->enrollmentRepository,
             $this->interestProfileRepository,
             $this->signalRepository,

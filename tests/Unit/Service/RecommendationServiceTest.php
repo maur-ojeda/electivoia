@@ -41,6 +41,7 @@ class RecommendationServiceTest extends TestCase
 
         $this->service = new RecommendationService(
             $this->entityManager,
+            $this->courseRepository,
             $this->enrollmentRepository,
             $interestProfileRepository,
             $this->signalRepository,
@@ -96,7 +97,7 @@ class RecommendationServiceTest extends TestCase
     private function stubCourses(Course ...$courses): void
     {
         $this->courseRepository
-            ->method('findBy')
+            ->method('findActiveForContext')
             ->willReturn(array_values($courses));
     }
 

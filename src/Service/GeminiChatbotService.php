@@ -103,6 +103,16 @@ class GeminiChatbotService
     public function chat(string $userMessage, array $history = [], array $studentContext = [], ?User $user = null): array
     {
         try {
+            if (trim($this->aiApiKey) === '') {
+                $this->logger->error('AI chatbot invoked without an API key configured (AI_API_KEY).');
+
+                return [
+                    'success' => false,
+                    'retry'   => true,
+                    'message' => 'El asistente está ocupado. Intenta de nuevo en unos segundos.',
+                ];
+            }
+
             $this->currentUser = $user;
 
             $coursesContext = $this->buildCoursesContext();
@@ -168,8 +178,17 @@ class GeminiChatbotService
                 'message' => $lastTextResponse ?? 'Lo siento, no pude completar tu solicitud.',
             ];
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logger->error('Error en AI chatbot: ' . $e->getMessage());
+
+            if ($e instanceof \Error) {
+                // Programming/type errors must never surface as an HTTP 5xx to the user.
+                return [
+                    'success' => false,
+                    'retry'   => true,
+                    'message' => 'El asistente está ocupado. Intenta de nuevo en unos segundos.',
+                ];
+            }
 
             if ($e->getMessage() === 'openrouter_empty_stream'
                 || str_contains($e->getMessage(), '429')
