@@ -27,7 +27,7 @@ T1 | S1,S3,S4 | inline | `.gitignore` + `git rm --cached` + commit de `docs/pers
 T2 | S2 | inline | revisión de secretos en artefactos locales (reporte de tipos, sin valores) | done — sin secretos reales
 T3 | S5,S6 | inline | CI por carpeta completa + fix error controlado sin API key | done (aeb5010) — verificado en CI
 T4 | S7 | inline | verificación Dokploy "done" + job espera resultado | done (bb005fc, 5b3057e) — validado en deploy real
-T5 | S8 | inline | rotación DB + escaneo de historial git + variables R2 | pending — falta acceso prod
+T5 | S8 | inline | rotación DB + escaneo de historial git + variables R2 | partial — escaneo done; rotación espera paso manual del usuario
 T6 | S9 | inline | HU-R01 contexto limpio por rol + zip | pending — falta decisión de entorno
 
 ## Log
@@ -68,4 +68,14 @@ L14 (2026-11-18): Dos ediciones manuales seguidas de `~/.config/opencode/opencod
 L15 (2026-11-18): T4 cerrado y validado en un deploy real. Push de `5b3057e` (7 commits) → run 44353984072: PHPStan success, Tests success (carpetas completas, incluida `tests/Integration` con `ChatbotControllerIntegrationTest`), Deploy success. Log del gate: `Previous deployment: sucDgBHGy81XrSX7iawWK`, luego `deployment=80Ee6SqNeiZtK_WnMkW0Y status=running` (x2), `status=done`, `Dokploy deployment 80Ee6SqNeiZtK_WnMkW0Y finished: done`. Dato util: `application.deploy` responde `{"json":null,...}`, no devuelve deploymentId — por eso el gate no debe parsear la respuesta del trigger. El filtro pasó de timestamp a ID por riesgo de desfase de reloj. `Coding Standards (advisory)` sigue en rojo y no bloquea.
 
 
+
+L16 (2026-11-18): T5 — escaneo del historial de git (167 commits, todas las ramas). Método: extraer todas las contraseñas de connection strings y todos los `APP_SECRET` de cada revisión, hashear y comparar contra los valores ACTIVOS que hoy tiene la app en Dokploy. Resultado: **ninguna credencial activa de producción está en el historial** (password 40 chars y APP_SECRET: sin coincidencia). Solo hay 5 contraseñas distintas y 4 `APP_SECRET` distintos en todo el historial, todos obsoletos o placeholders.
+
+Hallazgos de higiene (valores no mostrados):
+- `compose.prod.yaml` versionado con contraseña de Postgres en claro (14 chars, predecible, contiene el nombre del proyecto). Es un archivo heredado de la era Coolify: Dokploy hoy usa `buildType: dockerfile` y la contraseña activa es de 40 chars, distinta. Riesgo bajo pero el archivo debe salir del repo.
+- `.env`, `.env.dev`, `.env.production`, `.env.test` ESTÁN versionados: solo se ignoran las variantes `.local`. `.env.production` trae un `APP_SECRET` real (no el activo), `.env.dev` y `.env.test` también. `.env` es sano (secret vacío, API key de ejemplo).
+- CI no depende de esos archivos: el workflow inyecta `APP_ENV`, `APP_SECRET` y `DATABASE_URL` por `env:`. Desversionar `.env.dev/.test/.production` no rompe nada.
+- `public/build/` tiene 2 archivos versionados pese a la regla de ignore (menor).
+
+Acceso a producción para rotar, verificado: puerto 22 cerrado (sin SSH), 5432/6432 cerrados (base no expuesta), host `postgres-quantify-redundant-alarm-lznwne` es nombre de servicio Docker (NXDOMAIN desde local). Contenedor vivo: `postgres-quantify-redundant-alarm-lznwne.1.<hash>` (image postgres). Conclusión: el `ALTER ROLE` solo se puede ejecutar desde la terminal de Dokploy; `application.saveEnvironment` (POST) sí existe y sirve para actualizar el `env` sin exponer el valor.
 
