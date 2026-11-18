@@ -25,8 +25,8 @@ S9 (HU-R01): Correr HU-R01 de nuevo con contexto limpio por rol (`tests/ui/scree
 
 T1 | S1,S3,S4 | inline | `.gitignore` + `git rm --cached` + commit de `docs/personas.md` | done (406bfef, 436b66c)
 T2 | S2 | inline | revisión de secretos en artefactos locales (reporte de tipos, sin valores) | done — sin secretos reales
-T3 | S5,S6 | inline | CI por carpeta completa + fix error controlado sin API key | done (aeb5010) — integración sin verificar en local
-T4 | S7 | inline | verificación Dokploy "done" + job espera resultado | partial (bb005fc) — polling escrito, falta clave nueva
+T3 | S5,S6 | inline | CI por carpeta completa + fix error controlado sin API key | done (aeb5010) — verificado en CI
+T4 | S7 | inline | verificación Dokploy "done" + job espera resultado | done (bb005fc, 5b3057e) — validado en deploy real
 T5 | S8 | inline | rotación DB + escaneo de historial git + variables R2 | pending — falta acceso prod
 T6 | S9 | inline | HU-R01 contexto limpio por rol + zip | pending — falta decisión de entorno
 
@@ -60,5 +60,12 @@ L10 (2026-11-18): MCP oficial de Dokploy instalado en `~/.config/opencode/openco
 L11 (2026-11-18): Incidente propio. Al inspeccionar el bloque `mcp` del config global se imprimió el token de Neon (`napi_...`) en la conversación. Debe rotarse. Regla adoptada: nunca volcar contenido de archivos de configuración, solo estructura y nombres de claves.
 
 L12 (2026-11-18): Estado de credenciales tras la rotación del usuario: la API key vieja de Dokploy ahora responde `401 UNAUTHORIZED` (la revocación sí tomó). Pendiente y roto hasta resolverlo: (a) `secrets.DOKPLOY_API_KEY` de GitHub sigue con el valor viejo → todo deploy futuro falla 401; (b) `AI_API_KEY` en el `env` de Dokploy sigue con la clave vieja de OpenRouter → el chatbot de producción está degradado hasta actualizar y redesplegar.
+
+L13 (2026-11-18): Incidente de secretos (lección). Al correr `gh secret set` sin nombre en el comando, `gh` pidió primero el nombre y el usuario pegó la API key ahí: quedó como NOMBRE de secreto (`RFXT...`, 2026-11-18T15:30:25Z). Los nombres de secretos de GitHub no están cifrados ni redactados. Se borró el secreto basura; esa llave de Dokploy quedó quemada y hubo que crear una tercera. Regla: siempre `gh secret set NOMBRE` con el nombre en la línea de comando, y el valor por stdin (`pbpaste |` o pipe desde config), nunca por prompt interactivo.
+
+L14 (2026-11-18): Dos ediciones manuales seguidas de `~/.config/opencode/opencode.json` lo invalidaron en la misma línea: (a) clave sin comilla de cierre; (b) clave sin coma final. Ambos casos tumban TODOS los servidores MCP, no solo dokploy. Regla: validar con `python3 -c "import json;json.load(open(...))"` después de cada edición manual.
+
+L15 (2026-11-18): T4 cerrado y validado en un deploy real. Push de `5b3057e` (7 commits) → run 44353984072: PHPStan success, Tests success (carpetas completas, incluida `tests/Integration` con `ChatbotControllerIntegrationTest`), Deploy success. Log del gate: `Previous deployment: sucDgBHGy81XrSX7iawWK`, luego `deployment=80Ee6SqNeiZtK_WnMkW0Y status=running` (x2), `status=done`, `Dokploy deployment 80Ee6SqNeiZtK_WnMkW0Y finished: done`. Dato util: `application.deploy` responde `{"json":null,...}`, no devuelve deploymentId — por eso el gate no debe parsear la respuesta del trigger. El filtro pasó de timestamp a ID por riesgo de desfase de reloj. `Coding Standards (advisory)` sigue en rojo y no bloquea.
+
 
 
