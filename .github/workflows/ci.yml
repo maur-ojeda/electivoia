@@ -176,7 +176,15 @@ jobs:
         id: trigger
         run: |
           set -euo pipefail
-          echo "started=$(date -u +%Y-%m-%dT%H:%M:%S)" >> "$GITHUB_OUTPUT"
+          input="%7B%220%22%3A%7B%22json%22%3A%7B%22applicationId%22%3A%22$DOKPLOY_APPLICATION_ID%22%7D%7D%7D"
+          # Remember the newest deployment BEFORE triggering, so the waiter can
+          # ignore it without depending on clock agreement between runner and host.
+          previous=$(curl -fsS --max-time 30 \
+            "$DOKPLOY_URL/api/trpc/deployment.all?batch=1&input=$input" \
+            -H "x-api-key: $DOKPLOY_API_KEY" \
+            | jq -r '[.[0].result.data.json[]] | sort_by(.createdAt) | last | .deploymentId // ""')
+          echo "previous_id=$previous" >> "$GITHUB_OUTPUT"
+          echo "Previous deployment: ${previous:-<none>}"
           curl -fsS -X POST \
             "$DOKPLOY_URL/api/trpc/application.deploy?batch=1" \
             -H "Content-Type: application/json" \
@@ -190,7 +198,7 @@ jobs:
       - name: Wait for Dokploy to finish
         run: |
           set -euo pipefail
-          started='${{ steps.trigger.outputs.started }}'
+          previous='${{ steps.trigger.outputs.previous_id }}'
           input="%7B%220%22%3A%7B%22json%22%3A%7B%22applicationId%22%3A%22$DOKPLOY_APPLICATION_ID%22%7D%7D%7D"
           deadline=$((SECONDS + 1200))
           while [ "$SECONDS" -lt "$deadline" ]; do
@@ -198,12 +206,17 @@ jobs:
             resp=$(curl -fsS --max-time 30 \
               "$DOKPLOY_URL/api/trpc/deployment.all?batch=1&input=$input" \
               -H "x-api-key: $DOKPLOY_API_KEY") || { echo "poll failed, retrying"; continue; }
-            row=$(printf '%s' "$resp" | jq -r --arg since "$started" '
+            row=$(printf '%s' "$resp" | jq -r --arg prev "$previous" '
               [.[0].result.data.json[]]
-              | map(select(.createdAt >= $since))
               | sort_by(.createdAt)
               | last
-              | "\(.deploymentId // "?") \(.status // "?")"' 2>/dev/null) || row="? ?"
+              | select(. != null)
+              | select(.deploymentId != $prev)
+              | "\(.deploymentId) \(.status // "?")"' 2>/dev/null) || row=""
+            if [ -z "$row" ]; then
+              echo "no new deployment yet"
+              continue
+            fi
             id=${row%% *}
             status=${row##* }
             echo "deployment=$id status=$status"
