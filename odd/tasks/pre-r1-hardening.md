@@ -28,7 +28,7 @@ T2 | S2 | inline | revisión de secretos en artefactos locales (reporte de tipos
 T3 | S5,S6 | inline | CI por carpeta completa + fix error controlado sin API key | done (aeb5010) — verificado en CI
 T4 | S7 | inline | verificación Dokploy "done" + job espera resultado | done (bb005fc, 5b3057e) — validado en deploy real
 T5 | S8 | inline | rotación DB + escaneo de historial git + variables R2 | partial — escaneo done; rotación espera paso manual del usuario
-T6 | S9 | inline | HU-R01 contexto limpio por rol + zip | pending — falta decisión de entorno
+T6 | S9 | inline | HU-R01 contexto limpio por rol + zip | done — 57 capturas, zip entregado
 
 ## Log
 
@@ -86,4 +86,16 @@ Rotación: contraseña nueva de 32 caracteres alfanuméricos generada en `stagin
 Verificación real (importante): `pg_hba` tiene `127.0.0.1` y `localhost` en `trust`, así que probar la clave contra `127.0.0.1` no prueba NADA — cualquier password pasa. La prueba válida es contra la IP del contenedor (`10.0.1.15`), que sí cae en la regla `host all all all scram-sha-256`: con la clave nueva devuelve `1`, con la vieja `password authentication failed`. Además, desde el contenedor nuevo: `dbal:run-sql` responde OK (`current_user=electivoia`), `select count(*) from "user"` = 219, y el log no tiene ni un ERROR.
 
 Incidente menor: al probar con un PDO crudo contra el contenedor VIEJO, el mensaje de excepción imprimió la contraseña ANTERIOR en la conversación. Sin impacto porque la rotación ya estaba aplicada y esa clave quedó rechazada por scram. Lección: nunca construir un DSN a mano para "probar" — usar el camino real de la app (`dbal:run-sql`) y verificar el contenedor correcto, porque durante un deploy de Swarm conviven dos contenedores y el viejo sigue `healthy`.
+
+L18 (2026-11-18): T6 ejecutado. Corrección importante a L17: SÍ existe un mecanismo de reset, `app:usability:reset` + `app:usability:seed` (src/Command/Usability*.php). Mi conclusión anterior ("no se puede resetear, no está el bundle de fixtures") miraba solo `doctrine/doctrine-fixtures-bundle` en require-dev y era incompleta. El reset exige `USABILITY_SEED_ENABLED=1`, que no está en el env desplegado, así que se pasa con `docker exec -e USABILITY_SEED_ENABLED=1`. Ojo: `reset` solo BORRA (la descripción del comando miente al decir "and re-seed"); hay que correr `seed` después o el entorno queda vacío.
+
+Estado del entorno: producción (electivoia.mojeda.site) NO tiene datos reales. Escuelas `Liceo Ficticio ElectivoIA` (id 60) y `Colegio Aislamiento` (id 61), 180 emails `@electivoia.test`, `MAILER_DSN=smtp://mailpit:1025`, `MESSENGER_TRANSPORT_DSN=sync://`. Es un demo/UAT, no producción. Por eso no vale la pena un entorno aparte todavía: el único argumento real era no ensuciar datos reales, y no hay datos reales.
+
+Procedimiento de ejecución: (1) dump de línea base `pg_dump -Fc --no-owner --no-privileges` → `staging/dumps/electivoia-baseline-20261118T175643Z.dump` (58 KB, 121 objetos); (2) `reset` (borró 180 usuarios y 2 escuelas, dejó intactas 27 CourseCategory por diseño); (3) `seed` → 179 usuarios en escuelas, 35 cursos, 164 inscripciones; (4) verificación de que las 23 cuentas de `staging/test-credentials.json` existen y cumplen la regla password = primeros 6 dígitos del RUT (23/23); (5) `npx playwright test tests/ui/screenshots.spec.ts`; (6) `pg_restore --clean --if-exists` para volver al baseline exacto (219 usuarios, 164 inscripciones) y verificación de que la app siguió sana.
+
+Resultado HU-R01: 7 tests verdes en 1.1 min, 57 capturas + 57 JSON de axe + README = 115 archivos, zip en `results/ui/HU-R01-2026-11-18.zip` (11 MB). Línea base de accesibilidad: 291 violaciones, **3129 nodos**, 12 reglas distintas. Dominantes: `region` 2079 (moderate), `label` 563 (critical), `color-contrast` 219 (serious), `button-name` 88 (critical), `landmark-one-main` 57, `link-name` 50, `heading-order` 37, `select-name` 22. Las pantallas peores son los formularios de asistencia del profesor (418 nodos).
+
+Detalle de datos: quedaron 39 usuarios huérfanos (37 student, 1 teacher, 1 super admin) sin escuela y sin email, creados por la app y no por el seed; el reset no los toca y el seed los ignora. Están en el baseline, así que el restore los devuelve.
+
+`playwright.config.ts`: `baseURL` ahora es `process.env.BASE_URL ?? 'https://electivoia.mojeda.site'` (commit cd01bfe), para poder apuntar a otro entorno sin editar el archivo cuando exista staging.
 
