@@ -79,3 +79,11 @@ Hallazgos de higiene (valores no mostrados):
 
 Acceso a producción para rotar, verificado: puerto 22 cerrado (sin SSH), 5432/6432 cerrados (base no expuesta), host `postgres-quantify-redundant-alarm-lznwne` es nombre de servicio Docker (NXDOMAIN desde local). Contenedor vivo: `postgres-quantify-redundant-alarm-lznwne.1.<hash>` (image postgres). Conclusión: el `ALTER ROLE` solo se puede ejecutar desde la terminal de Dokploy; `application.saveEnvironment` (POST) sí existe y sirve para actualizar el `env` sin exponer el valor.
 
+L17 (2026-11-18): T5 ejecutado. Acceso: existe alias SSH `homelab` (homelab.mojeda.site:2222, user mauricioojeda, id_rsa); el puerto 22 estaba cerrado pero el 2222 es el bueno. La base es el recurso `electivoia-db` de Dokploy (postgresId `nKtOGps6t8pZ_zuzwshHp`, appName `postgres-quantify-redundant-alarm-lznwne`, imagen postgres:16, usuario y base `electivoia`, el rol es superusuario).
+
+Rotación: contraseña nueva de 32 caracteres alfanuméricos generada en `staging/.db-password` (chmod 600, gitignored), la anterior guardada en `staging/.db-password.previous` para rollback. `ALTER ROLE` por stdin a `docker exec psql` (nunca en argv), env actualizado con `application.saveEnvironment` preservando `buildArgs`, `buildSecrets` y `createEnvFile`, deploy `ZaNGCNVsJnwSuWMnUpvu0` en `done`.
+
+Verificación real (importante): `pg_hba` tiene `127.0.0.1` y `localhost` en `trust`, así que probar la clave contra `127.0.0.1` no prueba NADA — cualquier password pasa. La prueba válida es contra la IP del contenedor (`10.0.1.15`), que sí cae en la regla `host all all all scram-sha-256`: con la clave nueva devuelve `1`, con la vieja `password authentication failed`. Además, desde el contenedor nuevo: `dbal:run-sql` responde OK (`current_user=electivoia`), `select count(*) from "user"` = 219, y el log no tiene ni un ERROR.
+
+Incidente menor: al probar con un PDO crudo contra el contenedor VIEJO, el mensaje de excepción imprimió la contraseña ANTERIOR en la conversación. Sin impacto porque la rotación ya estaba aplicada y esa clave quedó rechazada por scram. Lección: nunca construir un DSN a mano para "probar" — usar el camino real de la app (`dbal:run-sql`) y verificar el contenedor correcto, porque durante un deploy de Swarm conviven dos contenedores y el viejo sigue `healthy`.
+
