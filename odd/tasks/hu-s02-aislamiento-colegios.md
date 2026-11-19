@@ -1,7 +1,7 @@
 # HU-S02 · Aislamiento entre colegios
 
 **Objetivo:** que ningún usuario pueda ver ni modificar datos de otro colegio, en todos los CRUD del panel.
-**Rama:** `main` · **Entrega:** commits por unidad de trabajo, sin push hasta confirmar deploy libre · **Runner:** `php bin/phpunit` (Unit + Integration por carpeta)
+**Rama:** `hu-s02-aislamiento-colegios` · **Entrega:** commits por unidad de trabajo, sin push hasta confirmar deploy libre · **Runner:** `php bin/phpunit` (Unit + Integration por carpeta)
 **Tablero:** Kaneo → proyecto `ElectivoIA` (`dmhw78oxo69l5nb0dgbol5c8`) · tarea `fm2f8vbt329ecdog46fram86` (`in-progress`, asignada)
 
 ---
@@ -50,7 +50,7 @@ Fuera de alcance de ID, anotado como advisory: `AdminImportController` valida RU
 | ID | Tarea | Specs | Ruta | Estado |
 | --- | --- | --- | --- | --- |
 | T1 | Inventario de superficie: cada ruta del panel que recibe un ID, con su veredicto (pasa por repositorio tenant-aware o no). Entregable: listado de rutas revisadas. | S3, S1 | inline | hecho (ver sección Inventario T1) |
-| T2 | Un test de ID cruzado por CRUD, en **RED** antes de tocar código productivo: cursos, usuarios, inscripciones, asistencia, perfiles IA, señales IA, apoderado-pupilo y acciones por lote. | S1, S3, S4, S6 | inline | hecho (32 tests, ver L10) |
+| T2 | Un test de ID cruzado por CRUD, en **RED** antes de tocar código productivo: cursos, usuarios, inscripciones, asistencia, perfiles IA, señales IA, apoderado-pupilo y acciones por lote. | S1, S3, S4, S6 | inline | hecho (33 tests, ver L10) |
 | T3 | Corrección del agujero más chica por caso confirmado por T2, incluidos selectores y autocompletado. | S1, S2, S4 | inline | hecho (ver L11) |
 | T4 | Decisión explícita sobre `SameSchoolVoter`: conectarlo a las entidades o eliminarlo. No dejarlo como está. | S1 | inline | hecho: se conserva y se extiende a batch (ver L12) |
 | T5 | Cierre: suite completa (Unit + Integration) y verificación de que el paso corre en CI antes del deploy. | S6 | inline | hecho (ver L13) |
