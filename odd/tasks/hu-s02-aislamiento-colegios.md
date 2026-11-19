@@ -145,6 +145,19 @@ No se elimina. Ya estaba conectado a las rutas de entidad única vía `setEntity
 - `composer analyse` (PHPStan, no advisory en CI) → sin errores.
 - S6 verificado en `.github/workflows/ci.yml`: el job `tests` corre `php bin/phpunit tests/Integration` (que incluye `IsolationTest`) después de crear el esquema y sembrar con `app:usability:seed`, y el job `deploy` tiene `needs: tests` y solo corre en push a `main`. El aislamiento bloquea el deploy.
 
-Pendiente fuera de este cambio: commit en rama (no hay push hasta confirmar que el deploy está libre, regla 5 del backlog).
+Conteo final tras limpiar los probes temporales: `php bin/phpunit` → **136 tests, 487 assertions, OK**.
+
+**L14 (2026-11-19) · Ramificado, pusheado y PR abierto.**
+
+Deploy verificado como libre antes de pushear (regla 5 del backlog) y confirmado por el usuario. Evidencia: el job `deploy` de `ci.yml` exige `github.ref == 'refs/heads/main'` y tiene `needs: tests`; la rama remota solo corre CI.
+
+- Rama `hu-s02-aislamiento-colegios` pusheada con dos commits: `1a27d36` (el fix) y `7e8d43b` (cierre del documento).
+- CI en la rama: `success` (run `44620886867`).
+- PR abierto: <https://github.com/maur-ojeda/electivoia/pull/21> → `fix(security): enforce school isolation across admin CRUD and AI signals`.
+- Tarea Kaneo `HU-S02 · Aislamiento entre colegios` (`fm2f8vbt329ecdog46fram86`) movida a **Done** (columna `iz5vcfpm1yx00hw3et2s2myy`).
+
+El PR no enlaza issue de GitHub: el tracking de esta HU vive en Kaneo, y el repo no tiene issues para S02.
+
+Pendiente y deliberadamente no ejecutado: el **merge a `main`**. Ese merge dispara el deploy a producción y es decisión del usuario, no una consecuencia automática de esta autorización.
 
 
