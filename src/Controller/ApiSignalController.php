@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\AiSignal;
 use App\Entity\Course;
+use App\Security\SameSchoolVoter;
 use App\Service\SignalCollectionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -54,6 +55,13 @@ class ApiSignalController extends AbstractController
             $course = $em->getRepository(Course::class)->find($courseId);
 
             if ($course === null) {
+                return $this->json(
+                    ['success' => false, 'error' => 'Course not found'],
+                    Response::HTTP_NOT_FOUND,
+                );
+            }
+
+            if (!$this->isGranted(SameSchoolVoter::ATTRIBUTE, $course)) {
                 return $this->json(
                     ['success' => false, 'error' => 'Course not found'],
                     Response::HTTP_NOT_FOUND,
