@@ -193,8 +193,8 @@ parameters:
 			path: src/Entity/Attendance.php
 
 		-
-			message: '#^Access to an undefined property App\\Entity\\Course\:\:\$courseCategories\.$#'
-			identifier: property.notFound
+			message: '#^Property App\\Entity\\Course\:\:\$id \(int\|null\) is never assigned int so it can be removed from the property type\.$#'
+			identifier: property.unusedType
 			count: 1
 			path: src/Entity/Course.php
 

@@ -72,7 +72,6 @@ class Course
         $this->isActive = true;
         $this->enrollments = new ArrayCollection();
         $this->attendances = new ArrayCollection();
-        $this->courseCategories = new ArrayCollection();
     }
 
     public function getId(): ?int
