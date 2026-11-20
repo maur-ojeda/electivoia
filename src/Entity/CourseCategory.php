@@ -19,7 +19,7 @@ class CourseCategory
     #[ORM\Column(length: 10)]
     private ?string $area = null;
 
-    #[ORM\ManyToOne(inversedBy: 'courseCategories')]
+    #[ORM\ManyToOne]
     private ?Course $course = null;
 
     public function getId(): ?int

@@ -111,8 +111,19 @@ class ExportService
     {
         $columns = self::getStudentColumnDefinitions();
 
+        // Twig cannot invoke a closure stored inside an array, so the cell
+        // values are resolved here before rendering.
+        $rows = [];
+        foreach ($data as $rowIndex => $record) {
+            $rows[] = array_map(
+                static fn (array $column): string => (string) $column['accessor']($record, $rowIndex),
+                $columns,
+            );
+        }
+
         $html = $this->twig->render('export/students_pdf.html.twig', [
             'columns' => $columns,
+            'rows' => $rows,
             'data' => $data,
             'course' => $course,
             'school' => $school,
