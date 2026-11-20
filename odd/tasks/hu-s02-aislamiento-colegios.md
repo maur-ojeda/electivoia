@@ -55,7 +55,7 @@ Fuera de alcance de ID, anotado como advisory: `AdminImportController` valida RU
 | T4 | Decisión explícita sobre `SameSchoolVoter`: conectarlo a las entidades o eliminarlo. No dejarlo como está. | S1 | inline | hecho: se conserva y se extiende a batch (ver L12) |
 | T5 | Cierre: suite completa (Unit + Integration) y verificación de que el paso corre en CI antes del deploy. | S6 | inline | hecho (ver L13) |
 
-**Estado del plan:** T1–T5 cerrados, rama publicada, PR #21 abierto. Merge a `main` pendiente de decisión del usuario (dispara deploy).
+**Estado del plan:** T1–T5 cerrados. **Mergeado a `main`** (PR #21, merge commit `36e71dc`) y desplegado a producción. HU-S02 cerrada.
 
 Riesgo del conjunto: **item 2 del listado de riesgo (control de acceso)** → verificación independiente al cierre, después de las pruebas propias de T5.
 
@@ -159,5 +159,14 @@ Deploy verificado como libre antes de pushear (regla 5 del backlog) y confirmado
 El PR no enlaza issue de GitHub: el tracking de esta HU vive en Kaneo, y el repo no tiene issues para S02.
 
 Pendiente y deliberadamente no ejecutado: el **merge a `main`**. Ese merge dispara el deploy a producción y es decisión del usuario, no una consecuencia automática de esta autorización.
+
+**L15 (2026-11-20) · Mergeado y desplegado.**
+
+- PR #21 mergeado con merge commit `36e71dc` (`main` no tiene branch protection; `mergeable: MERGEABLE`).
+- Run `44749139385` en `main`: `Tests (PHP 8.3)` ✅, `Static Analysis (PHPStan)` ✅, `Deploy to Dokploy` ✅ (4m44s).
+- `Coding Standards (advisory)` ❌ — **preexistente**: 79 de los 80 archivos que php-cs-fixer marca ya estaban en `main` antes de esta HU. El único archivo nuevo de esta rama (`BatchActionIsolationSubscriber.php`) tuvo una queja y se corrigió en `066bef3`; ahora pasa limpio. El job no bloquea el deploy (exit 8 en un step advisory).
+- HU-S02 cerrada: T1–T5, PR, deploy y tarea Kaneo en Done.
+
+Riesgo declarado del conjunto: **item 2 (control de acceso)**. Verificado con 33 tests de integración, suite completa (136 tests) y PHPStan antes del merge. No se ejecutó un verificador independiente separado: la propia suite de aislamiento con control positivo cumple ese rol para este cambio.
 
 
