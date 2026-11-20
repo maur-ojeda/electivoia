@@ -178,11 +178,11 @@ class IsolationTest extends WebTestCase
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId() . '/detail');
+        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId());
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
-            [403, 404, 302],
+            [403, 404],
             'Admin from other school must not see a course detail from Liceo.'
         );
     }
@@ -199,7 +199,7 @@ class IsolationTest extends WebTestCase
 
         $this->client->loginUser($aisAdmin, 'main');
         $this->client->request('GET', '/admin/course/' . $liceoCourse->getId() . '/edit');
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     /**
@@ -214,7 +214,7 @@ class IsolationTest extends WebTestCase
 
         $this->client->loginUser($aisAdmin, 'main');
         $this->client->request('POST', '/admin/course/' . $liceoCourse->getId() . '/delete');
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     /**
@@ -228,8 +228,9 @@ class IsolationTest extends WebTestCase
         $liceoUser   = $this->getStudentOf($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/user/' . $liceoUser->getId() . '/detail');
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
+        $this->client->request('GET', '/admin/user/' . $liceoUser->getId());
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     /**
@@ -244,7 +245,7 @@ class IsolationTest extends WebTestCase
 
         $this->client->loginUser($aisAdmin, 'main');
         $this->client->request('GET', '/admin/user/' . $liceoUser->getId() . '/edit');
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     // ── Student enroll isolation ──────────────────────────────────────────────
@@ -264,7 +265,7 @@ class IsolationTest extends WebTestCase
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
-            [403, 302],
+            [403, 404],
             'Student from other school must receive 403 or redirect on enroll attempt.'
         );
 
@@ -289,7 +290,7 @@ class IsolationTest extends WebTestCase
         $this->client->loginUser($aisStudent, 'main');
         $this->client->request('POST', '/student/unenroll/' . $liceoCourse->getId());
 
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 302]);
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     // ── Teacher isolation ─────────────────────────────────────────────────────
@@ -311,7 +312,7 @@ class IsolationTest extends WebTestCase
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
-            [403, 404, 302],
+            [403, 404],
             'Teacher must not access attendance of a course from another school.'
         );
     }
@@ -330,7 +331,7 @@ class IsolationTest extends WebTestCase
         $this->client->loginUser($aisTeacher, 'main');
         $this->client->request('GET', '/teacher/report/' . $liceoCourse->getId());
 
-        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404, 302]);
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     /**
@@ -358,7 +359,7 @@ class IsolationTest extends WebTestCase
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
-            [403, 404, 302],
+            [403, 404],
             'Teacher must not access attendance of a colleague\'s course.'
         );
     }
@@ -414,7 +415,9 @@ class IsolationTest extends WebTestCase
 
     /**
      * AdminAislamiento attempts batch-delete on a Liceo Ficticio course ID.
-     * The voter must block it (403) or silently skip the foreign entity.
+     *
+     * The token must be valid: EasyAdmin validates CSRF before permissions,
+     * so an untokened request is rejected by CSRF and never reaches the voter.
      */
     public function testAdminCannotBatchDeleteCourseFromOtherSchool(): void
     {
@@ -424,9 +427,19 @@ class IsolationTest extends WebTestCase
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
+        $csrfToken = $this->batchDeleteToken('/admin/course');
         $this->client->request('POST', '/admin/course/batch-delete', [
+            'batchActionName' => 'batchDelete',
             'batchActionEntityIds' => [$liceoCourse->getId()],
+            'batchActionCsrfToken' => $csrfToken,
+            'entityFqcn' => Course::class,
         ]);
+
+        $this->assertContains(
+            $this->client->getResponse()->getStatusCode(),
+            [403, 404],
+            'Cross-school batch-delete must be refused by the voter, not by CSRF.'
+        );
 
         // The course from Liceo must still exist after the attempt.
         $this->em->clear();
@@ -434,8 +447,77 @@ class IsolationTest extends WebTestCase
         $this->assertNotNull($stillExists, 'Cross-school batch-delete must not remove the entity.');
     }
 
-    // ── EasyAdmin autocomplete isolation ─────────────────────────────────────
+    /**
+     * The batch action resolves its target repository from the posted
+     * entityFqcn, so without a check a school admin could delete entities of
+     * any class by posting a different FQCN to any batch endpoint.
+     */
+    public function testBatchDeleteRejectsForeignEntityClass(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $victim      = $this->createTestUser('test-batch-fqcn-iso@test.local', ['ROLE_STUDENT'], $liceo);
+        $victimId    = $victim->getId();
 
+        $this->client->loginUser($aisAdmin, 'main');
+
+        // Course endpoint, User entity class.
+        $this->client->request('POST', '/admin/course/batch-delete', [
+            'batchActionName' => 'batchDelete',
+            'batchActionEntityIds' => [$victimId],
+            'batchActionCsrfToken' => $this->batchDeleteToken('/admin/course'),
+            'entityFqcn' => User::class,
+        ]);
+
+        $this->assertContains(
+            $this->client->getResponse()->getStatusCode(),
+            [403, 404],
+            'A batch action must not accept an entity class other than its own.'
+        );
+
+        $this->em->clear();
+        $this->assertNotNull(
+            $this->em->find(User::class, $victimId),
+            'Batch-delete through a mismatched entity class must not remove the entity.'
+        );
+    }
+
+    /**
+     * Positive control for the batch guard: an admin can still batch-delete an
+     * enrollment of their own school.
+     */
+    public function testAdminCanBatchDeleteOwnSchoolEnrollment(): void
+    {
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $student     = $this->createTestUser('test-own-batch-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $enrollment  = $this->createEnrollment($student, $this->getCourseBelongingTo($aislamiento));
+        $id          = $enrollment->getId();
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $csrfToken = $this->batchDeleteToken('/admin/enrollment');
+        $this->client->request('POST', '/admin/enrollment/batch-delete', [
+            'batchActionName' => 'batchDelete',
+            'batchActionEntityIds' => [$id],
+            'batchActionCsrfToken' => $csrfToken,
+            'entityFqcn' => \App\Entity\Enrollment::class,
+        ]);
+
+        $this->assertSame(
+            302,
+            $this->client->getResponse()->getStatusCode(),
+            'An own-school batch-delete must be allowed.'
+        );
+
+        $this->em->clear();
+        $this->assertNull(
+            $this->em->find(\App\Entity\Enrollment::class, $id),
+            'An own-school batch-delete must remove the entity.'
+        );
+    }
+
+    // ── EasyAdmin autocomplete isolation ─────────────────────────────────────
     /**
      * The admin/course autocomplete endpoint must not return courses
      * belonging to a different school.
@@ -446,21 +528,42 @@ class IsolationTest extends WebTestCase
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $aisAdmin    = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
+        $aisCourse   = $this->getCourseBelongingTo($aislamiento);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/course/autocomplete', ['query' => $liceoCourse->getName()]);
 
-        $status = $this->client->getResponse()->getStatusCode();
-        if ($status === 200) {
-            $data = json_decode($this->client->getResponse()->getContent() ?: '{}', true);
-            $ids  = array_column($data['results'] ?? [], 'value');
-            $this->assertNotContains(
-                (string) $liceoCourse->getId(),
-                $ids,
-                'Autocomplete must not return courses from another school.'
-            );
-        }
-        // A 403/404/302 also satisfies the requirement.
+        // Positive control: a course of the admin's own school IS offered.
+        $this->assertContains(
+            (string) $aisCourse->getId(),
+            $this->autocompleteCourseIds((string) $aisCourse->getName()),
+            'The course selector must offer courses from the admin\'s own school.'
+        );
+
+        // Negative: a course from another school is NOT offered.
+        $this->assertNotContains(
+            (string) $liceoCourse->getId(),
+            $this->autocompleteCourseIds((string) $liceoCourse->getName()),
+            'Autocomplete must not return courses from another school.'
+        );
+    }
+
+    /** @return list<string> Ids returned by the enrollment form's course autocomplete. */
+    private function autocompleteCourseIds(string $query): array
+    {
+        $this->client->request('GET', '/admin/course/autocomplete', [
+            'query' => $query,
+            'autocompleteContext' => [
+                'propertyName' => 'course',
+                'originatingPage' => 'edit',
+                'crudControllerFqcn' => \App\Controller\Admin\EnrollmentCrudController::class,
+            ],
+        ]);
+
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $data = json_decode($this->client->getResponse()->getContent() ?: '{}', true);
+
+        return array_map('strval', array_column($data['results'] ?? [], 'entityId'));
     }
 
     // ── Email blast isolation ─────────────────────────────────────────────────
@@ -558,6 +661,414 @@ class IsolationTest extends WebTestCase
             [403, 404],
             'ROLE_ADMIN must receive 403/404 on POST /admin/course-category/{id}/delete.'
         );
+    }
+
+    // ── Cross-school ID for the remaining CRUDs (HU-S02 · T2) ─────────────────
+
+    /** Create an enrollment for $student in $course and schedule cleanup. */
+    private function createEnrollment(User $student, Course $course): \App\Entity\Enrollment
+    {
+        $enrollment = new \App\Entity\Enrollment();
+        $enrollment->setStudent($student);
+        $enrollment->setCourse($course);
+        $this->em->persist($enrollment);
+        $this->em->flush();
+        $this->entitiesToDelete[] = $enrollment;
+
+        return $enrollment;
+    }
+
+    /** Create an interest profile for $student and schedule cleanup. */
+    private function createInterestProfile(User $student): \App\Entity\InterestProfile
+    {
+        $profile = new \App\Entity\InterestProfile();
+        $profile->setStudent($student);
+        $profile->setInterests(['Filosofía' => 4]);
+        $this->em->persist($profile);
+        $this->em->flush();
+        $this->entitiesToDelete[] = $profile;
+
+        return $profile;
+    }
+
+    /**
+     * Fetches the batch-action CSRF token from the rendered index page, the
+     * same way the browser does. EasyAdmin's ActionFactory emits it as
+     * data-action-csrf-token.
+     *
+     * This matters: batchDelete() validates CSRF *before* the entity
+     * permission check, so an untokened request is rejected by CSRF and never
+     * reaches the voter — the test would pass for the wrong reason.
+     */
+    private function batchDeleteToken(string $indexUrl): string
+    {
+        $crawler = $this->client->request('GET', $indexUrl);
+        $node    = $crawler->filter('[data-action-csrf-token]');
+
+        $this->assertGreaterThan(
+            0,
+            $node->count(),
+            sprintf('No batch-action CSRF token rendered on %s.', $indexUrl)
+        );
+
+        return (string) $node->first()->attr('data-action-csrf-token');
+    }
+
+    public function testAdminCannotViewEnrollmentFromOtherSchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $liceoCourse = $this->getCourseBelongingTo($liceo);
+        $liceoStudent = $this->getStudentOf($liceo);
+        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/enrollment/' . $enrollment->getId());
+
+        $this->assertContains(
+            $this->client->getResponse()->getStatusCode(),
+            [403, 404],
+            'An enrollment from another school must not be viewable.'
+        );
+    }
+
+    public function testAdminCannotEditEnrollmentFromOtherSchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $liceoCourse = $this->getCourseBelongingTo($liceo);
+        $liceoStudent = $this->getStudentOf($liceo);
+        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/enrollment/' . $enrollment->getId() . '/edit');
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
+    }
+
+    public function testAdminCannotDeleteEnrollmentFromOtherSchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $liceoCourse = $this->getCourseBelongingTo($liceo);
+        $liceoStudent = $this->getStudentOf($liceo);
+        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+        $id = $enrollment->getId();
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('POST', '/admin/enrollment/' . $id . '/delete');
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
+        $this->em->clear();
+        $this->assertNotNull(
+            $this->em->find(\App\Entity\Enrollment::class, $id),
+            'Cross-school delete must not remove the enrollment.'
+        );
+    }
+
+    public function testAdminCannotBatchDeleteEnrollmentFromOtherSchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $liceoCourse = $this->getCourseBelongingTo($liceo);
+        $liceoStudent = $this->getStudentOf($liceo);
+        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+        $id = $enrollment->getId();
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $csrfToken = $this->batchDeleteToken('/admin/enrollment');
+        $this->client->request('POST', '/admin/enrollment/batch-delete', [
+            'batchActionName' => 'batchDelete',
+            'batchActionEntityIds' => [$id],
+            'batchActionCsrfToken' => $csrfToken,
+            'entityFqcn' => \App\Entity\Enrollment::class,
+        ]);
+
+        $this->assertContains(
+            $this->client->getResponse()->getStatusCode(),
+            [403, 404],
+            'Cross-school batch-delete must be refused by the voter, not by CSRF.'
+        );
+
+        $this->em->clear();
+        $this->assertNotNull($this->em->find(\App\Entity\Enrollment::class, $id));
+    }
+
+    public function testAdminCannotViewInterestProfileFromOtherSchool(): void
+    {
+        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento  = $this->getSchool('colegio-aislamiento');
+        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceoStudent = $this->createTestUser('test-profile-owner-iso@test.local', ['ROLE_STUDENT'], $liceo);
+        $profile      = $this->createInterestProfile($liceoStudent);
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/interest-profile/' . $profile->getId());
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
+    }
+
+    public function testAdminCannotEditInterestProfileFromOtherSchool(): void
+    {
+        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento  = $this->getSchool('colegio-aislamiento');
+        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceoStudent = $this->createTestUser('test-profile-edit-iso@test.local', ['ROLE_STUDENT'], $liceo);
+        $profile      = $this->createInterestProfile($liceoStudent);
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/interest-profile/' . $profile->getId() . '/edit');
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
+    }
+
+    public function testAdminCannotDeleteInterestProfileFromOtherSchool(): void
+    {
+        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento  = $this->getSchool('colegio-aislamiento');
+        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceoStudent = $this->createTestUser('test-profile-del-iso@test.local', ['ROLE_STUDENT'], $liceo);
+        $profile      = $this->createInterestProfile($liceoStudent);
+        $id = $profile->getId();
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('POST', '/admin/interest-profile/' . $id . '/delete');
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
+        $this->em->clear();
+        $this->assertNotNull($this->em->find(\App\Entity\InterestProfile::class, $id));
+    }
+
+    public function testAdminCannotBatchDeleteUserFromOtherSchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $liceoStudent = $this->createTestUser('test-user-batch-iso@test.local', ['ROLE_STUDENT'], $liceo);
+        $id = $liceoStudent->getId();
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $csrfToken = $this->batchDeleteToken('/admin/user');
+        $this->client->request('POST', '/admin/user/batch-delete', [
+            'batchActionName' => 'batchDelete',
+            'batchActionEntityIds' => [$id],
+            'batchActionCsrfToken' => $csrfToken,
+            'entityFqcn' => User::class,
+        ]);
+
+        $this->assertContains(
+            $this->client->getResponse()->getStatusCode(),
+            [403, 404],
+            'Cross-school batch-delete must be refused by the voter, not by CSRF.'
+        );
+
+        $this->em->clear();
+        $this->assertNotNull($this->em->find(User::class, $id));
+    }
+
+    /**
+     * A teacher from another school cannot save attendance for a Liceo course,
+     * and the existing attendance of that course must survive the attempt.
+     */
+    public function testTeacherCannotSaveAttendanceOfCourseFromOtherSchool(): void
+    {
+        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento  = $this->getSchool('colegio-aislamiento');
+        $aisTeacher   = $this->getTeacherOf($aislamiento);
+        $liceoStudent = $this->getStudentOf($liceo);
+        $liceoCourse  = $this->getCourseBelongingTo($liceo);
+
+        $today = new \DateTime();
+        $existing = new \App\Entity\Attendance();
+        $existing->setStudent($liceoStudent);
+        $existing->setCourse($liceoCourse);
+        $existing->setDate($today);
+        $existing->setStatus('present');
+        $this->em->persist($existing);
+        $this->em->flush();
+        $this->entitiesToDelete[] = $existing;
+        $existingId = $existing->getId();
+
+        $this->client->loginUser($aisTeacher, 'main');
+        $this->client->request('POST', '/teacher/attendance/' . $liceoCourse->getId() . '/save', [
+            'student_ids' => [$liceoStudent->getId()],
+            'status' => [$liceoStudent->getId() => 'absent'],
+        ]);
+
+        $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
+        $this->em->clear();
+        $survivor = $this->em->find(\App\Entity\Attendance::class, $existingId);
+        $this->assertNotNull($survivor, 'Attendance of another school must not be deleted.');
+        $this->assertSame('present', $survivor->getStatus(), 'Attendance of another school must not be overwritten.');
+    }
+
+    /**
+     * S1/S3: a signal must not be recorded against a course from another school.
+     */
+    public function testStudentCannotRecordAiSignalForCourseFromOtherSchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisStudent  = $this->createTestUser('test-signal-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $liceoCourse = $this->getCourseBelongingTo($liceo);
+        $studentId   = $aisStudent->getId();
+        $courseId    = $liceoCourse->getId();
+
+        $this->client->loginUser($aisStudent, 'main');
+        $this->client->request(
+            'POST',
+            '/api/ai/signal',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['action' => 'view', 'course_id' => $courseId]),
+        );
+
+        $status = $this->client->getResponse()->getStatusCode();
+        $signals = $this->em->getRepository(\App\Entity\AiSignal::class)
+            ->findBy(['student' => $aisStudent, 'course' => $liceoCourse]);
+
+        $created = count($signals);
+        foreach ($signals as $signal) {
+            $this->em->remove($signal);
+        }
+        $this->em->flush();
+
+        $this->assertContains($status, [403, 404], 'Cross-school signal must be rejected.');
+        $this->assertSame(0, $created, 'No signal may be stored against a course from another school.');
+    }
+
+    /**
+     * Pins the valid path: the same endpoint still records signals for own-school courses.
+     */
+    public function testStudentCanRecordAiSignalForOwnSchoolCourse(): void
+    {
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisStudent  = $this->createTestUser('test-signal-own-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $aisCourse   = $this->getCourseBelongingTo($aislamiento);
+
+        $this->client->loginUser($aisStudent, 'main');
+        $this->client->request(
+            'POST',
+            '/api/ai/signal',
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            json_encode(['action' => 'view', 'course_id' => $aisCourse->getId()]),
+        );
+
+        $status = $this->client->getResponse()->getStatusCode();
+        $signals = $this->em->getRepository(\App\Entity\AiSignal::class)
+            ->findBy(['student' => $aisStudent, 'course' => $aisCourse]);
+        $created = count($signals);
+        foreach ($signals as $signal) {
+            $this->em->remove($signal);
+        }
+        $this->em->flush();
+
+        $this->assertSame(201, $status, 'Own-school signal must still be recorded.');
+        $this->assertSame(1, $created);
+    }
+
+    /**
+     * S2: the teacher selector in the course form must not offer teachers
+     * belonging to another school.
+     *
+     * EasyAdmin resolves the autocomplete query builder from the target entity's
+     * CRUD controller (UserCrudController), which filters by school. The
+     * autocomplete context is required: without it the endpoint cannot resolve
+     * the page name and returns 500.
+     */
+    public function testTeacherAutocompleteDoesNotLeakUsersFromOtherSchool(): void
+    {
+        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento  = $this->getSchool('colegio-aislamiento');
+        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceoTeacher = $this->getTeacherOf($liceo);
+        $aisTeacher   = $this->getTeacherOf($aislamiento);
+
+        $this->client->loginUser($aisAdmin, 'main');
+
+        // Positive control: a teacher of the admin's own school IS offered.
+        // Without it the negative assertion below would also pass on an empty result.
+        $ownIds = $this->autocompleteUserIds((string) $aisTeacher->getFullName());
+        $this->assertContains(
+            (string) $aisTeacher->getId(),
+            $ownIds,
+            'The user selector must offer teachers from the admin\'s own school.'
+        );
+
+        // Negative: a teacher of another school is NOT offered.
+        $foreignIds = $this->autocompleteUserIds((string) $liceoTeacher->getFullName());
+        $this->assertNotContains(
+            (string) $liceoTeacher->getId(),
+            $foreignIds,
+            'The user selector must not offer teachers from another school.'
+        );
+    }
+
+    /** @return list<string> Ids returned by the course form's teacher autocomplete. */
+    private function autocompleteUserIds(string $query): array
+    {
+        $this->client->request('GET', '/admin/user/autocomplete', [
+            'query' => $query,
+            'autocompleteContext' => [
+                'propertyName' => 'teacher',
+                'originatingPage' => 'edit',
+                'crudControllerFqcn' => \App\Controller\Admin\CourseCrudController::class,
+            ],
+        ]);
+
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $data = json_decode($this->client->getResponse()->getContent() ?: '{}', true);
+
+        return array_map('strval', array_column($data['results'] ?? [], 'entityId'));
+    }
+
+    /**
+     * S2: the guardian pupils selector renders no student from another school.
+     */
+    public function testGuardianPupilsSelectorDoesNotOfferStudentsFromOtherSchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin    = $this->getAdminOf($aislamiento);
+
+        $guardian = $this->createTestUser('test-guardian-sel-iso@test.local', ['ROLE_GUARDIAN'], $aislamiento);
+        $foreign  = $this->createTestUser('test-foreign-pupil-iso@test.local', ['ROLE_STUDENT'], $liceo);
+
+        $this->client->loginUser($aisAdmin, 'main');
+        $this->client->request('GET', '/admin/user/' . $guardian->getId() . '/edit');
+
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode());
+        $content = $this->client->getResponse()->getContent() ?: '';
+        $this->assertStringNotContainsString(
+            (string) $foreign->getFullName(),
+            $content,
+            'The pupils selector must not offer students from another school.'
+        );
+    }
+
+    /**
+     * S5: the super admin keeps access to every school.
+     */
+    public function testSuperAdminCanViewCourseFromAnySchool(): void
+    {
+        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $liceoCourse = $this->getCourseBelongingTo($liceo);
+        $superAdmin  = $this->createTestUser('test-superadmin-iso@test.local', ['ROLE_SUPER_ADMIN'], $aislamiento);
+
+        $this->client->loginUser($superAdmin, 'main');
+        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId());
+
+        $this->assertSame(200, $this->client->getResponse()->getStatusCode(),
+            'The super admin must keep access to courses from any school.');
     }
 
     // ── Helpers (extra) ───────────────────────────────────────────────────────
