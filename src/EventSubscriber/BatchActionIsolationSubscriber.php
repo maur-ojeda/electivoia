@@ -59,11 +59,7 @@ class BatchActionIsolationSubscriber
             }
 
             if (!$this->security->isGranted(SameSchoolVoter::ATTRIBUTE, $entity)) {
-                throw new AccessDeniedHttpException(sprintf(
-                    'Cross-school batch action refused for %s#%s.',
-                    $entityFqcn,
-                    $entityId,
-                ));
+                throw new AccessDeniedHttpException(sprintf('Cross-school batch action refused for %s#%s.', $entityFqcn, $entityId));
             }
         }
     }
