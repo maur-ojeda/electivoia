@@ -25,10 +25,10 @@ final class GeminiMockHttpClient extends MockHttpClient
     public function __construct()
     {
         parent::__construct(static fn (): MockResponse => new MockResponse(
-            'data: ' . json_encode(
+            'data: '.json_encode(
                 ['choices' => [['delta' => ['content' => self::REPLY]]]],
                 JSON_THROW_ON_ERROR,
-            ) . "\n\ndata: [DONE]\n\n",
+            )."\n\ndata: [DONE]\n\n",
             ['response_headers' => ['content-type' => 'text/event-stream']],
         ));
     }

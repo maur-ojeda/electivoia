@@ -2,13 +2,12 @@
 
 namespace App\Security;
 
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\Security\Core\Security;
 
 /**
  * Redirige al usuario a una página específica después de iniciar sesión con éxito,
@@ -43,7 +42,7 @@ class LoginSuccessHandler implements AuthenticationSuccessHandlerInterface
             // Asegúrate de que esta ruta exista en tu archivo config/routes.yaml
             $targetUrl = $this->router->generate('admin');
 
-            // 3. Prioridad: ROLE_TEACHER
+        // 3. Prioridad: ROLE_TEACHER
         } elseif (in_array('ROLE_TEACHER', $roles, true)) {
             $targetUrl = $this->router->generate('teacher_courses');
 

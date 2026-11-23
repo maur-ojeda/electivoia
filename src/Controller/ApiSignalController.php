@@ -23,7 +23,7 @@ class ApiSignalController extends AbstractController
     ): JsonResponse {
         $user = $this->getUser();
 
-        if ($user === null) {
+        if (null === $user) {
             return $this->json(
                 ['success' => false, 'error' => 'Authentication required'],
                 Response::HTTP_UNAUTHORIZED,
@@ -41,7 +41,7 @@ class ApiSignalController extends AbstractController
 
         $action = $data['action'] ?? null;
 
-        if ($action === null || !in_array($action, AiSignal::ALLOWED_ACTIONS, true)) {
+        if (null === $action || !in_array($action, AiSignal::ALLOWED_ACTIONS, true)) {
             return $this->json(
                 ['success' => false, 'error' => 'Invalid or missing action'],
                 Response::HTTP_BAD_REQUEST,
@@ -51,10 +51,10 @@ class ApiSignalController extends AbstractController
         $course = null;
         $courseId = $data['course_id'] ?? null;
 
-        if ($courseId !== null) {
+        if (null !== $courseId) {
             $course = $em->getRepository(Course::class)->find($courseId);
 
-            if ($course === null) {
+            if (null === $course) {
                 return $this->json(
                     ['success' => false, 'error' => 'Course not found'],
                     Response::HTTP_NOT_FOUND,

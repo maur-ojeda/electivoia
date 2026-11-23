@@ -22,7 +22,8 @@ class DemandPredictionService
         private EntityManagerInterface $em,
         private InterestProfileRepository $interestProfileRepository,
         private AiSignalRepository $aiSignalRepository,
-    ) {}
+    ) {
+    }
 
     /**
      * Predicts enrollment demand for a single course.
@@ -44,7 +45,7 @@ class DemandPredictionService
         $school = $course->getSchool();
 
         // Cannot predict without a school or category
-        if ($school === null || $school->getId() === null || $category === null) {
+        if (null === $school || null === $school->getId() || null === $category) {
             return [
                 'predicted_enrollments' => $currentEnrollment,
                 'confidence' => 0.0,
@@ -62,7 +63,7 @@ class DemandPredictionService
         );
 
         // 2. View signals from the last 30 days
-        $recentViews = $course->getId() !== null
+        $recentViews = null !== $course->getId()
             ? $this->aiSignalRepository->countRecentViewsForCourse($course->getId(), self::RECENT_VIEWS_DAYS)
             : 0;
 
@@ -96,7 +97,7 @@ class DemandPredictionService
      */
     public function predictDemandForSchool(School $school): array
     {
-        if ($school->getId() === null) {
+        if (null === $school->getId()) {
             return [];
         }
 
@@ -114,7 +115,7 @@ class DemandPredictionService
             $category = $course->getCategory();
             $demandPool = 0;
 
-            if ($category !== null) {
+            if (null !== $category) {
                 $demandPool = $this->interestProfileRepository->countStudentsInterestedInCategory(
                     $school->getId(),
                     $category->getName(),

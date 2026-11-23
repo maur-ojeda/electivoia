@@ -1,92 +1,59 @@
 <?php
 
-
 namespace App\Controller;
 
-
-
-use App\Entity\Enrollment;
-
 use App\Entity\Course;
-
+use App\Entity\Enrollment;
 use Doctrine\ORM\EntityManagerInterface;
-
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-
 use Symfony\Component\HttpFoundation\Request;
-
 use Symfony\Component\HttpFoundation\Response;
-
 use Symfony\Component\Routing\Attribute\Route;
-
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-
-
 #[Route('/enrollment', name: 'enrollment_')]
-
 class EnrollmentController extends AbstractController
-
 {
-
     #[Route('/{id}/enroll', name: 'enroll', methods: ['POST'])]
 
     #[IsGranted('ROLE_STUDENT')]
-
     #[IsGranted('SAME_SCHOOL', subject: 'course')]
-
     public function enroll(
-
         Course $course,
 
         EntityManagerInterface $em,
 
-        Request $request
-
+        Request $request,
     ): Response {
-
         $student = $this->getUser();
-
-
 
         // Validar: curso activo
 
         if (!$course->isActive()) {
-
             $this->addFlash('error', 'El curso no está disponible.');
 
             return $this->redirectToRoute('student_courses');
         }
 
-
-
         // Validar: ya inscrito
 
         $existing = $em->getRepository(Enrollment::class)->findOneBy([
-
             'student' => $student,
 
-            'course' => $course
-
+            'course' => $course,
         ]);
 
         if ($existing) {
-
             $this->addFlash('warning', 'Ya estás inscrito en este curso.');
 
             return $this->redirectToRoute('student_courses');
         }
 
-
-
         $currentCount = $em->getRepository(Enrollment::class)->count(['course' => $course]);
 
         $maxCapacity = $course->getMaxCapacity();
 
-
-
         if ($currentCount < $maxCapacity) {
-
             // Hay cupo → inscribir directamente
 
             $enrollment = new Enrollment();
@@ -103,19 +70,15 @@ class EnrollmentController extends AbstractController
 
             $this->addFlash('success', '¡Inscripción exitosa!');
         } else {
-
             // Sin cupo → aplicar regla de prioridad
 
             $studentGrade = $student->getAverageGrade();
 
-            if ($studentGrade === null) {
-
+            if (null === $studentGrade) {
                 $this->addFlash('error', 'No puedes inscribirte sin promedio registrado.');
 
                 return $this->redirectToRoute('student_courses');
             }
-
-
 
             // Buscar estudiante con menor promedio
 
@@ -137,18 +100,12 @@ ORDER BY COALESCE(s.averageGrade, 0) ASC
 
                 ->getOneOrNullResult();
 
-
-
             if ($lowestEnrollment) {
-
                 $lowestStudent = $lowestEnrollment->getStudent();
 
                 $lowestGrade = $lowestStudent->getAverageGrade() ?? 0;
 
-
-
                 if ($studentGrade > $lowestGrade) {
-
                     // Desplazar al estudiante con menor promedio
 
                     $em->remove($lowestEnrollment);
@@ -167,16 +124,12 @@ ORDER BY COALESCE(s.averageGrade, 0) ASC
 
                     $this->addFlash('success', "¡Inscripción exitosa! Reemplazaste a {$lowestStudent->getEmail()}.");
                 } else {
-
                     $this->addFlash('error', 'No hay cupo y tu promedio no es suficiente.');
                 }
             } else {
-
                 $this->addFlash('error', 'Error al verificar prioridad.');
             }
         }
-
-
 
         return $this->redirectToRoute('student_courses');
     }

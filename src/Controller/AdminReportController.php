@@ -23,8 +23,9 @@ class AdminReportController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private GeminiInsightsService $insightsService,
-        private TenantContext $tenantContext
-    ) {}
+        private TenantContext $tenantContext,
+    ) {
+    }
 
     private function activeCourseQb(): \Doctrine\ORM\QueryBuilder
     {
@@ -63,6 +64,7 @@ class AdminReportController extends AbstractController
         foreach ($rows as $row) {
             $counts[(int) $row['courseId']] = (int) $row['cnt'];
         }
+
         return $counts;
     }
 
@@ -126,7 +128,7 @@ class AdminReportController extends AbstractController
         foreach ($courses as $course) {
             $current = $enrollmentCounts[$course->getId()] ?? 0;
             if ($course->getMaxCapacity() > 0 && ($current / $course->getMaxCapacity()) >= 0.8) {
-                $highDemandCount++;
+                ++$highDemandCount;
             }
         }
         $highDemandRatio = $totalCourses > 0 ? ($highDemandCount / $totalCourses) * 100 : 0;
@@ -149,12 +151,11 @@ class AdminReportController extends AbstractController
 
         $insights = [
             "El sistema tiene un total de {$totalCourses} cursos activos con {$totalEnrollments} inscripciones.",
-            sprintf("La ocupación promedio general es del %.1f%%.", $averageOccupancy),
-            sprintf("El %.1f%% de los cursos tienen más del 80%% de su cupo ocupado.", $highDemandRatio),
+            sprintf('La ocupación promedio general es del %.1f%%.', $averageOccupancy),
+            sprintf('El %.1f%% de los cursos tienen más del 80%% de su cupo ocupado.', $highDemandRatio),
             sprintf("Los cursos de 'Ciencias' tienen una ocupación del %.1f%%.", $scienceOccupancy),
-            "Se recomienda revisar los cursos con baja inscripción para ajustar oferta o promoción."
+            'Se recomienda revisar los cursos con baja inscripción para ajustar oferta o promoción.',
         ];
-
 
         return $this->render('admin_report/index.html.twig', [
             'courses' => $courses,
@@ -175,10 +176,10 @@ class AdminReportController extends AbstractController
         $matrix = $this->buildComparativeMatrix();
 
         return $this->render('admin_report/comparative.html.twig', [
-            'matrix'     => $matrix['matrix'],
-            'grades'     => $matrix['grades'],
+            'matrix' => $matrix['matrix'],
+            'grades' => $matrix['grades'],
             'categories' => $matrix['categories'],
-            'totals'     => $matrix['totals'],
+            'totals' => $matrix['totals'],
         ]);
     }
 
@@ -195,7 +196,7 @@ class AdminReportController extends AbstractController
         $col = 2;
         foreach ($matrix['categories'] as $cat) {
             $sheet->setCellValueByColumnAndRow($col, 1, $cat);
-            $col++;
+            ++$col;
         }
         $sheet->setCellValueByColumnAndRow($col, 1, 'TOTAL');
 
@@ -209,10 +210,10 @@ class AdminReportController extends AbstractController
                 $val = $matrix['matrix'][$grade][$cat] ?? 0;
                 $sheet->setCellValueByColumnAndRow($col, $row, $val);
                 $rowTotal += $val;
-                $col++;
+                ++$col;
             }
             $sheet->setCellValueByColumnAndRow($col, $row, $rowTotal);
-            $row++;
+            ++$row;
         }
 
         // Totals row
@@ -220,7 +221,7 @@ class AdminReportController extends AbstractController
         $col = 2;
         foreach ($matrix['categories'] as $cat) {
             $sheet->setCellValueByColumnAndRow($col, $row, $matrix['totals'][$cat] ?? 0);
-            $col++;
+            ++$col;
         }
 
         $response = new StreamedResponse(function () use ($spreadsheet) {
@@ -267,7 +268,7 @@ class AdminReportController extends AbstractController
             $byTeacher[$teacherId]['totalEnrolled'] += $enrolled;
         }
 
-        uasort($byTeacher, fn($a, $b) => count($b['courses']) <=> count($a['courses']));
+        uasort($byTeacher, fn ($a, $b) => count($b['courses']) <=> count($a['courses']));
 
         return $this->render('admin_report/by_teacher.html.twig', [
             'byTeacher' => $byTeacher,
@@ -290,18 +291,18 @@ class AdminReportController extends AbstractController
 
             if ($pct < $threshold) {
                 $alerts[] = [
-                    'course'    => $course,
-                    'enrolled'  => $enrolled,
-                    'capacity'  => $capacity,
-                    'pct'       => round($pct * 100),
+                    'course' => $course,
+                    'enrolled' => $enrolled,
+                    'capacity' => $capacity,
+                    'pct' => round($pct * 100),
                 ];
             }
         }
 
-        usort($alerts, fn($a, $b) => $a['pct'] <=> $b['pct']);
+        usort($alerts, fn ($a, $b) => $a['pct'] <=> $b['pct']);
 
         return $this->render('admin_report/low_enrollment.html.twig', [
-            'alerts'    => $alerts,
+            'alerts' => $alerts,
             'threshold' => (int) ($threshold * 100),
         ]);
     }
@@ -329,17 +330,17 @@ class AdminReportController extends AbstractController
         arsort($byCategory);
 
         $stats = [
-            'total_courses'   => count($courses),
-            'total_enrolled'  => $totalEnrolled,
-            'total_capacity'  => $totalCapacity,
-            'avg_occupancy'   => $totalCapacity > 0 ? round($totalEnrolled / $totalCapacity * 100, 1) : 0,
-            'by_category'     => $byCategory,
+            'total_courses' => count($courses),
+            'total_enrolled' => $totalEnrolled,
+            'total_capacity' => $totalCapacity,
+            'avg_occupancy' => $totalCapacity > 0 ? round($totalEnrolled / $totalCapacity * 100, 1) : 0,
+            'by_category' => $byCategory,
         ];
 
         $aiInsights = $this->insightsService->generateInsights($stats);
 
         return $this->render('admin_report/insights.html.twig', [
-            'stats'      => $stats,
+            'stats' => $stats,
             'aiInsights' => $aiInsights,
         ]);
     }

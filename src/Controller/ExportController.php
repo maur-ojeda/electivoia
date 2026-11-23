@@ -12,11 +12,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\ExpressionLanguage\Expression;
-
 
 #[Route('/admin/export')]
 class ExportController extends AbstractController
@@ -24,7 +23,8 @@ class ExportController extends AbstractController
     public function __construct(
         private TenantContext $tenantContext,
         private ExportService $exportService,
-    ) {}
+    ) {
+    }
 
     #[Route('/attendance', name: 'admin_export_attendance')]
     #[IsGranted('ROLE_ADMIN')]
@@ -63,23 +63,23 @@ class ExportController extends AbstractController
             foreach ($attendances as $att) {
                 $student = $att->getStudent();
                 $course = $att->getCourse();
-                $sheet->setCellValue('A' . $row, $student->getRut());
-                $sheet->setCellValue('B' . $row, $student->getFullName());
-                $sheet->setCellValue('C' . $row, $student->getGrade());
-                $sheet->setCellValue('D' . $row, $course->getName());
-                $sheet->setCellValue('E' . $row, $course->getTeacher()->getFullName());
-                $sheet->setCellValue('F' . $row, $att->getDate()->format('d/m/Y'));
-                $sheet->setCellValue('G' . $row, $att->getStatus());
-                $row++;
+                $sheet->setCellValue('A'.$row, $student->getRut());
+                $sheet->setCellValue('B'.$row, $student->getFullName());
+                $sheet->setCellValue('C'.$row, $student->getGrade());
+                $sheet->setCellValue('D'.$row, $course->getName());
+                $sheet->setCellValue('E'.$row, $course->getTeacher()->getFullName());
+                $sheet->setCellValue('F'.$row, $att->getDate()->format('d/m/Y'));
+                $sheet->setCellValue('G'.$row, $att->getStatus());
+                ++$row;
             }
 
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         });
 
-        $filename = 'asistencias_' . date('Y-m-d') . '.xlsx';
+        $filename = 'asistencias_'.date('Y-m-d').'.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="' . $filename . '"');
+        $response->headers->set('Content-Disposition', 'attachment;filename="'.$filename.'"');
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
@@ -105,11 +105,12 @@ class ExportController extends AbstractController
         $data = $this->exportService->getStudentExportData($course);
         $school = $this->tenantContext->hasSchool() ? $this->tenantContext->getCurrentSchool() : $course->getSchool();
 
-        if ($_format === 'pdf') {
+        if ('pdf' === $_format) {
             return $this->exportService->generateStudentPdf($data, $course, $school);
         }
 
-        $filename = 'alumnos_' . $course->getName() . '.xlsx';
+        $filename = 'alumnos_'.$course->getName().'.xlsx';
+
         return $this->exportService->generateStudentExcel($data, $filename);
     }
 
@@ -145,21 +146,21 @@ class ExportController extends AbstractController
 
             $row = 2;
             foreach ($users as $user) {
-                $sheet->setCellValue('A' . $row, $user->getRut());
-                $sheet->setCellValue('B' . $row, $user->getFullName());
-                $sheet->setCellValue('C' . $row, $user->getEmail() ?? '');
-                $sheet->setCellValue('D' . $row, implode(', ', $user->getRoles()));
-                $sheet->setCellValue('E' . $row, $user->getGrade() ?? '');
-                $sheet->setCellValue('F' . $row, $user->getAverageGrade() ?? '');
-                $sheet->setCellValue('G' . $row, $user->isActive() ? 'Sí' : 'No');
-                $row++;
+                $sheet->setCellValue('A'.$row, $user->getRut());
+                $sheet->setCellValue('B'.$row, $user->getFullName());
+                $sheet->setCellValue('C'.$row, $user->getEmail() ?? '');
+                $sheet->setCellValue('D'.$row, implode(', ', $user->getRoles()));
+                $sheet->setCellValue('E'.$row, $user->getGrade() ?? '');
+                $sheet->setCellValue('F'.$row, $user->getAverageGrade() ?? '');
+                $sheet->setCellValue('G'.$row, $user->isActive() ? 'Sí' : 'No');
+                ++$row;
             }
 
             (new Xlsx($spreadsheet))->save('php://output');
         });
 
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="usuarios_' . date('Y-m-d') . '.xlsx"');
+        $response->headers->set('Content-Disposition', 'attachment;filename="usuarios_'.date('Y-m-d').'.xlsx"');
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
@@ -202,23 +203,23 @@ class ExportController extends AbstractController
             $row = 2;
             foreach ($courses as $course) {
                 $enrolled = $em->getRepository(Enrollment::class)->count(['course' => $course]);
-                $sheet->setCellValue('A' . $row, $course->getName());
-                $sheet->setCellValue('B' . $row, $course->getCategory()?->getName() ?? '');
-                $sheet->setCellValue('C' . $row, $course->getTeacher()?->getFullName() ?? '');
-                $sheet->setCellValue('D' . $row, $course->getSchedule() ?? '');
-                $sheet->setCellValue('E' . $row, implode(', ', $course->getTargetGrades() ?? []));
-                $sheet->setCellValue('F' . $row, $enrolled);
-                $sheet->setCellValue('G' . $row, $course->getMaxCapacity());
-                $sheet->setCellValue('H' . $row, $course->getEnrollmentDeadline()?->format('d/m/Y') ?? '');
-                $sheet->setCellValue('I' . $row, $course->isActive() ? 'Sí' : 'No');
-                $row++;
+                $sheet->setCellValue('A'.$row, $course->getName());
+                $sheet->setCellValue('B'.$row, $course->getCategory()?->getName() ?? '');
+                $sheet->setCellValue('C'.$row, $course->getTeacher()?->getFullName() ?? '');
+                $sheet->setCellValue('D'.$row, $course->getSchedule() ?? '');
+                $sheet->setCellValue('E'.$row, implode(', ', $course->getTargetGrades() ?? []));
+                $sheet->setCellValue('F'.$row, $enrolled);
+                $sheet->setCellValue('G'.$row, $course->getMaxCapacity());
+                $sheet->setCellValue('H'.$row, $course->getEnrollmentDeadline()?->format('d/m/Y') ?? '');
+                $sheet->setCellValue('I'.$row, $course->isActive() ? 'Sí' : 'No');
+                ++$row;
             }
 
             (new Xlsx($spreadsheet))->save('php://output');
         });
 
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="cursos_' . date('Y-m-d') . '.xlsx"');
+        $response->headers->set('Content-Disposition', 'attachment;filename="cursos_'.date('Y-m-d').'.xlsx"');
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;

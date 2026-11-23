@@ -44,6 +44,7 @@ class EnrollmentServiceTest extends TestCase
         $student->method('getId')->willReturn($id);
         $student->method('getGrade')->willReturn($grade);
         $student->method('getFullName')->willReturn("Student $id");
+
         return $student;
     }
 
@@ -68,7 +69,7 @@ class EnrollmentServiceTest extends TestCase
         $course->method('getTeacher')->willReturn($teacher);
 
         $category = null;
-        if ($categoryName !== null) {
+        if (null !== $categoryName) {
             $category = $this->createMock(CourseCategory::class);
             $category->method('getName')->willReturn($categoryName);
         }

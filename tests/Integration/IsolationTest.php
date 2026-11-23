@@ -41,11 +41,11 @@ class IsolationTest extends WebTestCase
     {
         foreach (array_reverse($this->entitiesToDelete) as $entity) {
             $refreshed = $this->em->find($entity::class, $entity->getId());
-            if ($refreshed !== null) {
+            if (null !== $refreshed) {
                 $this->em->remove($refreshed);
             }
         }
-        if ($this->entitiesToDelete !== []) {
+        if ([] !== $this->entitiesToDelete) {
             $this->em->flush();
         }
         $this->entitiesToDelete = [];
@@ -57,7 +57,7 @@ class IsolationTest extends WebTestCase
      */
     private function createTestUser(
         string $email,
-        array  $roles,
+        array $roles,
         School $school,
         string $grade = '',
     ): User {
@@ -66,22 +66,23 @@ class IsolationTest extends WebTestCase
         $user->setRoles($roles);
         $user->setSchool($school);
         $user->setActive(true);
-        $user->setFullName('Test ' . substr(md5($email), 0, 12));
+        $user->setFullName('Test '.substr(md5($email), 0, 12));
         // Fake RUT: use a range (99.000.XXX-X) unlikely to collide with seed data.
         $n = abs(crc32($email)) % 900 + 100;
-        $user->setRut("99.000.{$n}-" . ($n % 9 + 1));
+        $user->setRut("99.000.{$n}-".($n % 9 + 1));
 
         /** @var \Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface $hasher */
         $hasher = static::getContainer()->get('security.user_password_hasher');
         $user->setPassword($hasher->hashPassword($user, 'Test1234!'));
 
-        if ($grade !== '') {
+        if ('' !== $grade) {
             $user->setGrade($grade);
         }
 
         $this->em->persist($user);
         $this->em->flush();
         $this->entitiesToDelete[] = $user;
+
         return $user;
     }
 
@@ -91,6 +92,7 @@ class IsolationTest extends WebTestCase
     {
         $school = $this->em->getRepository(School::class)->findOneBy(['slug' => $slug]);
         $this->assertNotNull($school, "Seed school '{$slug}' not found — run app:usability:seed first.");
+
         return $school;
     }
 
@@ -99,6 +101,7 @@ class IsolationTest extends WebTestCase
     {
         $course = $this->em->getRepository(Course::class)->findOneBy(['school' => $school]);
         $this->assertNotNull($course, "No course found for school {$school->getName()}.");
+
         return $course;
     }
 
@@ -139,9 +142,9 @@ class IsolationTest extends WebTestCase
     }
 
     /** Return first active course owned by $teacher. */
-    private function getCourseOwnedBy(User $teacher): ?\App\Entity\Course
+    private function getCourseOwnedBy(User $teacher): ?Course
     {
-        return $this->em->getRepository(\App\Entity\Course::class)->findOneBy(['teacher' => $teacher]);
+        return $this->em->getRepository(Course::class)->findOneBy(['teacher' => $teacher]);
     }
 
     // ── Old URL format ────────────────────────────────────────────────────────
@@ -152,12 +155,12 @@ class IsolationTest extends WebTestCase
     public function testLegacyUrlFormatReturns404(): void
     {
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $this->client->loginUser($aisAdmin, 'main');
 
         $url = '/admin?crudAction=edit'
-            . '&crudControllerFqcn=' . urlencode('App\\Controller\\Admin\\CourseCrudController')
-            . '&entityId=1';
+            .'&crudControllerFqcn='.urlencode('App\\Controller\\Admin\\CourseCrudController')
+            .'&entityId=1';
 
         $this->client->request('GET', $url);
         $this->assertSame(404, $this->client->getResponse()->getStatusCode(),
@@ -172,13 +175,13 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotViewCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId());
+        $this->client->request('GET', '/admin/course/'.$liceoCourse->getId());
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
@@ -192,13 +195,13 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotEditCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId() . '/edit');
+        $this->client->request('GET', '/admin/course/'.$liceoCourse->getId().'/edit');
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
@@ -207,13 +210,13 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotDeleteCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('POST', '/admin/course/' . $liceoCourse->getId() . '/delete');
+        $this->client->request('POST', '/admin/course/'.$liceoCourse->getId().'/delete');
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
@@ -222,13 +225,13 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotViewUserFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
-        $liceoUser   = $this->getStudentOf($liceo);
+        $aisAdmin = $this->getAdminOf($aislamiento);
+        $liceoUser = $this->getStudentOf($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/user/' . $liceoUser->getId());
+        $this->client->request('GET', '/admin/user/'.$liceoUser->getId());
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
@@ -238,13 +241,13 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotEditUserFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
-        $liceoUser   = $this->getStudentOf($liceo);
+        $aisAdmin = $this->getAdminOf($aislamiento);
+        $liceoUser = $this->getStudentOf($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/user/' . $liceoUser->getId() . '/edit');
+        $this->client->request('GET', '/admin/user/'.$liceoUser->getId().'/edit');
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
@@ -255,13 +258,13 @@ class IsolationTest extends WebTestCase
      */
     public function testStudentCannotEnrollInCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisStudent  = $this->getStudentOf($aislamiento);
+        $aisStudent = $this->getStudentOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisStudent, 'main');
-        $this->client->request('POST', '/student/enroll/' . $liceoCourse->getId());
+        $this->client->request('POST', '/student/enroll/'.$liceoCourse->getId());
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
@@ -272,7 +275,7 @@ class IsolationTest extends WebTestCase
         // Verify no enrollment was created
         $enrollment = $this->em->getRepository(\App\Entity\Enrollment::class)->findOneBy([
             'student' => $aisStudent,
-            'course'  => $liceoCourse,
+            'course' => $liceoCourse,
         ]);
         $this->assertNull($enrollment, 'No enrollment must be created for cross-school attempt.');
     }
@@ -282,13 +285,13 @@ class IsolationTest extends WebTestCase
      */
     public function testStudentCannotUnenrollFromCourseOfOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisStudent  = $this->getStudentOf($aislamiento);
+        $aisStudent = $this->getStudentOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisStudent, 'main');
-        $this->client->request('POST', '/student/unenroll/' . $liceoCourse->getId());
+        $this->client->request('POST', '/student/unenroll/'.$liceoCourse->getId());
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
@@ -302,13 +305,13 @@ class IsolationTest extends WebTestCase
      */
     public function testTeacherCannotViewAttendanceOfCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisTeacher  = $this->getTeacherOf($aislamiento);
+        $aisTeacher = $this->getTeacherOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisTeacher, 'main');
-        $this->client->request('GET', '/teacher/attendance/' . $liceoCourse->getId());
+        $this->client->request('GET', '/teacher/attendance/'.$liceoCourse->getId());
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
@@ -323,13 +326,13 @@ class IsolationTest extends WebTestCase
      */
     public function testTeacherCannotViewReportOfCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisTeacher  = $this->getTeacherOf($aislamiento);
+        $aisTeacher = $this->getTeacherOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisTeacher, 'main');
-        $this->client->request('GET', '/teacher/report/' . $liceoCourse->getId());
+        $this->client->request('GET', '/teacher/report/'.$liceoCourse->getId());
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
@@ -337,25 +340,25 @@ class IsolationTest extends WebTestCase
     /**
      * A teacher from Liceo Ficticio cannot view the attendance page of a
      * course that belongs to a *colleague* in the same school.
-     * (Owner check, not school voter — but must still return 403.)
+     * (Owner check, not school voter — but must still return 403.).
      */
     public function testTeacherCannotViewAttendanceOfColleagueCourse(): void
     {
-        $liceo          = $this->getSchool('liceo-ficticio-electivoia');
-        $liceoTeacher1  = $this->getTeacherOf($liceo);
-        $liceoTeacher2  = $this->getSecondTeacherOf($liceo, $liceoTeacher1);
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
+        $liceoTeacher1 = $this->getTeacherOf($liceo);
+        $liceoTeacher2 = $this->getSecondTeacherOf($liceo, $liceoTeacher1);
 
-        if ($liceoTeacher2 === null) {
+        if (null === $liceoTeacher2) {
             $this->markTestSkipped('Liceo has only one teacher in the seed — cannot test colleague isolation.');
         }
 
         $teacher1Course = $this->getCourseOwnedBy($liceoTeacher1);
-        if ($teacher1Course === null) {
+        if (null === $teacher1Course) {
             $this->markTestSkipped('Teacher 1 has no course in seed data.');
         }
 
         $this->client->loginUser($liceoTeacher2, 'main');
-        $this->client->request('GET', '/teacher/attendance/' . $teacher1Course->getId());
+        $this->client->request('GET', '/teacher/attendance/'.$teacher1Course->getId());
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
@@ -374,13 +377,13 @@ class IsolationTest extends WebTestCase
      */
     public function testGuardianDashboardDoesNotLeakStudentsFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
 
         // This test creates its own data so it never depends on seed guardians.
-        $guardian        = $this->createTestUser('test-guardian-iso@test.local',    ['ROLE_GUARDIAN'], $aislamiento);
-        $pupil           = $this->createTestUser('test-pupil-iso@test.local',       ['ROLE_STUDENT'],  $aislamiento);
-        $foreignStudent  = $this->createTestUser('test-foreign-iso@test.local',     ['ROLE_STUDENT'],  $liceo);
+        $guardian = $this->createTestUser('test-guardian-iso@test.local', ['ROLE_GUARDIAN'], $aislamiento);
+        $pupil = $this->createTestUser('test-pupil-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $foreignStudent = $this->createTestUser('test-foreign-iso@test.local', ['ROLE_STUDENT'], $liceo);
         $sameSchoolNonPupil = $this->createTestUser('test-nopupil-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
 
         $guardian->addGuardianStudent($pupil);
@@ -421,9 +424,9 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminCannotBatchDeleteCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
@@ -443,7 +446,7 @@ class IsolationTest extends WebTestCase
 
         // The course from Liceo must still exist after the attempt.
         $this->em->clear();
-        $stillExists = $this->em->getRepository(\App\Entity\Course::class)->find($liceoCourse->getId());
+        $stillExists = $this->em->getRepository(Course::class)->find($liceoCourse->getId());
         $this->assertNotNull($stillExists, 'Cross-school batch-delete must not remove the entity.');
     }
 
@@ -454,11 +457,11 @@ class IsolationTest extends WebTestCase
      */
     public function testBatchDeleteRejectsForeignEntityClass(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
-        $victim      = $this->createTestUser('test-batch-fqcn-iso@test.local', ['ROLE_STUDENT'], $liceo);
-        $victimId    = $victim->getId();
+        $aisAdmin = $this->getAdminOf($aislamiento);
+        $victim = $this->createTestUser('test-batch-fqcn-iso@test.local', ['ROLE_STUDENT'], $liceo);
+        $victimId = $victim->getId();
 
         $this->client->loginUser($aisAdmin, 'main');
 
@@ -490,10 +493,10 @@ class IsolationTest extends WebTestCase
     public function testAdminCanBatchDeleteOwnSchoolEnrollment(): void
     {
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
-        $student     = $this->createTestUser('test-own-batch-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
-        $enrollment  = $this->createEnrollment($student, $this->getCourseBelongingTo($aislamiento));
-        $id          = $enrollment->getId();
+        $aisAdmin = $this->getAdminOf($aislamiento);
+        $student = $this->createTestUser('test-own-batch-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $enrollment = $this->createEnrollment($student, $this->getCourseBelongingTo($aislamiento));
+        $id = $enrollment->getId();
 
         $this->client->loginUser($aisAdmin, 'main');
         $csrfToken = $this->batchDeleteToken('/admin/enrollment');
@@ -524,11 +527,11 @@ class IsolationTest extends WebTestCase
      */
     public function testAdminAutocompleteDoesNotLeakCoursesFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
-        $aisCourse   = $this->getCourseBelongingTo($aislamiento);
+        $aisCourse = $this->getCourseBelongingTo($aislamiento);
 
         $this->client->loginUser($aisAdmin, 'main');
 
@@ -574,7 +577,7 @@ class IsolationTest extends WebTestCase
     public function testEmailBlastAccessibleByAdmin(): void
     {
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
 
         $this->client->loginUser($aisAdmin, 'main');
         $this->client->request('GET', '/admin/email/blast');
@@ -590,7 +593,7 @@ class IsolationTest extends WebTestCase
      */
     public function testEmailBlastFiltersScopeBySchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
 
         $liceoStudent = $this->createTestUser(
@@ -625,7 +628,7 @@ class IsolationTest extends WebTestCase
     public function testAdminCannotManageCategoryViaUrl(): void
     {
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
 
         $this->client->loginUser($aisAdmin, 'main');
 
@@ -639,7 +642,7 @@ class IsolationTest extends WebTestCase
 
         // 2. Edit / Delete — need an existing category ID.
         $category = $this->em->getRepository(CourseCategory::class)->findOneBy([]);
-        if ($category === null) {
+        if (null === $category) {
             // Create a minimal category just for this assertion.
             $category = new CourseCategory();
             $category->setName('__test_cat__');
@@ -648,14 +651,14 @@ class IsolationTest extends WebTestCase
             $this->entitiesToDelete[] = $category;
         }
 
-        $this->client->request('GET', '/admin/course-category/' . $category->getId() . '/edit');
+        $this->client->request('GET', '/admin/course-category/'.$category->getId().'/edit');
         $this->assertSame(
             403,
             $this->client->getResponse()->getStatusCode(),
             'ROLE_ADMIN must receive 403 on GET /admin/course-category/{id}/edit.'
         );
 
-        $this->client->request('POST', '/admin/course-category/' . $category->getId() . '/delete');
+        $this->client->request('POST', '/admin/course-category/'.$category->getId().'/delete');
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
             [403, 404],
@@ -703,7 +706,7 @@ class IsolationTest extends WebTestCase
     private function batchDeleteToken(string $indexUrl): string
     {
         $crawler = $this->client->request('GET', $indexUrl);
-        $node    = $crawler->filter('[data-action-csrf-token]');
+        $node = $crawler->filter('[data-action-csrf-token]');
 
         $this->assertGreaterThan(
             0,
@@ -716,15 +719,15 @@ class IsolationTest extends WebTestCase
 
     public function testAdminCannotViewEnrollmentFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
         $liceoStudent = $this->getStudentOf($liceo);
-        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+        $enrollment = $this->createEnrollment($liceoStudent, $liceoCourse);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/enrollment/' . $enrollment->getId());
+        $this->client->request('GET', '/admin/enrollment/'.$enrollment->getId());
 
         $this->assertContains(
             $this->client->getResponse()->getStatusCode(),
@@ -735,31 +738,31 @@ class IsolationTest extends WebTestCase
 
     public function testAdminCannotEditEnrollmentFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
         $liceoStudent = $this->getStudentOf($liceo);
-        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+        $enrollment = $this->createEnrollment($liceoStudent, $liceoCourse);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/enrollment/' . $enrollment->getId() . '/edit');
+        $this->client->request('GET', '/admin/enrollment/'.$enrollment->getId().'/edit');
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     public function testAdminCannotDeleteEnrollmentFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
         $liceoStudent = $this->getStudentOf($liceo);
-        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+        $enrollment = $this->createEnrollment($liceoStudent, $liceoCourse);
         $id = $enrollment->getId();
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('POST', '/admin/enrollment/' . $id . '/delete');
+        $this->client->request('POST', '/admin/enrollment/'.$id.'/delete');
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
         $this->em->clear();
@@ -771,12 +774,12 @@ class IsolationTest extends WebTestCase
 
     public function testAdminCannotBatchDeleteEnrollmentFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
         $liceoStudent = $this->getStudentOf($liceo);
-        $enrollment  = $this->createEnrollment($liceoStudent, $liceoCourse);
+        $enrollment = $this->createEnrollment($liceoStudent, $liceoCourse);
         $id = $enrollment->getId();
 
         $this->client->loginUser($aisAdmin, 'main');
@@ -800,43 +803,43 @@ class IsolationTest extends WebTestCase
 
     public function testAdminCannotViewInterestProfileFromOtherSchool(): void
     {
-        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
-        $aislamiento  = $this->getSchool('colegio-aislamiento');
-        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoStudent = $this->createTestUser('test-profile-owner-iso@test.local', ['ROLE_STUDENT'], $liceo);
-        $profile      = $this->createInterestProfile($liceoStudent);
+        $profile = $this->createInterestProfile($liceoStudent);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/interest-profile/' . $profile->getId());
+        $this->client->request('GET', '/admin/interest-profile/'.$profile->getId());
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     public function testAdminCannotEditInterestProfileFromOtherSchool(): void
     {
-        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
-        $aislamiento  = $this->getSchool('colegio-aislamiento');
-        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoStudent = $this->createTestUser('test-profile-edit-iso@test.local', ['ROLE_STUDENT'], $liceo);
-        $profile      = $this->createInterestProfile($liceoStudent);
+        $profile = $this->createInterestProfile($liceoStudent);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/interest-profile/' . $profile->getId() . '/edit');
+        $this->client->request('GET', '/admin/interest-profile/'.$profile->getId().'/edit');
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
     }
 
     public function testAdminCannotDeleteInterestProfileFromOtherSchool(): void
     {
-        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
-        $aislamiento  = $this->getSchool('colegio-aislamiento');
-        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoStudent = $this->createTestUser('test-profile-del-iso@test.local', ['ROLE_STUDENT'], $liceo);
-        $profile      = $this->createInterestProfile($liceoStudent);
+        $profile = $this->createInterestProfile($liceoStudent);
         $id = $profile->getId();
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('POST', '/admin/interest-profile/' . $id . '/delete');
+        $this->client->request('POST', '/admin/interest-profile/'.$id.'/delete');
 
         $this->assertContains($this->client->getResponse()->getStatusCode(), [403, 404]);
         $this->em->clear();
@@ -845,9 +848,9 @@ class IsolationTest extends WebTestCase
 
     public function testAdminCannotBatchDeleteUserFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoStudent = $this->createTestUser('test-user-batch-iso@test.local', ['ROLE_STUDENT'], $liceo);
         $id = $liceoStudent->getId();
 
@@ -876,11 +879,11 @@ class IsolationTest extends WebTestCase
      */
     public function testTeacherCannotSaveAttendanceOfCourseFromOtherSchool(): void
     {
-        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
-        $aislamiento  = $this->getSchool('colegio-aislamiento');
-        $aisTeacher   = $this->getTeacherOf($aislamiento);
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisTeacher = $this->getTeacherOf($aislamiento);
         $liceoStudent = $this->getStudentOf($liceo);
-        $liceoCourse  = $this->getCourseBelongingTo($liceo);
+        $liceoCourse = $this->getCourseBelongingTo($liceo);
 
         $today = new \DateTime();
         $existing = new \App\Entity\Attendance();
@@ -894,7 +897,7 @@ class IsolationTest extends WebTestCase
         $existingId = $existing->getId();
 
         $this->client->loginUser($aisTeacher, 'main');
-        $this->client->request('POST', '/teacher/attendance/' . $liceoCourse->getId() . '/save', [
+        $this->client->request('POST', '/teacher/attendance/'.$liceoCourse->getId().'/save', [
             'student_ids' => [$liceoStudent->getId()],
             'status' => [$liceoStudent->getId() => 'absent'],
         ]);
@@ -911,12 +914,12 @@ class IsolationTest extends WebTestCase
      */
     public function testStudentCannotRecordAiSignalForCourseFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisStudent  = $this->createTestUser('test-signal-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $aisStudent = $this->createTestUser('test-signal-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
         $liceoCourse = $this->getCourseBelongingTo($liceo);
-        $studentId   = $aisStudent->getId();
-        $courseId    = $liceoCourse->getId();
+        $studentId = $aisStudent->getId();
+        $courseId = $liceoCourse->getId();
 
         $this->client->loginUser($aisStudent, 'main');
         $this->client->request(
@@ -948,8 +951,8 @@ class IsolationTest extends WebTestCase
     public function testStudentCanRecordAiSignalForOwnSchoolCourse(): void
     {
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisStudent  = $this->createTestUser('test-signal-own-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
-        $aisCourse   = $this->getCourseBelongingTo($aislamiento);
+        $aisStudent = $this->createTestUser('test-signal-own-iso@test.local', ['ROLE_STUDENT'], $aislamiento);
+        $aisCourse = $this->getCourseBelongingTo($aislamiento);
 
         $this->client->loginUser($aisStudent, 'main');
         $this->client->request(
@@ -985,11 +988,11 @@ class IsolationTest extends WebTestCase
      */
     public function testTeacherAutocompleteDoesNotLeakUsersFromOtherSchool(): void
     {
-        $liceo        = $this->getSchool('liceo-ficticio-electivoia');
-        $aislamiento  = $this->getSchool('colegio-aislamiento');
-        $aisAdmin     = $this->getAdminOf($aislamiento);
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
+        $aislamiento = $this->getSchool('colegio-aislamiento');
+        $aisAdmin = $this->getAdminOf($aislamiento);
         $liceoTeacher = $this->getTeacherOf($liceo);
-        $aisTeacher   = $this->getTeacherOf($aislamiento);
+        $aisTeacher = $this->getTeacherOf($aislamiento);
 
         $this->client->loginUser($aisAdmin, 'main');
 
@@ -1035,15 +1038,15 @@ class IsolationTest extends WebTestCase
      */
     public function testGuardianPupilsSelectorDoesNotOfferStudentsFromOtherSchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
-        $aisAdmin    = $this->getAdminOf($aislamiento);
+        $aisAdmin = $this->getAdminOf($aislamiento);
 
         $guardian = $this->createTestUser('test-guardian-sel-iso@test.local', ['ROLE_GUARDIAN'], $aislamiento);
-        $foreign  = $this->createTestUser('test-foreign-pupil-iso@test.local', ['ROLE_STUDENT'], $liceo);
+        $foreign = $this->createTestUser('test-foreign-pupil-iso@test.local', ['ROLE_STUDENT'], $liceo);
 
         $this->client->loginUser($aisAdmin, 'main');
-        $this->client->request('GET', '/admin/user/' . $guardian->getId() . '/edit');
+        $this->client->request('GET', '/admin/user/'.$guardian->getId().'/edit');
 
         $this->assertSame(200, $this->client->getResponse()->getStatusCode());
         $content = $this->client->getResponse()->getContent() ?: '';
@@ -1059,13 +1062,13 @@ class IsolationTest extends WebTestCase
      */
     public function testSuperAdminCanViewCourseFromAnySchool(): void
     {
-        $liceo       = $this->getSchool('liceo-ficticio-electivoia');
+        $liceo = $this->getSchool('liceo-ficticio-electivoia');
         $aislamiento = $this->getSchool('colegio-aislamiento');
         $liceoCourse = $this->getCourseBelongingTo($liceo);
-        $superAdmin  = $this->createTestUser('test-superadmin-iso@test.local', ['ROLE_SUPER_ADMIN'], $aislamiento);
+        $superAdmin = $this->createTestUser('test-superadmin-iso@test.local', ['ROLE_SUPER_ADMIN'], $aislamiento);
 
         $this->client->loginUser($superAdmin, 'main');
-        $this->client->request('GET', '/admin/course/' . $liceoCourse->getId());
+        $this->client->request('GET', '/admin/course/'.$liceoCourse->getId());
 
         $this->assertSame(200, $this->client->getResponse()->getStatusCode(),
             'The super admin must keep access to courses from any school.');
@@ -1082,6 +1085,7 @@ class IsolationTest extends WebTestCase
                 return $user;
             }
         }
+
         return null;
     }
 }

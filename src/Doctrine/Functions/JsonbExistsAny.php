@@ -1,4 +1,5 @@
 <?php
+
 // src/Doctrine/Functions/JsonbExistsAny.php
 
 namespace App\Doctrine\Functions;
@@ -10,7 +11,7 @@ use Doctrine\ORM\Query\Parser;
 use Doctrine\ORM\Query\SqlWalker;
 
 /**
- * JsonbExistsAny ::= "JSONB_EXISTS_ANY" "(" StringPrimary "," StringPrimary ")"
+ * JsonbExistsAny ::= "JSONB_EXISTS_ANY" "(" StringPrimary "," StringPrimary ")".
  */
 class JsonbExistsAny extends FunctionNode
 {
@@ -20,9 +21,9 @@ class JsonbExistsAny extends FunctionNode
     public function getSql(SqlWalker $sqlWalker): string
     {
         // Genera la llamada a la función nativa de PostgreSQL
-        return 'jsonb_exists_any(' .
-            $sqlWalker->walkStringPrimary($this->jsonbPathExpression) . ', ' .
-            $sqlWalker->walkStringPrimary($this->arrayExpression) .
+        return 'jsonb_exists_any('.
+            $sqlWalker->walkStringPrimary($this->jsonbPathExpression).', '.
+            $sqlWalker->walkStringPrimary($this->arrayExpression).
             ')';
     }
 

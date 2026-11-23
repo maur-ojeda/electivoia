@@ -32,18 +32,16 @@ class CourseCrudController extends AbstractCrudController
 {
     // Definimos las opciones de grados de educación chilena
     private const CHILEAN_GRADES = [
-
         '3° Medio' => '3M',
         '4° Medio' => '4M',
     ];
-
-
 
     public function __construct(
         private AdminUrlGenerator $adminUrlGenerator,
         private TenantContext $tenantContext,
         private RouterInterface $router,
-    ) {}
+    ) {
+    }
 
     public function createIndexQueryBuilder(SearchDto $searchDto, EntityDto $entityDto, FieldCollection $fields, FilterCollection $filters): QueryBuilder
     {
@@ -59,7 +57,7 @@ class CourseCrudController extends AbstractCrudController
 
     public function persistEntity(EntityManagerInterface $entityManager, $entity): void
     {
-        if ($entity instanceof Course && $entity->getSchool() === null && $this->tenantContext->hasSchool()) {
+        if ($entity instanceof Course && null === $entity->getSchool() && $this->tenantContext->hasSchool()) {
             $entity->setSchool($this->tenantContext->getCurrentSchool());
         }
 
@@ -118,7 +116,6 @@ class CourseCrudController extends AbstractCrudController
 
     public function configureFields(string $pageName): iterable
     {
-
         return [
             TextField::new('name', 'Nombre'),
             TextField::new('schedule', 'Horario')->setRequired(false)->setHelp('Ej: Lunes y Miércoles 15:30-17:00'),
@@ -137,8 +134,6 @@ class CourseCrudController extends AbstractCrudController
                 ->setChoices(self::CHILEAN_GRADES)
                 ->allowMultipleChoices(true)
                 ->renderAsBadges(),
-
-
         ];
     }
 

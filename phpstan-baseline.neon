@@ -259,7 +259,7 @@ parameters:
 			path: src/Service/BiasDetectionService.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			message: '#^Strict comparison using \=\=\= between null and string will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
 			path: src/Service/BiasDetectionService.php
@@ -277,7 +277,7 @@ parameters:
 			path: src/Service/EnrollmentService.php
 
 		-
-			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			message: '#^Strict comparison using \!\=\= between null and mixed will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: src/Service/GeminiChatbotService.php

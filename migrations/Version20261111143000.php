@@ -9,7 +9,7 @@ use Doctrine\Migrations\AbstractMigration;
 
 /**
  * Normalize all RUTs in the user table: strip dots, uppercase K.
- * Example: "30.100.001-k" → "30100001-K"
+ * Example: "30.100.001-k" → "30100001-K".
  *
  * Uses a pure-SQL expression compatible with PostgreSQL.
  * The unique constraint on rut means duplicates (same RUT with/without dots)

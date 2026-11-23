@@ -36,10 +36,10 @@ class RoleFilter implements FilterInterface
         QueryBuilder $queryBuilder,
         FilterDataDto $filterDataDto,
         ?FieldDto $fieldDto,
-        EntityDto $entityDto
+        EntityDto $entityDto,
     ): void {
         $value = $filterDataDto->getValue();
-        
+
         if (empty($value)) {
             return;
         }

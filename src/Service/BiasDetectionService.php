@@ -22,7 +22,8 @@ class BiasDetectionService
     public function __construct(
         private EntityManagerInterface $em,
         private EnrollmentRepository $enrollmentRepository,
-    ) {}
+    ) {
+    }
 
     /**
      * Analyzes enrollment distribution by demographic group for a school.
@@ -100,7 +101,7 @@ class BiasDetectionService
                 'total_categories_analyzed' => count($byCategory),
                 'gender_flags' => $genderFlags,
                 'grade_flags' => $gradeFlags,
-                'overall_fair' => $genderFlags === 0 && $gradeFlags === 0,
+                'overall_fair' => 0 === $genderFlags && 0 === $gradeFlags,
             ],
         ];
     }
@@ -150,16 +151,16 @@ class BiasDetectionService
             ++$byCategory[$category]['total'];
 
             $gender = $row['gender'];
-            if ($gender === 'M') {
+            if ('M' === $gender) {
                 ++$byCategory[$category]['gender']['M'];
-            } elseif ($gender === 'F') {
+            } elseif ('F' === $gender) {
                 ++$byCategory[$category]['gender']['F'];
             } else {
                 ++$byCategory[$category]['gender']['other'];
             }
 
             $grade = $row['grade'] ?? 'Sin grado';
-            if ($grade === null) {
+            if (null === $grade) {
                 $grade = 'Sin grado';
             }
 

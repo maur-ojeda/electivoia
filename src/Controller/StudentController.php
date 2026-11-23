@@ -6,8 +6,8 @@ use App\Entity\Attendance;
 use App\Entity\Course;
 use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
-use App\Service\EnrollmentService;
 use App\Entity\InterestProfile;
+use App\Service\EnrollmentService;
 use App\Service\NotificationService;
 use App\Service\RecommendationService;
 use App\Service\TenantContext;
@@ -26,10 +26,11 @@ class StudentController extends AbstractController
     public function __construct(
         private EnrollmentService $enrollmentService,
         private NotificationService $notificationService,
-        private TenantContext $tenantContext
-    ) {}
+        private TenantContext $tenantContext,
+    ) {
+    }
 
-    //---------------
+    // ---------------
 
     #[Route('/dashboard', name: 'dashboard')]
     public function dashboard(EntityManagerInterface $em): Response
@@ -46,7 +47,7 @@ class StudentController extends AbstractController
             $course = $enrollment->getCourse();
             $records = $em->getRepository(Attendance::class)->findBy(['student' => $student, 'course' => $course]);
             $sessions = count($records);
-            $attended = count(array_filter($records, fn($a) => in_array($a->getStatus(), ['present', 'justified'])));
+            $attended = count(array_filter($records, fn ($a) => in_array($a->getStatus(), ['present', 'justified'])));
 
             $totalSessions += $sessions;
             $totalAttended += $attended;
@@ -73,7 +74,7 @@ class StudentController extends AbstractController
     public function courses(
         Request $request,
         EntityManagerInterface $em,
-        RecommendationService $recommendationService
+        RecommendationService $recommendationService,
     ): Response {
         $student = $this->getUser();
         $showAvailableOnly = (bool) $request->query->get('available', false);
@@ -109,9 +110,9 @@ class StudentController extends AbstractController
         }
 
         // Filtro por búsqueda (nombre, descripción u horario)
-        if ($searchQuery !== '') {
+        if ('' !== $searchQuery) {
             $qb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search OR LOWER(c.schedule) LIKE :search')
-                ->setParameter('search', '%' . strtolower($searchQuery) . '%');
+                ->setParameter('search', '%'.strtolower($searchQuery).'%');
         }
 
         $allCourses = $qb->getQuery()->getResult();
@@ -121,7 +122,8 @@ class StudentController extends AbstractController
         if ($studentGrade) {
             $courses = array_filter($allCourses, function (Course $course) use ($studentGrade) {
                 $targetGrades = $course->getTargetGrades();
-                return $targetGrades !== null && in_array($studentGrade, $targetGrades);
+
+                return null !== $targetGrades && in_array($studentGrade, $targetGrades);
             });
             $courses = array_values($courses);
         } else {
@@ -129,7 +131,7 @@ class StudentController extends AbstractController
         }
 
         // Contar inscripciones por curso (optimizado)
-        $courseIds = array_map(fn(Course $c) => $c->getId(), $courses);
+        $courseIds = array_map(fn (Course $c) => $c->getId(), $courses);
         $enrollmentCounts = [];
         if (!empty($courseIds)) {
             $counts = $em->createQuery('
@@ -145,13 +147,11 @@ class StudentController extends AbstractController
         // Recomendaciones
         $recommendations = $recommendationService->getForStudentWithReasons($student);
         $enrolledCourseIds = array_map(
-            fn(Enrollment $e) => $e->getCourse()->getId(),
+            fn (Enrollment $e) => $e->getCourse()->getId(),
             $em->getRepository(Enrollment::class)->findBy(['student' => $student])
         );
 
         $interests = $student->getInterestProfile()?->getInterests() ?? [];
-
-
 
         // Reagrupar enrollments por curso (como antes)
         $enrollmentsByCourse = [];
@@ -160,9 +160,8 @@ class StudentController extends AbstractController
             $enrollmentsByCourse[$course->getId()] = $course->getEnrollments()->toArray();
         }
 
-
         $currentSchool = $this->tenantContext->getCurrentSchool();
-        $enrollmentOpen = $currentSchool === null || $currentSchool->isEnrollmentOpen();
+        $enrollmentOpen = null === $currentSchool || $currentSchool->isEnrollmentOpen();
 
         return $this->render('student/courses.html.twig', [
             'student' => $student,
@@ -181,7 +180,7 @@ class StudentController extends AbstractController
         ]);
     }
 
-    //---------------
+    // ---------------
 
     #[Route('/enrollments', name: 'enrollments')]
     public function enrollments(EntityManagerInterface $em): Response
@@ -203,13 +202,15 @@ class StudentController extends AbstractController
 
         // HU-16: Check school-wide enrollment period
         $school = $this->tenantContext->getCurrentSchool();
-        if ($school !== null && !$school->isEnrollmentOpen()) {
+        if (null !== $school && !$school->isEnrollmentOpen()) {
             $this->addFlash('error', 'El período de inscripción del colegio está cerrado.');
+
             return $this->redirectToRoute('student_courses');
         }
 
         if ($course->getEnrollmentDeadline() && $now > $course->getEnrollmentDeadline()) {
             $this->addFlash('error', 'La inscripción para este curso ya está cerrada.');
+
             return $this->redirectToRoute('student_courses');
         }
 
@@ -225,11 +226,12 @@ class StudentController extends AbstractController
 
             $existing = $em->getRepository(Enrollment::class)->findOneBy([
                 'student' => $student,
-                'course' => $course
+                'course' => $course,
             ]);
             if ($existing) {
                 $em->rollback();
                 $this->addFlash('warning', 'Ya estás inscrito en este curso.');
+
                 return $this->redirectToRoute('student_courses');
             }
 
@@ -246,9 +248,10 @@ class StudentController extends AbstractController
                 $this->addFlash('success', '¡Inscripción exitosa!');
             } else {
                 $studentGrade = $student->getAverageGrade();
-                if ($studentGrade === null) {
+                if (null === $studentGrade) {
                     $em->rollback();
                     $this->addFlash('error', 'No puedes inscribirte sin promedio registrado.');
+
                     return $this->redirectToRoute('student_courses');
                 }
 
@@ -313,7 +316,7 @@ class StudentController extends AbstractController
                 'Matemática',
                 'Ciencias',
                 'Artes',
-                'Educación física y salud'
+                'Educación física y salud',
             ];
 
             $filteredInterests = [];
@@ -325,6 +328,7 @@ class StudentController extends AbstractController
             $em->persist($profile);
             $em->flush();
             $this->addFlash('success', 'Perfil de intereses actualizado.');
+
             return $this->redirectToRoute('student_courses');
         }
 
@@ -349,10 +353,10 @@ class StudentController extends AbstractController
             );
 
             $total = count($records);
-            $present = count(array_filter($records, fn($a) => $a->getStatus() === 'present'));
-            $absent = count(array_filter($records, fn($a) => $a->getStatus() === 'absent'));
-            $justified = count(array_filter($records, fn($a) => $a->getStatus() === 'justified'));
-            $late = count(array_filter($records, fn($a) => $a->getStatus() === 'late'));
+            $present = count(array_filter($records, fn ($a) => 'present' === $a->getStatus()));
+            $absent = count(array_filter($records, fn ($a) => 'absent' === $a->getStatus()));
+            $justified = count(array_filter($records, fn ($a) => 'justified' === $a->getStatus()));
+            $late = count(array_filter($records, fn ($a) => 'late' === $a->getStatus()));
             // 'late' reduces attendance% (counts in total but not as present/justified)
             $percentage = $total > 0 ? round(($present + $justified) / $total * 100) : null;
 
@@ -382,30 +386,34 @@ class StudentController extends AbstractController
 
         // HU-16: Check school-wide enrollment period
         $school = $this->tenantContext->getCurrentSchool();
-        if ($school !== null && !$school->isEnrollmentOpen()) {
+        if (null !== $school && !$school->isEnrollmentOpen()) {
             $this->addFlash('error', 'El período de inscripción del colegio está cerrado.');
+
             return $this->redirectToRoute('student_courses');
         }
 
         // HU-4: Check enrollment deadline
         if ($course->getEnrollmentDeadline() && new \DateTimeImmutable() > $course->getEnrollmentDeadline()) {
             $this->addFlash('error', 'La fecha límite de inscripción ya pasó. No es posible darse de baja.');
+
             return $this->redirectToRoute('student_courses');
         }
 
         $enrollment = $em->getRepository(Enrollment::class)->findOneBy([
             'student' => $student,
-            'course' => $course
+            'course' => $course,
         ]);
 
         if (!$enrollment) {
             $this->addFlash('error', 'No estás inscrito en este curso.');
+
             return $this->redirectToRoute('student_courses');
         }
 
         $em->remove($enrollment);
         $em->flush();
         $this->addFlash('success', 'Te has dado de baja del curso.');
+
         return $this->redirectToRoute('student_courses');
     }
 }

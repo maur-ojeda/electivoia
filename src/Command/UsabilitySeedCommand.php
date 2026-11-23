@@ -36,19 +36,21 @@ class UsabilitySeedCommand extends Command
 
         if (($_SERVER['USABILITY_SEED_ENABLED'] ?? getenv('USABILITY_SEED_ENABLED') ?? '') !== '1') {
             $io->error('Set USABILITY_SEED_ENABLED=1 to run this command.');
+
             return Command::FAILURE;
         }
 
         if ($this->em->getRepository(School::class)->findOneBy(['slug' => 'liceo-ficticio-electivoia'])) {
             $io->error('Already seeded. Run app:usability:reset first.');
+
             return Command::FAILURE;
         }
 
         // --- Categories (find-or-create; never deleted by reset) ---
-        $catCiencias  = $this->findOrCreateCategory('Ciencias', 'CI');
-        $catHistoria  = $this->findOrCreateCategory('Historia, geografía y ciencias sociales', 'HI');
+        $catCiencias = $this->findOrCreateCategory('Ciencias', 'CI');
+        $catHistoria = $this->findOrCreateCategory('Historia, geografía y ciencias sociales', 'HI');
         $catMatematica = $this->findOrCreateCategory('Matemática', 'MA');
-        $catArtes     = $this->findOrCreateCategory('Artes', 'AR');
+        $catArtes = $this->findOrCreateCategory('Artes', 'AR');
 
         // --- Schools ---
         $liceo = (new School())
@@ -68,51 +70,51 @@ class UsabilitySeedCommand extends Command
         $this->em->persist($aislamiento);
 
         // --- Named personas: Liceo Ficticio ---
-        $ad1 = $this->makePersona(30100001, 'Carolina Pizarro',  ['ROLE_ADMIN'],        'F', null,  null, $liceo,  'ad1.carolina');
-        $ad2 = $this->makePersona(30200001, 'Felipe Navarro',    ['ROLE_ADMIN'],        'M', null,  null, $liceo,  'ad2.felipe');
-        $p1  = $this->makePersona(30300001, 'Patricia Vergara',  ['ROLE_TEACHER'],      'F', null,  null, $liceo,  'p1.patricia');
-        $p2  = $this->makePersona(30400001, 'Diego Herrera',     ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p2.diego');
-        $pR  = $this->makePersona(30500001, 'Roberto Muñoz',     ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p3.roberto');
-        $p4  = $this->makePersona(30500002, 'Alejandra Soto',    ['ROLE_TEACHER'],      'F', null,  null, $liceo,  'p4.alejandra');
-        $p5  = $this->makePersona(30500003, 'Martín Espinoza',   ['ROLE_TEACHER'],      'M', null,  null, $liceo,  'p5.martin');
-        $e1  = $this->makePersona(30600001, 'Catalina Rojas',    ['ROLE_STUDENT'],      'F', '4M',  6.6,  $liceo,  'e1.catalina');
-        $e2  = $this->makePersona(30700001, 'Matías Fuentes',    ['ROLE_STUDENT'],      'M', '3M',  5.1,  $liceo,  'e2.matias');
-        $e3  = $this->makePersona(30800001, 'Josefa Muñoz',      ['ROLE_STUDENT'],      'F', '3M',  5.8,  $liceo,  'e3.josefa');
-        $e4  = $this->makePersona(30900001, 'Tomás Araya',       ['ROLE_STUDENT'],      'M', '4M',  6.0,  $liceo,  'e4.tomas');
-        $e5  = $this->makePersona(31000001, 'Valentina Díaz',    ['ROLE_STUDENT'],      'F', '4M',  null, $liceo,  'e5.valentina');
-        $eE  = $this->makePersona(31050001, 'Relleno Empate',    ['ROLE_STUDENT'],      'M', '3M',  5.1,  $liceo,  'relleno.empate');
-        $a1  = $this->makePersona(31100001, 'Rosa Contreras',    ['ROLE_GUARDIAN'],     'F', null,  null, $liceo,  'a1.rosa');
-        $a2  = $this->makePersona(31200001, 'Andrés Lagos',      ['ROLE_GUARDIAN'],     'M', null,  null, $liceo,  'a2.andres');
-        $ben = $this->makePersona(31300001, 'Benjamín Lagos',    ['ROLE_STUDENT'],      'M', '4M',  6.1,  $liceo,  'benjamin.lagos');
-        $sa1 = $this->makePersona(31400001, 'Ignacia Torres',    ['ROLE_SUPER_ADMIN'],  'F', null,  null, null,    'sa1.ignacia');
+        $ad1 = $this->makePersona(30100001, 'Carolina Pizarro', ['ROLE_ADMIN'], 'F', null, null, $liceo, 'ad1.carolina');
+        $ad2 = $this->makePersona(30200001, 'Felipe Navarro', ['ROLE_ADMIN'], 'M', null, null, $liceo, 'ad2.felipe');
+        $p1 = $this->makePersona(30300001, 'Patricia Vergara', ['ROLE_TEACHER'], 'F', null, null, $liceo, 'p1.patricia');
+        $p2 = $this->makePersona(30400001, 'Diego Herrera', ['ROLE_TEACHER'], 'M', null, null, $liceo, 'p2.diego');
+        $pR = $this->makePersona(30500001, 'Roberto Muñoz', ['ROLE_TEACHER'], 'M', null, null, $liceo, 'p3.roberto');
+        $p4 = $this->makePersona(30500002, 'Alejandra Soto', ['ROLE_TEACHER'], 'F', null, null, $liceo, 'p4.alejandra');
+        $p5 = $this->makePersona(30500003, 'Martín Espinoza', ['ROLE_TEACHER'], 'M', null, null, $liceo, 'p5.martin');
+        $e1 = $this->makePersona(30600001, 'Catalina Rojas', ['ROLE_STUDENT'], 'F', '4M', 6.6, $liceo, 'e1.catalina');
+        $e2 = $this->makePersona(30700001, 'Matías Fuentes', ['ROLE_STUDENT'], 'M', '3M', 5.1, $liceo, 'e2.matias');
+        $e3 = $this->makePersona(30800001, 'Josefa Muñoz', ['ROLE_STUDENT'], 'F', '3M', 5.8, $liceo, 'e3.josefa');
+        $e4 = $this->makePersona(30900001, 'Tomás Araya', ['ROLE_STUDENT'], 'M', '4M', 6.0, $liceo, 'e4.tomas');
+        $e5 = $this->makePersona(31000001, 'Valentina Díaz', ['ROLE_STUDENT'], 'F', '4M', null, $liceo, 'e5.valentina');
+        $eE = $this->makePersona(31050001, 'Relleno Empate', ['ROLE_STUDENT'], 'M', '3M', 5.1, $liceo, 'relleno.empate');
+        $a1 = $this->makePersona(31100001, 'Rosa Contreras', ['ROLE_GUARDIAN'], 'F', null, null, $liceo, 'a1.rosa');
+        $a2 = $this->makePersona(31200001, 'Andrés Lagos', ['ROLE_GUARDIAN'], 'M', null, null, $liceo, 'a2.andres');
+        $ben = $this->makePersona(31300001, 'Benjamín Lagos', ['ROLE_STUDENT'], 'M', '4M', 6.1, $liceo, 'benjamin.lagos');
+        $sa1 = $this->makePersona(31400001, 'Ignacia Torres', ['ROLE_SUPER_ADMIN'], 'F', null, null, null, 'sa1.ignacia');
 
         // --- Named personas: Colegio Aislamiento ---
-        $aAdmin = $this->makePersona(32100001, 'Admin Aislamiento',    ['ROLE_ADMIN'],   'M', null, null, $aislamiento, 'admin.aislamiento');
-        $aProf  = $this->makePersona(32200001, 'Profesor Aislamiento', ['ROLE_TEACHER'], 'M', null, null, $aislamiento, 'prof.aislamiento');
+        $aAdmin = $this->makePersona(32100001, 'Admin Aislamiento', ['ROLE_ADMIN'], 'M', null, null, $aislamiento, 'admin.aislamiento');
+        $aProf = $this->makePersona(32200001, 'Profesor Aislamiento', ['ROLE_TEACHER'], 'M', null, null, $aislamiento, 'prof.aislamiento');
 
         // --- Relleno: Liceo Ficticio (31_500_001 onwards) ---
         // Groups: Física(0-28), Química(29-58), Cálculo(59-63), CienciasSalud(64-93), Comprensión(94-128), Biología(129-143), Artes(144-155)
         $relleno = [];
-        for ($i = 0; $i < 156; $i++) {
-            $base  = 31500001 + $i;
-            $grade = ($i % 2 === 0) ? '4M' : '3M';
-            $avg   = $this->rellenoAvg($i);
-            $name  = self::rellenoName($i);
+        for ($i = 0; $i < 156; ++$i) {
+            $base = 31500001 + $i;
+            $grade = (0 === $i % 2) ? '4M' : '3M';
+            $avg = $this->rellenoAvg($i);
+            $name = self::rellenoName($i);
             $relleno[$i] = $this->makeRelleno($base, $name, $avg, $grade, $liceo);
         }
 
         // --- Relleno: Colegio Aislamiento ---
         $aisEst = [];
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 5; ++$i) {
             $aisEst[$i] = $this->makePersona(
                 32300001 + $i,
-                'Estudiante Aislamiento ' . ($i + 1),
+                'Estudiante Aislamiento '.($i + 1),
                 ['ROLE_STUDENT'],
-                ($i % 2 === 0) ? 'M' : 'F',
+                (0 === $i % 2) ? 'M' : 'F',
                 '4M',
                 round(5.0 + $i * 0.3, 1),
                 $aislamiento,
-                'est.aislamiento.' . ($i + 1)
+                'est.aislamiento.'.($i + 1)
             );
         }
 
@@ -152,40 +154,40 @@ class UsabilitySeedCommand extends Command
 
         // --- Enrollments: Liceo Ficticio ---
         // Física: 29 relleno (0-28) + E2
-        for ($i = 0; $i < 29; $i++) {
+        for ($i = 0; $i < 29; ++$i) {
             $this->enroll($relleno[$i], $cFisica);
         }
         $this->enroll($e2, $cFisica);
 
         // Química: 30 relleno (29-58)
-        for ($i = 29; $i < 59; $i++) {
+        for ($i = 29; $i < 59; ++$i) {
             $this->enroll($relleno[$i], $cQuimica);
         }
 
         // Cálculo: 5 relleno (59-63) + E4
-        for ($i = 59; $i < 64; $i++) {
+        for ($i = 59; $i < 64; ++$i) {
             $this->enroll($relleno[$i], $cCalculo);
         }
         $this->enroll($e4, $cCalculo);
 
         // Ciencias de la Salud: 30 relleno (64-93)
-        for ($i = 64; $i < 94; $i++) {
+        for ($i = 64; $i < 94; ++$i) {
             $this->enroll($relleno[$i], $cCiencias);
         }
 
         // Comprensión Histórica: 35 relleno (94-128) + E2
-        for ($i = 94; $i < 129; $i++) {
+        for ($i = 94; $i < 129; ++$i) {
             $this->enroll($relleno[$i], $cHistoria);
         }
         $this->enroll($e2, $cHistoria);
 
         // Biología: 15 relleno (129-143)
-        for ($i = 129; $i < 144; $i++) {
+        for ($i = 129; $i < 144; ++$i) {
             $this->enroll($relleno[$i], $cBiologia);
         }
 
         // Artes: 12 relleno (144-155)
-        for ($i = 144; $i < 156; $i++) {
+        for ($i = 144; $i < 156; ++$i) {
             $this->enroll($relleno[$i], $cArtes);
         }
 
@@ -209,7 +211,7 @@ class UsabilitySeedCommand extends Command
         $this->generateAttendance($e2, $cHistoria, $statuses);
 
         // --- Attendance: Ciencias de la Salud — 5 students <85%, rest ~90% ---
-        for ($i = 64; $i < 94; $i++) {
+        for ($i = 64; $i < 94; ++$i) {
             if ($i < 69) {
                 // 15/20 = 75%
                 $s = array_merge(array_fill(0, 15, 'present'), array_fill(0, 5, 'absent'));
@@ -224,13 +226,13 @@ class UsabilitySeedCommand extends Command
         $profile = new InterestProfile();
         $profile->setStudent($e3);
         $profile->setInterests([
-            'Artes'                                      => 4,
-            'Ciencias'                                   => 4,
-            'Filosofía'                                  => 2,
-            'Historia, geografía y ciencias sociales'    => 2,
-            'Lengua y literatura'                        => 2,
-            'Matemática'                                 => 1,
-            'Educación física y salud'                   => 1,
+            'Artes' => 4,
+            'Ciencias' => 4,
+            'Filosofía' => 2,
+            'Historia, geografía y ciencias sociales' => 2,
+            'Lengua y literatura' => 2,
+            'Matemática' => 1,
+            'Educación física y salud' => 1,
         ]);
         $this->em->persist($profile);
 
@@ -263,6 +265,7 @@ class UsabilitySeedCommand extends Command
         }
         $cat = (new CourseCategory())->setName($name)->setArea($area);
         $this->em->persist($cat);
+
         return $cat;
     }
 
@@ -277,7 +280,7 @@ class UsabilitySeedCommand extends Command
         string $emailPrefix,
     ): User {
         $rut = self::rut($rutBase);
-        $pwd = substr((string)$rutBase, 0, 6);
+        $pwd = substr((string) $rutBase, 0, 6);
 
         $user = new User();
         $user->setRut($rut);
@@ -285,16 +288,17 @@ class UsabilitySeedCommand extends Command
         $user->setRoles($roles);
         $user->setGender($gender);
         $user->setActive(true);
-        $user->setEmail($emailPrefix . '@electivoia.test');
+        $user->setEmail($emailPrefix.'@electivoia.test');
         if ($grade) {
             $user->setGrade($grade);
         }
-        if ($avg !== null) {
+        if (null !== $avg) {
             $user->setAverageGrade($avg);
         }
         $user->setSchool($school);
         $user->setPassword($this->hasher->hashPassword($user, $pwd));
         $this->em->persist($user);
+
         return $user;
     }
 
@@ -306,15 +310,16 @@ class UsabilitySeedCommand extends Command
         $user->setFullName($name);
         $user->setGrade($grade);
         $user->setRoles(['ROLE_STUDENT']);
-        $user->setGender($base % 2 === 0 ? 'F' : 'M');
+        $user->setGender(0 === $base % 2 ? 'F' : 'M');
         $user->setActive(true);
         $user->setSchool($school);
-        $user->setEmail('relleno.' . $base . '@electivoia.test');
-        if ($avg !== null) {
+        $user->setEmail('relleno.'.$base.'@electivoia.test');
+        if (null !== $avg) {
             $user->setAverageGrade($avg);
         }
-        $user->setPassword($this->hasher->hashPassword($user, substr((string)$base, 0, 6)));
+        $user->setPassword($this->hasher->hashPassword($user, substr((string) $base, 0, 6)));
         $this->em->persist($user);
+
         return $user;
     }
 
@@ -333,6 +338,7 @@ class UsabilitySeedCommand extends Command
             $course->setTargetGrades($targetGrades);
         }
         $this->em->persist($course);
+
         return $course;
     }
 
@@ -341,7 +347,7 @@ class UsabilitySeedCommand extends Command
         $enrollment = new Enrollment();
         $enrollment->setStudent($student);
         $enrollment->setCourse($course);
-        $enrollment->setEnrolledAt(new \DateTime('-' . rand(1, 20) . ' days'));
+        $enrollment->setEnrolledAt(new \DateTime('-'.rand(1, 20).' days'));
         $this->em->persist($enrollment);
     }
 
@@ -351,7 +357,7 @@ class UsabilitySeedCommand extends Command
             $att = new Attendance();
             $att->setStudent($student);
             $att->setCourse($course);
-            $att->setDate(new \DateTime('-' . ($i + 1) . ' days'));
+            $att->setDate(new \DateTime('-'.($i + 1).' days'));
             $att->setStatus($status);
             $this->em->persist($att);
         }
@@ -381,11 +387,12 @@ class UsabilitySeedCommand extends Command
         ];
         // base = 31500001 + $i; odd base → M, even base → F; since 31500001 is odd: i-even → M, i-odd → F
         $n = count($surnames); // 30 — gcd(6,30)=6 ∤ 11 so s1≠s2 always
-        $firstName = ($i % 2 === 0)
+        $firstName = (0 === $i % 2)
             ? $male[($i >> 1) % count($male)]
             : $female[(($i - 1) >> 1) % count($female)];
         $s1 = $surnames[$i % $n];
         $s2 = $surnames[($i * 7 + 11) % $n];
+
         return "$firstName $s1 $s2";
     }
 
@@ -395,6 +402,7 @@ class UsabilitySeedCommand extends Command
             // Física: avg >= 5.2
             return round(5.2 + ($i % 18) * 0.1, 1);
         }
+
         return round(5.0 + (($i * 7) % 20) * 0.1, 1);
     }
 
@@ -415,6 +423,7 @@ class UsabilitySeedCommand extends Command
             ['SA1', self::rut(31400001), '314000', 'sa1.ignacia@electivoia.test',    'SUPER_ADMIN (sin colegio)'],
             ['AdminAisl', self::rut(32100001), '321000', 'admin.aislamiento@electivoia.test', 'ADMIN (Aislamiento)'],
         ];
+
         return $rows;
     }
 
@@ -427,9 +436,10 @@ class UsabilitySeedCommand extends Command
         while ($n > 0) {
             $sum += ($n % 10) * $factor;
             $n = intdiv($n, 10);
-            $factor = $factor === 7 ? 2 : $factor + 1;
+            $factor = 7 === $factor ? 2 : $factor + 1;
         }
         $remainder = 11 - ($sum % 11);
+
         return match ($remainder) {
             11 => '0',
             10 => 'K',
@@ -439,6 +449,6 @@ class UsabilitySeedCommand extends Command
 
     private static function rut(int $n): string
     {
-        return (string)$n . '-' . self::dv($n);
+        return (string) $n.'-'.self::dv($n);
     }
 }

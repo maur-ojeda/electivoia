@@ -8,14 +8,14 @@ use Doctrine\ORM\Query\SqlWalker;
 use Doctrine\ORM\Query\TokenType;
 
 /**
- * JsonArrayContains ::= "JSON_ARRAY_CONTAINS" "(" ArithmeticPrimary "," StringPrimary ")"
- * 
+ * JsonArrayContains ::= "JSON_ARRAY_CONTAINS" "(" ArithmeticPrimary "," StringPrimary ")".
+ *
  * Verifica si un array JSON contiene un valor específico
  */
 class JsonArrayContains extends FunctionNode
 {
-    public $jsonField = null;
-    public $value = null;
+    public $jsonField;
+    public $value;
 
     public function parse(Parser $parser): void
     {

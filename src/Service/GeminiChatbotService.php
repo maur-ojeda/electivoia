@@ -4,9 +4,9 @@ namespace App\Service;
 
 use App\Entity\User;
 use App\Repository\CourseRepository;
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
-use Psr\Log\LoggerInterface;
 
 class GeminiChatbotService
 {
@@ -96,19 +96,19 @@ class GeminiChatbotService
         private CourseRepository $courseRepository,
         private EnrollmentService $enrollmentService,
         private LoggerInterface $logger,
-        private string $aiApiKey
+        private string $aiApiKey,
     ) {
     }
 
     public function chat(string $userMessage, array $history = [], array $studentContext = [], ?User $user = null): array
     {
         try {
-            if (trim($this->aiApiKey) === '') {
+            if ('' === trim($this->aiApiKey)) {
                 $this->logger->error('AI chatbot invoked without an API key configured (AI_API_KEY).');
 
                 return [
                     'success' => false,
-                    'retry'   => true,
+                    'retry' => true,
                     'message' => 'El asistente está ocupado. Intenta de nuevo en unos segundos.',
                 ];
             }
@@ -127,9 +127,9 @@ class GeminiChatbotService
 
             $lastTextResponse = null;
 
-            for ($iteration = 0; $iteration < self::MAX_TOOL_ITERATIONS; $iteration++) {
-                $message   = $this->callAIApi($messages);
-                $content   = $message['content'];
+            for ($iteration = 0; $iteration < self::MAX_TOOL_ITERATIONS; ++$iteration) {
+                $message = $this->callAIApi($messages);
+                $content = $message['content'];
                 $toolCalls = $message['tool_calls'];
 
                 if (!empty($content)) {
@@ -137,7 +137,7 @@ class GeminiChatbotService
                 }
 
                 if (empty($toolCalls)) {
-                    if ($lastTextResponse !== null) {
+                    if (null !== $lastTextResponse) {
                         return ['success' => true, 'message' => $lastTextResponse];
                     }
 
@@ -149,54 +149,53 @@ class GeminiChatbotService
 
                 // Append assistant message with tool_calls
                 $messages[] = [
-                    'role'       => 'assistant',
-                    'content'    => $content,
+                    'role' => 'assistant',
+                    'content' => $content,
                     'tool_calls' => $toolCalls,
                 ];
 
                 // Execute each tool and append results
                 foreach ($toolCalls as $toolCall) {
-                    $toolName   = $toolCall['function']['name'];
-                    $toolArgs   = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?? [];
+                    $toolName = $toolCall['function']['name'];
+                    $toolArgs = json_decode($toolCall['function']['arguments'] ?? '{}', true) ?? [];
                     $toolResult = $this->executeTool($toolName, $toolArgs);
 
                     $messages[] = [
-                        'role'         => 'tool',
+                        'role' => 'tool',
                         'tool_call_id' => $toolCall['id'],
-                        'content'      => json_encode($toolResult),
+                        'content' => json_encode($toolResult),
                     ];
                 }
             }
 
             // Loop cap reached
             $this->logger->warning(
-                'AI chatbot tool_call loop reached max iterations (' . self::MAX_TOOL_ITERATIONS . ')'
+                'AI chatbot tool_call loop reached max iterations ('.self::MAX_TOOL_ITERATIONS.')'
             );
 
             return [
                 'success' => true,
                 'message' => $lastTextResponse ?? 'Lo siento, no pude completar tu solicitud.',
             ];
-
         } catch (\Throwable $e) {
-            $this->logger->error('Error en AI chatbot: ' . $e->getMessage());
+            $this->logger->error('Error en AI chatbot: '.$e->getMessage());
 
             if ($e instanceof \Error) {
                 // Programming/type errors must never surface as an HTTP 5xx to the user.
                 return [
                     'success' => false,
-                    'retry'   => true,
+                    'retry' => true,
                     'message' => 'El asistente está ocupado. Intenta de nuevo en unos segundos.',
                 ];
             }
 
-            if ($e->getMessage() === 'openrouter_empty_stream'
+            if ('openrouter_empty_stream' === $e->getMessage()
                 || str_contains($e->getMessage(), '429')
                 || str_contains($e->getMessage(), 'RESOURCE_EXHAUSTED')
             ) {
                 return [
                     'success' => false,
-                    'retry'   => true,
+                    'retry' => true,
                     'message' => 'El asistente IA está ocupado en este momento. Espera unos segundos y vuelve a intentarlo.',
                 ];
             }
@@ -212,7 +211,7 @@ class GeminiChatbotService
     {
         $courses = $this->courseRepository->findActiveForContext();
         $context = "CURSOS DISPONIBLES:\n\n";
-        
+
         foreach ($courses as $course) {
             $context .= sprintf(
                 "- %s (Categoría: %s)\n  Descripción: %s\n  Profesor: %s\n  Horario: %s\n  Cupos: %d/%d\n\n",
@@ -225,7 +224,7 @@ class GeminiChatbotService
                 $course->getMaxCapacity()
             );
         }
-        
+
         return $context;
     }
 
@@ -233,34 +232,34 @@ class GeminiChatbotService
     {
         $response = $this->httpClient->request('POST', self::AI_API_URL, [
             'headers' => [
-                'Authorization' => 'Bearer ' . $this->aiApiKey,
-                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer '.$this->aiApiKey,
+                'Content-Type' => 'application/json',
             ],
             'timeout' => 90,
             'json' => [
-                'model'       => self::AI_MODEL,
-                'messages'    => $messages,
-                'tools'       => self::TOOL_DECLARATIONS,
+                'model' => self::AI_MODEL,
+                'messages' => $messages,
+                'tools' => self::TOOL_DECLARATIONS,
                 'tool_choice' => 'auto',
                 'temperature' => 0.7,
-                'max_tokens'  => 1024,
-                'stream'      => true,
+                'max_tokens' => 1024,
+                'stream' => true,
             ],
         ]);
 
         return $this->collectStream($response);
     }
 
-    private function collectStream(\Symfony\Contracts\HttpClient\ResponseInterface $response): array
+    private function collectStream(ResponseInterface $response): array
     {
         $statusCode = $response->getStatusCode();
-        if ($statusCode !== 200) {
+        if (200 !== $statusCode) {
             $body = $response->getContent(false);
             $this->logger->error("OpenRouter error {$statusCode}: {$body}");
-            throw new \RuntimeException("HTTP/{$statusCode} from OpenRouter: " . substr($body, 0, 500));
+            throw new \RuntimeException("HTTP/{$statusCode} from OpenRouter: ".substr($body, 0, 500));
         }
 
-        $content   = '';
+        $content = '';
         $toolCalls = [];
 
         foreach ($this->httpClient->stream($response, 90) as $chunk) {
@@ -277,17 +276,17 @@ class GeminiChatbotService
                     continue;
                 }
                 $json = ltrim(substr($line, 6));
-                if ($json === '[DONE]') {
+                if ('[DONE]' === $json) {
                     break 2;
                 }
                 $data = json_decode($json, true);
-                if ($data === null) {
+                if (null === $data) {
                     continue;
                 }
 
                 $delta = $data['choices'][0]['delta'] ?? [];
 
-                if (isset($delta['content']) && $delta['content'] !== null) {
+                if (isset($delta['content']) && null !== $delta['content']) {
                     $content .= $delta['content'];
                 }
 
@@ -313,12 +312,12 @@ class GeminiChatbotService
 
         // OpenRouter free tier silently returns HTTP 200 with an empty stream
         // instead of a 429 when rate-limited. Surface it so callers can retry.
-        if ($content === '' && empty($toolCalls)) {
+        if ('' === $content && empty($toolCalls)) {
             throw new \RuntimeException('openrouter_empty_stream');
         }
 
         return [
-            'content'    => $content !== '' ? $content : null,
+            'content' => '' !== $content ? $content : null,
             'tool_calls' => array_values($toolCalls),
         ];
     }
@@ -338,9 +337,10 @@ class GeminiChatbotService
 
                 case 'get_course_details':
                     $courseId = $args['course_id'] ?? 0;
-                    if ($this->currentUser === null) {
+                    if (null === $this->currentUser) {
                         return ['error' => 'Se requiere autenticación para ver detalles del curso.'];
                     }
+
                     return $this->enrollmentService->getCourseDetails(
                         courseId: (int) $courseId,
                         student: $this->currentUser,
@@ -348,7 +348,7 @@ class GeminiChatbotService
 
                 case 'enroll_in_course':
                     $courseId = $args['course_id'] ?? 0;
-                    if ($this->currentUser === null) {
+                    if (null === $this->currentUser) {
                         return ['error' => 'Se requiere autenticación para inscribirse.'];
                     }
                     // Preview only — get course details, do NOT enroll
@@ -357,7 +357,7 @@ class GeminiChatbotService
                         student: $this->currentUser,
                     );
 
-                    if ($details['id'] === 0) {
+                    if (0 === $details['id']) {
                         return [
                             'course_id' => (int) $courseId,
                             'course_name' => '',
@@ -380,12 +380,12 @@ class GeminiChatbotService
 
                 case 'confirm_enrollment':
                     $courseId = $args['course_id'] ?? 0;
-                    if ($this->currentUser === null) {
+                    if (null === $this->currentUser) {
                         return ['success' => false, 'message' => 'Se requiere autenticación para inscribirse.'];
                     }
 
                     $course = $this->courseRepository->find((int) $courseId);
-                    if ($course === null) {
+                    if (null === $course) {
                         return ['success' => false, 'message' => 'Curso no encontrado.'];
                     }
 
@@ -407,7 +407,8 @@ class GeminiChatbotService
                     return ['error' => "Herramienta no reconocida: {$toolName}"];
             }
         } catch (\Exception $e) {
-            $this->logger->error("Error ejecutando tool '{$toolName}': " . $e->getMessage());
+            $this->logger->error("Error ejecutando tool '{$toolName}': ".$e->getMessage());
+
             return ['error' => 'Error al procesar la solicitud. Por favor intenta de nuevo.'];
         }
     }
@@ -446,8 +447,8 @@ PROMPT;
 
         $lines = [];
         $lines[] = 'CONTEXTO DEL ESTUDIANTE:';
-        $lines[] = '- Nombre: ' . ($studentContext['name'] ?? 'Estudiante');
-        $lines[] = '- Curso: ' . ($studentContext['grade'] ?? 'No especificado');
+        $lines[] = '- Nombre: '.($studentContext['name'] ?? 'Estudiante');
+        $lines[] = '- Curso: '.($studentContext['grade'] ?? 'No especificado');
 
         // Interests: array like ['Filosofía' => 4, 'Artes' => 5]
         $interests = $studentContext['interests'] ?? [];
@@ -456,7 +457,7 @@ PROMPT;
             foreach ($interests as $topic => $score) {
                 $interestParts[] = "{$topic} (nivel {$score})";
             }
-            $lines[] = '- Intereses: ' . implode(', ', $interestParts);
+            $lines[] = '- Intereses: '.implode(', ', $interestParts);
         } else {
             $lines[] = '- Intereses: Sin intereses registrados aún';
         }
@@ -464,21 +465,22 @@ PROMPT;
         // Enrolled courses
         $enrolledCourses = $studentContext['enrolledCourses'] ?? [];
         if (!empty($enrolledCourses)) {
-            $courseNames = array_map(fn($c) => $c['name'] ?? $c, $enrolledCourses);
-            $lines[] = '- Cursos inscrito actualmente: ' . implode(', ', $courseNames);
+            $courseNames = array_map(fn ($c) => $c['name'] ?? $c, $enrolledCourses);
+            $lines[] = '- Cursos inscrito actualmente: '.implode(', ', $courseNames);
         } else {
             $lines[] = '- Cursos inscrito actualmente: Ninguno';
         }
 
         // Enrollment period status
         $enrollmentOpen = $studentContext['enrollmentOpen'] ?? null;
-        if ($enrollmentOpen === true) {
+        if (true === $enrollmentOpen) {
             $lines[] = '- Período de inscripción: Abierto';
-        } elseif ($enrollmentOpen === false) {
+        } elseif (false === $enrollmentOpen) {
             $lines[] = '- Período de inscripción: Cerrado';
         }
 
         $lines[] = '';
+
         return implode("\n", $lines);
     }
 }

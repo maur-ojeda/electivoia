@@ -121,7 +121,7 @@ class AiSignalRepository extends ServiceEntityRepository
             ->setParameter('since', $since)
             ->groupBy('s.action');
 
-        if ($school !== null) {
+        if (null !== $school) {
             $qb->andWhere('s.school = :school')
                 ->setParameter('school', $school);
         }

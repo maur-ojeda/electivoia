@@ -29,6 +29,7 @@ class LoginRedirectTest extends WebTestCase
     {
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => $email]);
         $this->assertNotNull($user, "Seed user '{$email}' not found — run app:usability:seed first.");
+
         return $user;
     }
 
@@ -76,7 +77,7 @@ class LoginRedirectTest extends WebTestCase
         $this->client->followRedirects(false);
         $this->client->request('GET', '/admin');
         $response = $this->client->getResponse();
-        $status   = $response->getStatusCode();
+        $status = $response->getStatusCode();
         $location = $response->headers->get('Location') ?? '';
         $this->assertSame(302, $status,
             "Admin user ad1.carolina expected 302 on /admin, got {$status}.");

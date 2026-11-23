@@ -16,7 +16,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminEmailController extends AbstractController
 {
-    public function __construct(private TenantContext $tenantContext) {}
+    public function __construct(private TenantContext $tenantContext)
+    {
+    }
 
     #[Route('/blast', name: 'blast')]
     public function blast(Request $request, EntityManagerInterface $em, NotificationService $notificationService): Response
@@ -58,12 +60,13 @@ class AdminEmailController extends AbstractController
                 // Filtrar solo estudiantes
                 $students = array_filter(
                     $qb->getQuery()->getResult(),
-                    fn(User $u) => in_array('ROLE_STUDENT', $u->getRoles())
+                    fn (User $u) => in_array('ROLE_STUDENT', $u->getRoles())
                 );
 
                 $recipientCount = count($students);
                 $sent = $notificationService->sendBulkAnnouncement(array_values($students), $subject, $body);
                 $this->addFlash('success', "Email enviado a {$sent} de {$recipientCount} estudiantes con email registrado.");
+
                 return $this->redirectToRoute('admin_email_blast');
             }
 

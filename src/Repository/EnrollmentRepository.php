@@ -2,12 +2,11 @@
 
 namespace App\Repository;
 
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\School;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -26,9 +25,6 @@ class EnrollmentRepository extends ServiceEntityRepository
     /**
      * Finds enrollments for a specific course ordered by the student's average grade in ascending order.
      * Students without an average grade are considered to have the lowest priority (treated as 0.0).
-     *
-     * @param Course $course
-     * @return array
      */
     public function findEnrollmentsByCourseOrderedByGradeAsc(Course $course): array
     {
@@ -45,6 +41,7 @@ class EnrollmentRepository extends ServiceEntityRepository
      * Returns all enrollments for the given students.
      *
      * @param User[] $students
+     *
      * @return Enrollment[]
      */
     public function findEnrollmentsByStudents(array $students): array
@@ -54,7 +51,7 @@ class EnrollmentRepository extends ServiceEntityRepository
         }
 
         $studentIds = array_map(fn (User $s) => $s->getId(), $students);
-        $studentIds = array_filter($studentIds, fn ($id) => $id !== null);
+        $studentIds = array_filter($studentIds, fn ($id) => null !== $id);
 
         if (empty($studentIds)) {
             return [];

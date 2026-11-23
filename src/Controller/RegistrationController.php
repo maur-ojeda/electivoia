@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\School;
 use App\Entity\User;
 use App\Repository\SchoolRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -20,7 +19,7 @@ class RegistrationController extends AbstractController
         Request $request,
         SchoolRepository $schoolRepository,
         EntityManagerInterface $em,
-        UserPasswordHasherInterface $hasher
+        UserPasswordHasherInterface $hasher,
     ): Response {
         // Redirect authenticated users away
         if ($this->getUser()) {
@@ -36,12 +35,12 @@ class RegistrationController extends AbstractController
         $errors = [];
 
         if ($request->isMethod('POST')) {
-            $fullName     = trim($request->request->get('fullName', ''));
-            $rut          = trim($request->request->get('rut', ''));
-            $email        = trim($request->request->get('email', '')) ?: null;
-            $grade        = $request->request->get('grade', '');
+            $fullName = trim($request->request->get('fullName', ''));
+            $rut = trim($request->request->get('rut', ''));
+            $email = trim($request->request->get('email', '')) ?: null;
+            $grade = $request->request->get('grade', '');
             $plainPassword = trim($request->request->get('password', ''));
-            $confirmPass  = trim($request->request->get('confirmPassword', ''));
+            $confirmPass = trim($request->request->get('confirmPassword', ''));
 
             // Validaciones básicas
             if (!$fullName) {
@@ -81,6 +80,7 @@ class RegistrationController extends AbstractController
                 $em->flush();
 
                 $this->addFlash('success', '¡Cuenta creada! Ya puedes iniciar sesión con tu RUT.');
+
                 return $this->redirectToRoute('app_login');
             }
         }

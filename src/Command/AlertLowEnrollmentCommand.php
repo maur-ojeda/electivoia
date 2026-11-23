@@ -53,14 +53,15 @@ class AlertLowEnrollmentCommand extends Command
                     $course->getName(),
                     $course->getTeacher()?->getFullName() ?? 'N/A',
                     $course->getSchedule() ?? '—',
-                    $enrolled . '/' . $capacity,
-                    round($pct * 100) . '%',
+                    $enrolled.'/'.$capacity,
+                    round($pct * 100).'%',
                 ];
             }
         }
 
         if (empty($alerts)) {
             $io->success(sprintf('Ningún curso por debajo del %d%% de ocupación.', (int) ($threshold * 100)));
+
             return Command::SUCCESS;
         }
 

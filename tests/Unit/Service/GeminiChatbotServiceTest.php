@@ -55,14 +55,14 @@ class GeminiChatbotServiceTest extends TestCase
         $course->method('getSchedule')->willReturn($schedule);
 
         $category = null;
-        if ($categoryName !== null) {
+        if (null !== $categoryName) {
             $category = $this->createMock(CourseCategory::class);
             $category->method('getName')->willReturn($categoryName);
         }
         $course->method('getCategory')->willReturn($category);
 
         $teacher = null;
-        if ($teacherName !== null) {
+        if (null !== $teacherName) {
             $teacher = $this->createMock(User::class);
             $teacher->method('getFullName')->willReturn($teacherName);
         }
@@ -78,6 +78,7 @@ class GeminiChatbotServiceTest extends TestCase
         $chunk->method('isTimeout')->willReturn(false);
         $chunk->method('isLast')->willReturn(false);
         $chunk->method('getContent')->willReturn("data: {$data}\ndata: [DONE]\n");
+
         return $chunk;
     }
 
@@ -85,13 +86,14 @@ class GeminiChatbotServiceTest extends TestCase
     {
         $response = $this->createMock(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(200);
+
         return $response;
     }
 
     private function mockStreamingText(string $text = '¡Hola! ¿En qué te puedo ayudar?'): void
     {
         $response = $this->makeStreamResponse();
-        $chunk    = $this->makeTextChunk($text);
+        $chunk = $this->makeTextChunk($text);
         $this->httpClient->method('request')->willReturn($response);
         $this->httpClient->method('stream')->willReturn(new MockResponseStream([$chunk]));
     }
@@ -103,11 +105,12 @@ class GeminiChatbotServiceTest extends TestCase
     private function mockStreamingWithCapture(string $text, array &$capturedMessages): void
     {
         $response = $this->makeStreamResponse();
-        $chunk    = $this->makeTextChunk($text);
+        $chunk = $this->makeTextChunk($text);
         $this->httpClient
             ->method('request')
             ->willReturnCallback(static function ($method, $url, $options) use (&$capturedMessages, $response) {
                 $capturedMessages = $options['json']['messages'] ?? [];
+
                 return $response;
             });
         $this->httpClient->method('stream')->willReturn(new MockResponseStream([$chunk]));

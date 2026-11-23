@@ -16,8 +16,9 @@ class NotificationService
         private MailerInterface $mailer,
         private Environment $twig,
         private LoggerInterface $logger,
-        private string $mailerFrom
-    ) {}
+        private string $mailerFrom,
+    ) {
+    }
 
     public function sendEnrollmentConfirmation(User $student, Course $course): void
     {
@@ -35,12 +36,12 @@ class NotificationService
             $email = (new Email())
                 ->from($this->mailerFrom)
                 ->to($student->getEmail())
-                ->subject('Inscripción confirmada: ' . $course->getName())
+                ->subject('Inscripción confirmada: '.$course->getName())
                 ->html($html);
 
             $this->mailer->send($email);
         } catch (\Exception $e) {
-            $this->logger->warning('No se pudo enviar email de confirmación: ' . $e->getMessage());
+            $this->logger->warning('No se pudo enviar email de confirmación: '.$e->getMessage());
         }
     }
 
@@ -59,12 +60,12 @@ class NotificationService
             $email = (new Email())
                 ->from($this->mailerFrom)
                 ->to($displaced->getEmail())
-                ->subject('Has sido desplazado del curso: ' . $course->getName())
+                ->subject('Has sido desplazado del curso: '.$course->getName())
                 ->html($html);
 
             $this->mailer->send($email);
         } catch (\Exception $e) {
-            $this->logger->warning('No se pudo enviar email de desplazamiento: ' . $e->getMessage());
+            $this->logger->warning('No se pudo enviar email de desplazamiento: '.$e->getMessage());
         }
     }
 
@@ -76,20 +77,20 @@ class NotificationService
 
         try {
             $html = $this->twig->render('email/school_welcome.html.twig', [
-                'admin'         => $admin,
-                'school'        => $school,
+                'admin' => $admin,
+                'school' => $school,
                 'plainPassword' => $plainPassword,
             ]);
 
             $email = (new Email())
                 ->from($this->mailerFrom)
                 ->to($admin->getEmail())
-                ->subject('Bienvenido a ElectivoIA — ' . $school->getName())
+                ->subject('Bienvenido a ElectivoIA — '.$school->getName())
                 ->html($html);
 
             $this->mailer->send($email);
         } catch (\Exception $e) {
-            $this->logger->warning('No se pudo enviar email de bienvenida: ' . $e->getMessage());
+            $this->logger->warning('No se pudo enviar email de bienvenida: '.$e->getMessage());
         }
     }
 
@@ -114,11 +115,12 @@ class NotificationService
                     ->html($html);
 
                 $this->mailer->send($email);
-                $sent++;
+                ++$sent;
             } catch (\Exception $e) {
-                $this->logger->warning('No se pudo enviar email a ' . $student->getEmail() . ': ' . $e->getMessage());
+                $this->logger->warning('No se pudo enviar email a '.$student->getEmail().': '.$e->getMessage());
             }
         }
+
         return $sent;
     }
 }

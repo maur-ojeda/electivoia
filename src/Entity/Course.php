@@ -63,8 +63,6 @@ class Course
     #[ORM\JoinColumn(nullable: true)]
     private ?School $school = null;
 
-
-
     public function __construct()
     {
         // No se inicializa $teacher (es ManyToOne, no colección)
@@ -87,6 +85,7 @@ class Course
     public function setName(string $name): static
     {
         $this->name = $name;
+
         return $this;
     }
 
@@ -98,6 +97,7 @@ class Course
     public function setDescription(?string $description): static
     {
         $this->description = $description;
+
         return $this;
     }
 
@@ -109,6 +109,7 @@ class Course
     public function setMaxCapacity(int $maxCapacity): static
     {
         $this->maxCapacity = $maxCapacity;
+
         return $this;
     }
 
@@ -120,10 +121,9 @@ class Course
     public function setCurrentEnrollment(int $currentEnrollment): static
     {
         $this->currentEnrollment = $currentEnrollment;
+
         return $this;
     }
-
-
 
     public function isActive(): bool
     {
@@ -133,6 +133,7 @@ class Course
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+
         return $this;
     }
 
@@ -144,6 +145,7 @@ class Course
     public function setTeacher(?User $teacher): static
     {
         $this->teacher = $teacher;
+
         return $this;
     }
 
@@ -240,14 +242,33 @@ class Course
     public function setCategory(?CourseCategory $category): static
     {
         $this->category = $category;
+
         return $this;
     }
 
-    public function getSchedule(): ?string { return $this->schedule; }
-    public function setSchedule(?string $schedule): static { $this->schedule = $schedule; return $this; }
+    public function getSchedule(): ?string
+    {
+        return $this->schedule;
+    }
 
-    public function getSchool(): ?School { return $this->school; }
-    public function setSchool(?School $school): static { $this->school = $school; return $this; }
+    public function setSchedule(?string $schedule): static
+    {
+        $this->schedule = $schedule;
+
+        return $this;
+    }
+
+    public function getSchool(): ?School
+    {
+        return $this->school;
+    }
+
+    public function setSchool(?School $school): static
+    {
+        $this->school = $school;
+
+        return $this;
+    }
 
     public function getEnrollmentBadge(): string
     {

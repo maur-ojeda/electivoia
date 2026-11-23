@@ -5,7 +5,6 @@ namespace App\Controller\Admin;
 use App\Entity\Course;
 use App\Entity\Enrollment;
 use App\Entity\InterestProfile;
-use App\Entity\User;
 use App\Repository\AiSignalRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\InterestProfileRepository;
@@ -31,7 +30,8 @@ class AiDashboardController extends AbstractController
         private AiSignalRepository $aiSignalRepository,
         private EnrollmentRepository $enrollmentRepository,
         private TenantContext $tenantContext,
-    ) {}
+    ) {
+    }
 
     #[Route('', name: 'dashboard')]
     public function index(): Response
@@ -42,7 +42,7 @@ class AiDashboardController extends AbstractController
         $engineOverview = $this->buildEngineOverview($school);
 
         // --- 2. Demand Predictions ---
-        $predictions = $school !== null
+        $predictions = null !== $school
             ? $this->demandPredictionService->predictDemandForSchool($school)
             : [];
 
@@ -54,7 +54,7 @@ class AiDashboardController extends AbstractController
         $coverage = $this->calculateCoverage($school);
 
         // --- 5. Bias Detection ---
-        $biasReport = $school !== null
+        $biasReport = null !== $school
             ? $this->biasDetectionService->analyzeBias($school)
             : null;
 
@@ -79,7 +79,7 @@ class AiDashboardController extends AbstractController
             ->select('COUNT(c.id)')
             ->where('c.isActive = true');
 
-        if ($school !== null) {
+        if (null !== $school) {
             $courseQb->andWhere('c.school = :school')
                 ->setParameter('school', $school);
         }
@@ -93,7 +93,7 @@ class AiDashboardController extends AbstractController
             ->join('e.course', 'c')
             ->where('c.isActive = true');
 
-        if ($school !== null) {
+        if (null !== $school) {
             $enrollmentQb->andWhere('c.school = :school')
                 ->setParameter('school', $school);
         }
@@ -102,7 +102,7 @@ class AiDashboardController extends AbstractController
 
         // Students with interest profiles
         $studentsWithProfiles = 0;
-        if ($school !== null && $school->getId() !== null) {
+        if (null !== $school && null !== $school->getId()) {
             /** @var InterestProfileRepository $profileRepo */
             $profileRepo = $this->em->getRepository(InterestProfile::class);
             $studentsWithProfiles = $profileRepo->countProfilesInSchool($school->getId());
@@ -127,7 +127,7 @@ class AiDashboardController extends AbstractController
             ->createQueryBuilder('c')
             ->where('c.isActive = true');
 
-        if ($school !== null) {
+        if (null !== $school) {
             $courseQb->andWhere('c.school = :school')
                 ->setParameter('school', $school);
         }
@@ -145,7 +145,7 @@ class AiDashboardController extends AbstractController
         foreach ($courses as $course) {
             $category = $course->getCategory();
 
-            if ($category === null || $school === null || $school->getId() === null) {
+            if (null === $category || null === $school || null === $school->getId()) {
                 continue;
             }
 

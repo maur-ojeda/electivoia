@@ -26,7 +26,8 @@ class RecommendationService
         private EnrollmentRepository $enrollmentRepository,
         private InterestProfileRepository $interestProfileRepository,
         private AiSignalRepository $signalRepository,
-    ) {}
+    ) {
+    }
 
     /**
      * Genera recomendaciones de cursos basadas en el perfil de intereses del estudiante.
@@ -63,7 +64,7 @@ class RecommendationService
 
         $studentGrade = $student->getGrade();
 
-        if ($studentGrade === null) {
+        if (null === $studentGrade) {
             return [];
         }
 
@@ -73,7 +74,7 @@ class RecommendationService
         foreach ($courses as $course) {
             $scored = $this->scoreCourse($course, $student, $interests, $studentGrade);
 
-            if ($scored !== null) {
+            if (null !== $scored) {
                 $results[] = $scored;
             }
         }
@@ -98,15 +99,15 @@ class RecommendationService
     ): ?array {
         // Filtro: el curso debe incluir el grado del estudiante
         $targetGrades = $course->getTargetGrades();
-        if ($targetGrades === null || !in_array($studentGrade, $targetGrades, true)) {
+        if (null === $targetGrades || !in_array($studentGrade, $targetGrades, true)) {
             return null;
         }
 
         // Excluir cursos en los que el estudiante ya está inscrito
-        $alreadyEnrolled = $this->enrollmentRepository->findOneBy([
+        $alreadyEnrolled = null !== $this->enrollmentRepository->findOneBy([
             'student' => $student,
             'course' => $course,
-        ]) !== null;
+        ]);
 
         if ($alreadyEnrolled) {
             return null;
@@ -114,7 +115,7 @@ class RecommendationService
 
         // La categoría debe existir y coincidir con un interés del estudiante
         $category = $course->getCategory();
-        if ($category === null) {
+        if (null === $category) {
             return null;
         }
 
@@ -177,19 +178,19 @@ class RecommendationService
 
         $studentGrade = $student->getGrade();
 
-        if ($studentGrade === null) {
+        if (null === $studentGrade) {
             return [];
         }
 
         $school = $student->getSchool();
 
-        if ($school === null || $school->getId() === null) {
+        if (null === $school || null === $school->getId()) {
             return [];
         }
 
         $studentId = $student->getId();
 
-        if ($studentId === null) {
+        if (null === $studentId) {
             return [];
         }
 
@@ -209,7 +210,7 @@ class RecommendationService
             if ($similarity > 0) {
                 $peerStudent = $profile->getStudent();
 
-                if ($peerStudent !== null && $peerStudent->getId() !== null) {
+                if (null !== $peerStudent && null !== $peerStudent->getId()) {
                     $peers[$peerStudent->getId()] = [
                         'student' => $peerStudent,
                         'similarity' => $similarity,
@@ -233,7 +234,7 @@ class RecommendationService
             $course = $enrollment->getCourse();
             $enrolledStudent = $enrollment->getStudent();
 
-            if ($course === null || $enrolledStudent === null) {
+            if (null === $course || null === $enrolledStudent) {
                 continue;
             }
 
@@ -246,7 +247,7 @@ class RecommendationService
             // Excluir cursos que no coincidan con el grado del estudiante
             $targetGrades = $course->getTargetGrades();
 
-            if ($targetGrades === null || !in_array($studentGrade, $targetGrades, true)) {
+            if (null === $targetGrades || !in_array($studentGrade, $targetGrades, true)) {
                 continue;
             }
 
@@ -271,10 +272,10 @@ class RecommendationService
             $course = $data['course'];
 
             // Excluir cursos en los que el estudiante ya está inscrito
-            $alreadyEnrolled = $this->enrollmentRepository->findOneBy([
+            $alreadyEnrolled = null !== $this->enrollmentRepository->findOneBy([
                 'student' => $student,
                 'course' => $course,
-            ]) !== null;
+            ]);
 
             if ($alreadyEnrolled) {
                 continue;
@@ -371,7 +372,7 @@ class RecommendationService
     {
         $boost = 0;
 
-        if ($viewedCourseIds === null) {
+        if (null === $viewedCourseIds) {
             $viewedCourseIds = $this->signalRepository->findViewedCourseIds($student);
         }
 
@@ -381,7 +382,7 @@ class RecommendationService
 
         $category = $course->getCategory();
 
-        if ($category !== null && $category->getId() !== null) {
+        if (null !== $category && null !== $category->getId()) {
             $viewedInCategory = $this->signalRepository->countViewedInCategory(
                 $student,
                 $category->getId(),
@@ -411,7 +412,7 @@ class RecommendationService
         foreach ($myInterests as $category => $myLevel) {
             $theirLevel = $theirInterests[$category] ?? null;
 
-            if ($theirLevel !== null && $theirLevel >= 3) {
+            if (null !== $theirLevel && $theirLevel >= 3) {
                 $similarity += min($myLevel, $theirLevel);
             }
         }

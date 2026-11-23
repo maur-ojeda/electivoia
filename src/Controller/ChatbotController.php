@@ -20,7 +20,8 @@ class ChatbotController extends AbstractController
         private RequestStack $requestStack,
         private TenantContext $tenantContext,
         private EnrollmentRepository $enrollmentRepository,
-    ) {}
+    ) {
+    }
 
     #[Route('/api/chatbot', name: 'api_chatbot', methods: ['POST'])]
     public function chat(Request $request, GeminiChatbotService $chatbotService): JsonResponse
@@ -34,7 +35,7 @@ class ChatbotController extends AbstractController
         }
 
         $user = $this->getUser();
-        if ($user === null) {
+        if (null === $user) {
             return $this->json(['success' => false, 'message' => 'Debes iniciar sesión para usar el asistente.'], 401);
         }
 
@@ -61,6 +62,7 @@ class ChatbotController extends AbstractController
     public function clearHistory(): JsonResponse
     {
         $this->requestStack->getSession()->remove(self::SESSION_KEY);
+
         return $this->json(['success' => true]);
     }
 
@@ -73,7 +75,7 @@ class ChatbotController extends AbstractController
         $enrolledCourses = [];
         foreach ($enrollments as $enrollment) {
             $course = $enrollment->getCourse();
-            if ($course !== null) {
+            if (null !== $course) {
                 $enrolledCourses[] = [
                     'id' => $course->getId(),
                     'name' => $course->getName(),
@@ -83,7 +85,7 @@ class ChatbotController extends AbstractController
         }
 
         $school = $this->tenantContext->getCurrentSchool();
-        $enrollmentOpen = $school === null || $school->isEnrollmentOpen();
+        $enrollmentOpen = null === $school || $school->isEnrollmentOpen();
 
         return [
             'name' => $user->getFullName() ?? 'Estudiante',

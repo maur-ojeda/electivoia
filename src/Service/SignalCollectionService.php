@@ -13,7 +13,8 @@ class SignalCollectionService
     public function __construct(
         private AiSignalRepository $signalRepository,
         private EntityManagerInterface $em,
-    ) {}
+    ) {
+    }
 
     /**
      * Creates and persists a signal. Does NOT flush — the caller decides when to flush.

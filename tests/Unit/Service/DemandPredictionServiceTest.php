@@ -40,14 +40,12 @@ class DemandPredictionServiceTest extends TestCase
         // Stub interest profile counts — default to 0
         $this->interestProfileRepository
             ->method('countStudentsInterestedInCategory')
-            ->willReturnCallback(fn (int $schoolId, string $categoryName, int $minLevel = 3): int
-                => $this->interestCounts[$categoryName] ?? 0);
+            ->willReturnCallback(fn (int $schoolId, string $categoryName, int $minLevel = 3): int => $this->interestCounts[$categoryName] ?? 0);
 
         // Stub view counts — default to 0
         $this->aiSignalRepository
             ->method('countRecentViewsForCourse')
-            ->willReturnCallback(fn (int $courseId, int $days = 30): int
-                => $this->viewCounts[$courseId] ?? 0);
+            ->willReturnCallback(fn (int $courseId, int $days = 30): int => $this->viewCounts[$courseId] ?? 0);
 
         $this->service = new DemandPredictionService(
             $this->entityManager,
@@ -60,6 +58,7 @@ class DemandPredictionServiceTest extends TestCase
     {
         $school = $this->createMock(School::class);
         $school->method('getId')->willReturn($id);
+
         return $school;
     }
 

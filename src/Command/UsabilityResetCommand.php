@@ -34,6 +34,7 @@ class UsabilityResetCommand extends Command
 
         if (($_SERVER['USABILITY_SEED_ENABLED'] ?? getenv('USABILITY_SEED_ENABLED') ?? '') !== '1') {
             $io->error('Set USABILITY_SEED_ENABLED=1 to run this command.');
+
             return Command::FAILURE;
         }
 
@@ -44,7 +45,7 @@ class UsabilityResetCommand extends Command
             $schools = $this->em->getRepository(School::class)->findBy([
                 'slug' => ['liceo-ficticio-electivoia', 'colegio-aislamiento'],
             ]);
-            $schoolIds = array_map(static fn(School $s) => $s->getId(), $schools);
+            $schoolIds = array_map(static fn (School $s) => $s->getId(), $schools);
 
             // Find ALL seeded users: by school OR by @electivoia.test email (covers SA1)
             $qb = $this->em->createQueryBuilder();
@@ -62,30 +63,31 @@ class UsabilityResetCommand extends Command
 
             if (!$users && !$schools) {
                 $io->note('Nothing to delete — seed was not run.');
+
                 return;
             }
 
-            $userIds = array_map(static fn(User $u) => $u->getId(), $users);
+            $userIds = array_map(static fn (User $u) => $u->getId(), $users);
 
             // 1. AiSignal
             if ($userIds) {
-                $this->em->createQuery('DELETE FROM ' . AiSignal::class . ' a WHERE a.student IN (:ids)')
+                $this->em->createQuery('DELETE FROM '.AiSignal::class.' a WHERE a.student IN (:ids)')
                     ->setParameter('ids', $userIds)->execute();
             }
             if ($schoolIds) {
-                $this->em->createQuery('DELETE FROM ' . AiSignal::class . ' a WHERE a.school IN (:ids)')
+                $this->em->createQuery('DELETE FROM '.AiSignal::class.' a WHERE a.school IN (:ids)')
                     ->setParameter('ids', $schoolIds)->execute();
             }
 
             // 2. Attendance (by user AND by course-school to catch any orphaned records)
             if ($userIds) {
-                $this->em->createQuery('DELETE FROM ' . Attendance::class . ' a WHERE a.student IN (:ids)')
+                $this->em->createQuery('DELETE FROM '.Attendance::class.' a WHERE a.student IN (:ids)')
                     ->setParameter('ids', $userIds)->execute();
             }
 
             // 3. Enrollment
             if ($userIds) {
-                $this->em->createQuery('DELETE FROM ' . Enrollment::class . ' e WHERE e.student IN (:ids)')
+                $this->em->createQuery('DELETE FROM '.Enrollment::class.' e WHERE e.student IN (:ids)')
                     ->setParameter('ids', $userIds)->execute();
             }
 
@@ -101,19 +103,19 @@ class UsabilityResetCommand extends Command
 
             // 5. Courses (deletes before Users to satisfy FK on teacher)
             if ($schoolIds) {
-                $this->em->createQuery('DELETE FROM ' . Course::class . ' c WHERE c.school IN (:ids)')
+                $this->em->createQuery('DELETE FROM '.Course::class.' c WHERE c.school IN (:ids)')
                     ->setParameter('ids', $schoolIds)->execute();
             }
 
             // 6a. InterestProfile (DQL bulk delete bypasses ORM cascade)
             if ($userIds) {
-                $this->em->createQuery('DELETE FROM ' . InterestProfile::class . ' ip WHERE ip.student IN (:ids)')
+                $this->em->createQuery('DELETE FROM '.InterestProfile::class.' ip WHERE ip.student IN (:ids)')
                     ->setParameter('ids', $userIds)->execute();
             }
 
             // 6b. Users
             if ($userIds) {
-                $this->em->createQuery('DELETE FROM ' . User::class . ' u WHERE u.id IN (:ids)')
+                $this->em->createQuery('DELETE FROM '.User::class.' u WHERE u.id IN (:ids)')
                     ->setParameter('ids', $userIds)->execute();
             }
 

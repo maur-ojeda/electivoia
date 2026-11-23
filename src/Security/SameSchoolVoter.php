@@ -17,7 +17,7 @@ class SameSchoolVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return $attribute === self::ATTRIBUTE && $subject !== null;
+        return self::ATTRIBUTE === $attribute && null !== $subject;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token): bool
@@ -33,12 +33,12 @@ class SameSchoolVoter extends Voter
         }
 
         $userSchool = $user->getSchool();
-        if ($userSchool === null) {
+        if (null === $userSchool) {
             return true; // no school on user → global actor
         }
 
         $entitySchool = $this->resolveSchool($subject);
-        if ($entitySchool === null) {
+        if (null === $entitySchool) {
             return true; // entity has no school → tenant-agnostic
         }
 
@@ -51,13 +51,14 @@ class SameSchoolVoter extends Voter
             return $entity->getSchool();
         }
         // Enrollment → Course → School
-        if (method_exists($entity, 'getCourse') && $entity->getCourse() !== null) {
+        if (method_exists($entity, 'getCourse') && null !== $entity->getCourse()) {
             return $entity->getCourse()->getSchool();
         }
         // InterestProfile → Student(User) → School
-        if (method_exists($entity, 'getStudent') && $entity->getStudent() !== null) {
+        if (method_exists($entity, 'getStudent') && null !== $entity->getStudent()) {
             return $entity->getStudent()->getSchool();
         }
+
         return null;
     }
 }

@@ -3,26 +3,25 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Enrollment;
+use App\Entity\User;
 use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
-use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
+use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\EntityFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Component\HttpFoundation\RequestStack;
-use App\Entity\User;
 use Symfony\Component\Routing\RouterInterface;
 
 class EnrollmentCrudController extends AbstractCrudController
@@ -32,11 +31,12 @@ class EnrollmentCrudController extends AbstractCrudController
         private AdminUrlGenerator $adminUrlGenerator,
         private RequestStack $requestStack,
         private RouterInterface $router,
-    ) {}
+    ) {
+    }
 
     public function persistEntity(EntityManagerInterface $entityManager, $entity): void
     {
-        if ($entity instanceof Enrollment && $entity->getEnrolledAt() === null) {
+        if ($entity instanceof Enrollment && null === $entity->getEnrolledAt()) {
             $entity->setEnrolledAt(new \DateTime());
         }
 
@@ -45,7 +45,7 @@ class EnrollmentCrudController extends AbstractCrudController
 
     public function deleteEntity(EntityManagerInterface $entityManager, $entityInstance): void
     {
-        if ($entityInstance instanceof \App\Entity\Enrollment) {
+        if ($entityInstance instanceof Enrollment) {
             $course = $entityInstance->getCourse();
             if ($course) {
                 $current = $course->getCurrentEnrollment();
@@ -104,15 +104,17 @@ class EnrollmentCrudController extends AbstractCrudController
                         ->setParameter('role', 'ROLE_STUDENT')
                         ->orderBy('u.fullName', 'ASC');
                     $school = $this->tenantContext->getCurrentSchool();
-                    if ($school !== null && !$this->isGranted('ROLE_SUPER_ADMIN')) {
+                    if (null !== $school && !$this->isGranted('ROLE_SUPER_ADMIN')) {
                         $qb->andWhere('u.school = :school')->setParameter('school', $school);
                     }
+
                     return $qb;
                 })
                 ->setFormTypeOption('choice_label', function (?User $user) {
-                    if ($user === null) {
+                    if (null === $user) {
                         return '';
                     }
+
                     return sprintf('%s (%s)', $user->getFullName() ?? 'Sin nombre', $user->getRut() ?? 'Sin RUT');
                 }),
             AssociationField::new('course', 'Curso Inscrito')
@@ -122,9 +124,10 @@ class EnrollmentCrudController extends AbstractCrudController
                         ->where('c.isActive = true')
                         ->orderBy('c.name', 'ASC');
                     $school = $this->tenantContext->getCurrentSchool();
-                    if ($school !== null && !$this->isGranted('ROLE_SUPER_ADMIN')) {
+                    if (null !== $school && !$this->isGranted('ROLE_SUPER_ADMIN')) {
                         $qb->andWhere('c.school = :school')->setParameter('school', $school);
                     }
+
                     return $qb;
                 }),
 
@@ -145,7 +148,7 @@ class EnrollmentCrudController extends AbstractCrudController
     {
         $courseId = $this->getCourseFilterId();
 
-        if ($courseId !== null) {
+        if (null !== $courseId) {
             $exportPdf = Action::new('exportEnrollmentsPdf', 'Exportar PDF', 'fa fa-file-pdf')
                 ->linkToUrl(fn () => $this->generateExportUrl($courseId, 'pdf'));
 
@@ -188,7 +191,7 @@ class EnrollmentCrudController extends AbstractCrudController
     {
         $courseId = $this->getCourseFilterId();
 
-        if ($courseId === null) {
+        if (null === $courseId) {
             throw $this->createNotFoundException('Seleccioná un curso para exportar.');
         }
 

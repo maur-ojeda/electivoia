@@ -11,7 +11,9 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
-    public function __construct(private UserPasswordHasherInterface $passwordHasher) {}
+    public function __construct(private UserPasswordHasherInterface $passwordHasher)
+    {
+    }
 
     public function load(ObjectManager $manager): void
     {
@@ -170,7 +172,9 @@ class AppFixtures extends Fixture
 
         foreach ($coursesData as $categoryName => $courseNames) {
             $category = $categories[$categoryName] ?? null;
-            if (!$category) continue;
+            if (!$category) {
+                continue;
+            }
 
             foreach ($courseNames as $courseName) {
                 $course = new Course();

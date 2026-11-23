@@ -8,7 +8,6 @@ use App\Repository\EnrollmentRepository;
 use App\Service\GeminiChatbotService;
 use App\Service\TenantContext;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -21,12 +20,12 @@ class ChatbotControllerTest extends TestCase
     public function testUnauthenticatedRequestReturns401(): void
     {
         $controller = $this->createController(user: null);
-        
+
         $request = new Request([], [], [], [], [], [], json_encode(['message' => 'Hola']));
         $request->headers->set('Content-Type', 'application/json');
-        
+
         $response = $controller->chat($request, $this->createMock(GeminiChatbotService::class));
-        
+
         $this->assertEquals(401, $response->getStatusCode());
         $data = json_decode($response->getContent(), true);
         $this->assertFalse($data['success']);
@@ -36,12 +35,12 @@ class ChatbotControllerTest extends TestCase
     public function testEmptyMessageReturns400(): void
     {
         $controller = $this->createController();
-        
+
         $request = new Request([], [], [], [], [], [], json_encode(['message' => '']));
         $request->headers->set('Content-Type', 'application/json');
-        
+
         $response = $controller->chat($request, $this->createMock(GeminiChatbotService::class));
-        
+
         $this->assertEquals(400, $response->getStatusCode());
         $data = json_decode($response->getContent(), true);
         $this->assertFalse($data['success']);
@@ -52,9 +51,9 @@ class ChatbotControllerTest extends TestCase
         $user = $this->createMock(User::class);
         $user->method('getFullName')->willReturn('Juan Pérez');
         $user->method('getGrade')->willReturn('3B');
-        
+
         $controller = $this->createController(user: $user);
-        
+
         $chatbotService = $this->createMock(GeminiChatbotService::class);
         $chatbotService
             ->expects($this->once())
@@ -63,18 +62,18 @@ class ChatbotControllerTest extends TestCase
                 $this->equalTo('¿Qué cursos hay?'),
                 $this->anything(),
                 $this->callback(function ($context) {
-                    return $context['name'] === 'Juan Pérez' 
-                        && $context['grade'] === '3B';
+                    return 'Juan Pérez' === $context['name']
+                        && '3B' === $context['grade'];
                 }),
                 $this->identicalTo($user)
             )
             ->willReturn(['success' => true, 'message' => 'Tenemos varios cursos.']);
-        
+
         $request = new Request([], [], [], [], [], [], json_encode(['message' => '¿Qué cursos hay?']));
         $request->headers->set('Content-Type', 'application/json');
-        
+
         $response = $controller->chat($request, $chatbotService);
-        
+
         $this->assertEquals(200, $response->getStatusCode());
         $data = json_decode($response->getContent(), true);
         $this->assertTrue($data['success']);
@@ -91,12 +90,12 @@ class ChatbotControllerTest extends TestCase
         $chatbotService
             ->method('chat')
             ->willReturn(['success' => true, 'message' => 'Respuesta 1']);
-        
+
         // First message
         $request1 = new Request([], [], [], [], [], [], json_encode(['message' => 'Hola']));
         $request1->headers->set('Content-Type', 'application/json');
         $controller->chat($request1, $chatbotService);
-        
+
         // Verify history stored
         $session = $this->controllerRequest->getSession();
         $history = $session->get('chatbot_history', []);
@@ -108,17 +107,17 @@ class ChatbotControllerTest extends TestCase
     public function testClearHistoryRemovesSessionData(): void
     {
         $controller = $this->createController();
-        
+
         // Add some history first
         $session = $this->controllerRequest->getSession();
         $session->set('chatbot_history', [['user' => 'Hola', 'bot' => 'Hola!']]);
-        
+
         $response = $controller->clearHistory();
-        
+
         $this->assertEquals(200, $response->getStatusCode());
         $data = json_decode($response->getContent(), true);
         $this->assertTrue($data['success']);
-        
+
         $this->assertEmpty($session->get('chatbot_history'));
     }
 
@@ -126,15 +125,15 @@ class ChatbotControllerTest extends TestCase
     {
         $user = $this->createMock(User::class);
         $user->method('getFullName')->willReturn('María');
-        
+
         $school = $this->createMock(\App\Entity\School::class);
         $school->method('isEnrollmentOpen')->willReturn(true);
-        
+
         $tenantContext = $this->createMock(TenantContext::class);
         $tenantContext->method('getCurrentSchool')->willReturn($school);
-        
+
         $controller = $this->createController(user: $user, tenantContext: $tenantContext);
-        
+
         $capturedContext = null;
         $chatbotService = $this->createMock(GeminiChatbotService::class);
         $chatbotService
@@ -142,13 +141,14 @@ class ChatbotControllerTest extends TestCase
             ->method('chat')
             ->willReturnCallback(function ($message, $history, $context) use (&$capturedContext) {
                 $capturedContext = $context;
+
                 return ['success' => true, 'message' => 'Ok'];
             });
-        
+
         $request = new Request([], [], [], [], [], [], json_encode(['message' => 'Hola']));
         $request->headers->set('Content-Type', 'application/json');
         $controller->chat($request, $chatbotService);
-        
+
         $this->assertTrue($capturedContext['enrollmentOpen']);
     }
 
@@ -156,12 +156,12 @@ class ChatbotControllerTest extends TestCase
     {
         $user = $this->createMock(User::class);
         $user->method('getFullName')->willReturn('Pedro');
-        
+
         $enrollmentRepo = $this->createMock(EnrollmentRepository::class);
         $enrollmentRepo->method('findBy')->willReturn([]);
-        
+
         $controller = $this->createController(user: $user, enrollmentRepo: $enrollmentRepo);
-        
+
         $capturedContext = null;
         $chatbotService = $this->createMock(GeminiChatbotService::class);
         $chatbotService
@@ -169,20 +169,21 @@ class ChatbotControllerTest extends TestCase
             ->method('chat')
             ->willReturnCallback(function ($message, $history, $context) use (&$capturedContext) {
                 $capturedContext = $context;
+
                 return ['success' => true, 'message' => 'Ok'];
             });
-        
+
         $request = new Request([], [], [], [], [], [], json_encode(['message' => 'Hola']));
         $request->headers->set('Content-Type', 'application/json');
         $controller->chat($request, $chatbotService);
-        
+
         $this->assertEmpty($capturedContext['enrolledCourses']);
     }
 
     private function createController(
         ?User $user = null,
         ?TenantContext $tenantContext = null,
-        ?EnrollmentRepository $enrollmentRepo = null
+        ?EnrollmentRepository $enrollmentRepo = null,
     ): ChatbotController {
         $requestStack = new RequestStack();
         $this->controllerRequest = new Request();
@@ -191,12 +192,12 @@ class ChatbotControllerTest extends TestCase
         ));
         $requestStack->push($this->controllerRequest);
 
-        if ($tenantContext === null) {
+        if (null === $tenantContext) {
             $tenantContext = $this->createMock(TenantContext::class);
             $tenantContext->method('getCurrentSchool')->willReturn(null);
         }
 
-        if ($enrollmentRepo === null) {
+        if (null === $enrollmentRepo) {
             $enrollmentRepo = $this->createMock(EnrollmentRepository::class);
             $enrollmentRepo->method('findBy')->willReturn([]);
         }
@@ -205,7 +206,7 @@ class ChatbotControllerTest extends TestCase
 
         // AbstractController::getUser() requires a container — always set one.
         $tokenStorage = $this->createMock(TokenStorageInterface::class);
-        if ($user !== null) {
+        if (null !== $user) {
             $token = $this->createMock(TokenInterface::class);
             $token->method('getUser')->willReturn($user);
             $tokenStorage->method('getToken')->willReturn($token);
@@ -219,6 +220,7 @@ class ChatbotControllerTest extends TestCase
     {
         $container = new \Symfony\Component\DependencyInjection\Container();
         $container->set('security.token_storage', $tokenStorage);
+
         return $container;
     }
 }

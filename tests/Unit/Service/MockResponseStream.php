@@ -15,11 +15,32 @@ class MockResponseStream implements ResponseStreamInterface, \Iterator
     private int $position = 0;
 
     /** @param ChunkInterface[] $chunks */
-    public function __construct(private readonly array $chunks) {}
+    public function __construct(private readonly array $chunks)
+    {
+    }
 
-    public function current(): ChunkInterface { return $this->chunks[$this->position]; }
-    public function key(): ResponseInterface   { throw new \LogicException('key() not used in service'); }
-    public function next(): void               { $this->position++; }
-    public function valid(): bool              { return isset($this->chunks[$this->position]); }
-    public function rewind(): void             { $this->position = 0; }
+    public function current(): ChunkInterface
+    {
+        return $this->chunks[$this->position];
+    }
+
+    public function key(): ResponseInterface
+    {
+        throw new \LogicException('key() not used in service');
+    }
+
+    public function next(): void
+    {
+        ++$this->position;
+    }
+
+    public function valid(): bool
+    {
+        return isset($this->chunks[$this->position]);
+    }
+
+    public function rewind(): void
+    {
+        $this->position = 0;
+    }
 }

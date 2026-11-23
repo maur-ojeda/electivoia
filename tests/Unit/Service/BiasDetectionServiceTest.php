@@ -52,6 +52,7 @@ class BiasDetectionServiceTest extends TestCase
     {
         $school = $this->createMock(School::class);
         $school->method('getId')->willReturn($id);
+
         return $school;
     }
 
