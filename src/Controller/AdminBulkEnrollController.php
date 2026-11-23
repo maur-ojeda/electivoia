@@ -19,7 +19,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminBulkEnrollController extends AbstractController
 {
-    public function __construct(private TenantContext $tenantContext) {}
+    public function __construct(private TenantContext $tenantContext)
+    {
+    }
 
     #[Route('/bulk', name: 'bulk', methods: ['GET', 'POST'])]
     public function bulk(Request $request, EntityManagerInterface $em): Response
@@ -34,17 +36,18 @@ class AdminBulkEnrollController extends AbstractController
         }
 
         $courses = $courseQb->getQuery()->getResult();
-        $grades  = ['3M', '4M'];
-        $result  = null;
+        $grades = ['3M', '4M'];
+        $result = null;
 
         if ($request->isMethod('POST')) {
             $courseId = (int) $request->request->get('course_id');
-            $grade    = $request->request->get('grade');
+            $grade = $request->request->get('grade');
 
             $course = $em->getRepository(Course::class)->find($courseId);
 
             if (!$course) {
                 $this->addFlash('error', 'Curso no encontrado.');
+
                 return $this->redirectToRoute('admin_enrollments_bulk');
             }
 
@@ -57,12 +60,14 @@ class AdminBulkEnrollController extends AbstractController
 
             if (!in_array($grade, $grades)) {
                 $this->addFlash('error', 'Grado inválido.');
+
                 return $this->redirectToRoute('admin_enrollments_bulk');
             }
 
             // Check deadline
             if ($course->getEnrollmentDeadline() && $course->getEnrollmentDeadline() < new \DateTimeImmutable()) {
                 $this->addFlash('error', 'El período de inscripción para este curso ha cerrado.');
+
                 return $this->redirectToRoute('admin_enrollments_bulk');
             }
 
@@ -75,9 +80,9 @@ class AdminBulkEnrollController extends AbstractController
             $rsm->addRootEntityFromClassMetadata(User::class, 'u');
 
             $sql = 'SELECT u.* FROM "user" u'
-                . ' WHERE u.grade = :grade'
-                . ' AND u.active = true'
-                . ' AND CAST(u.roles AS TEXT) LIKE :role';
+                .' WHERE u.grade = :grade'
+                .' AND u.active = true'
+                .' AND CAST(u.roles AS TEXT) LIKE :role';
 
             $params = ['grade' => $grade, 'role' => '%ROLE_STUDENT%'];
 
@@ -90,9 +95,9 @@ class AdminBulkEnrollController extends AbstractController
 
             $students = $em->createNativeQuery($sql, $rsm)->setParameters($params)->getResult();
 
-            $enrolled  = 0;
-            $skipped   = 0; // already enrolled
-            $rejected  = 0; // over capacity
+            $enrolled = 0;
+            $skipped = 0; // already enrolled
+            $rejected = 0; // over capacity
 
             try {
                 $em->beginTransaction();
@@ -111,16 +116,16 @@ class AdminBulkEnrollController extends AbstractController
                     // Already enrolled?
                     $existing = $em->getRepository(Enrollment::class)->findOneBy([
                         'student' => $student,
-                        'course'  => $course,
+                        'course' => $course,
                     ]);
                     if ($existing) {
-                        $skipped++;
+                        ++$skipped;
                         continue;
                     }
 
                     // Once the course is full, skip students without a grade too.
                     if ($currentCount >= $course->getMaxCapacity()) {
-                        $rejected++;
+                        ++$rejected;
                         continue;
                     }
 
@@ -129,8 +134,8 @@ class AdminBulkEnrollController extends AbstractController
                     $enrollment->setCourse($course);
                     $enrollment->setEnrolledAt(new \DateTime());
                     $em->persist($enrollment);
-                    $enrolled++;
-                    $currentCount++;
+                    ++$enrolled;
+                    ++$currentCount;
                 }
 
                 $em->flush();
@@ -138,26 +143,28 @@ class AdminBulkEnrollController extends AbstractController
             } catch (\Doctrine\ORM\PessimisticLockException $e) {
                 $em->rollback();
                 $this->addFlash('error', 'Otro proceso está inscribiendo en este curso. Inténtalo de nuevo.');
+
                 return $this->redirectToRoute('admin_enrollments_bulk');
             } catch (\Doctrine\DBAL\Exception\UniqueConstraintViolationException $e) {
                 $em->rollback();
                 $this->addFlash('error', 'Se detectó una inscripción duplicada. Verifica los datos e inténtalo de nuevo.');
+
                 return $this->redirectToRoute('admin_enrollments_bulk');
             }
 
             $result = [
-                'course'   => $course,
-                'grade'    => $grade,
+                'course' => $course,
+                'grade' => $grade,
                 'enrolled' => $enrolled,
-                'skipped'  => $skipped,
+                'skipped' => $skipped,
                 'rejected' => $rejected,
             ];
         }
 
         return $this->render('admin/bulk_enroll.html.twig', [
             'courses' => $courses,
-            'grades'  => $grades,
-            'result'  => $result,
+            'grades' => $grades,
+            'result' => $result,
         ]);
     }
 }

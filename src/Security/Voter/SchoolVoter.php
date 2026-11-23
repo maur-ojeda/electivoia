@@ -14,8 +14,8 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 class SchoolVoter extends Voter
 {
-    const VIEW = 'school_view';
-    const EDIT = 'school_edit';
+    public const VIEW = 'school_view';
+    public const EDIT = 'school_edit';
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -39,18 +39,18 @@ class SchoolVoter extends Voter
         $userSchool = $user->getSchool();
 
         // No school assigned to user → single-tenant / legacy mode, allow
-        if ($userSchool === null) {
+        if (null === $userSchool) {
             return true;
         }
 
         $resourceSchool = match (true) {
-            $subject instanceof Course     => $subject->getSchool(),
+            $subject instanceof Course => $subject->getSchool(),
             $subject instanceof Enrollment => $subject->getCourse()->getSchool(),
-            default                        => null,
+            default => null,
         };
 
         // Resource not yet assigned to a school → allow
-        if ($resourceSchool === null) {
+        if (null === $resourceSchool) {
             return true;
         }
 

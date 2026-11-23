@@ -44,43 +44,116 @@ class School
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function getId(): ?int { return $this->id; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getName(): string { return $this->name; }
-    public function setName(string $name): static { $this->name = $name; return $this; }
+    public function getName(): string
+    {
+        return $this->name;
+    }
 
-    public function getSlug(): string { return $this->slug; }
-    public function setSlug(string $slug): static { $this->slug = $slug; return $this; }
+    public function setName(string $name): static
+    {
+        $this->name = $name;
 
-    public function getRbd(): ?string { return $this->rbd; }
-    public function setRbd(?string $rbd): static { $this->rbd = $rbd; return $this; }
+        return $this;
+    }
 
-    public function isActive(): bool { return $this->active; }
-    public function setActive(bool $active): static { $this->active = $active; return $this; }
+    public function getSlug(): string
+    {
+        return $this->slug;
+    }
 
-    public function getPlan(): string { return $this->plan; }
-    public function setPlan(string $plan): static { $this->plan = $plan; return $this; }
+    public function setSlug(string $slug): static
+    {
+        $this->slug = $slug;
 
-    public function getEnrollmentStart(): ?\DateTimeImmutable { return $this->enrollmentStart; }
-    public function setEnrollmentStart(?\DateTimeImmutable $enrollmentStart): static { $this->enrollmentStart = $enrollmentStart; return $this; }
+        return $this;
+    }
 
-    public function getEnrollmentEnd(): ?\DateTimeImmutable { return $this->enrollmentEnd; }
-    public function setEnrollmentEnd(?\DateTimeImmutable $enrollmentEnd): static { $this->enrollmentEnd = $enrollmentEnd; return $this; }
+    public function getRbd(): ?string
+    {
+        return $this->rbd;
+    }
+
+    public function setRbd(?string $rbd): static
+    {
+        $this->rbd = $rbd;
+
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function setActive(bool $active): static
+    {
+        $this->active = $active;
+
+        return $this;
+    }
+
+    public function getPlan(): string
+    {
+        return $this->plan;
+    }
+
+    public function setPlan(string $plan): static
+    {
+        $this->plan = $plan;
+
+        return $this;
+    }
+
+    public function getEnrollmentStart(): ?\DateTimeImmutable
+    {
+        return $this->enrollmentStart;
+    }
+
+    public function setEnrollmentStart(?\DateTimeImmutable $enrollmentStart): static
+    {
+        $this->enrollmentStart = $enrollmentStart;
+
+        return $this;
+    }
+
+    public function getEnrollmentEnd(): ?\DateTimeImmutable
+    {
+        return $this->enrollmentEnd;
+    }
+
+    public function setEnrollmentEnd(?\DateTimeImmutable $enrollmentEnd): static
+    {
+        $this->enrollmentEnd = $enrollmentEnd;
+
+        return $this;
+    }
 
     /** Returns true when the global enrollment window is currently open (or not configured). */
     public function isEnrollmentOpen(): bool
     {
         $now = new \DateTimeImmutable();
-        if ($this->enrollmentStart !== null && $now < $this->enrollmentStart) {
+        if (null !== $this->enrollmentStart && $now < $this->enrollmentStart) {
             return false;
         }
-        if ($this->enrollmentEnd !== null && $now > $this->enrollmentEnd) {
+        if (null !== $this->enrollmentEnd && $now > $this->enrollmentEnd) {
             return false;
         }
+
         return true;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable { return $this->createdAt; }
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
 
-    public function __toString(): string { return $this->name; }
+    public function __toString(): string
+    {
+        return $this->name;
+    }
 }

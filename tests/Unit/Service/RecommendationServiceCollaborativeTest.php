@@ -8,10 +8,10 @@ use App\Entity\Enrollment;
 use App\Entity\InterestProfile;
 use App\Entity\School;
 use App\Entity\User;
+use App\Repository\AiSignalRepository;
 use App\Repository\CourseRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\InterestProfileRepository;
-use App\Repository\AiSignalRepository;
 use App\Service\RecommendationService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -70,7 +70,7 @@ class RecommendationServiceCollaborativeTest extends TestCase
             $student->method('getInterestProfile')->willReturn(null);
         }
 
-        if ($schoolId !== null) {
+        if (null !== $schoolId) {
             $school = $this->createMock(School::class);
             $school->method('getId')->willReturn($schoolId);
             $student->method('getSchool')->willReturn($school);
@@ -124,7 +124,7 @@ class RecommendationServiceCollaborativeTest extends TestCase
         $course->method('getTargetGrades')->willReturn($targetGrades);
         $course->method('isActive')->willReturn($isActive);
 
-        if ($categoryName !== null) {
+        if (null !== $categoryName) {
             $category = $this->createMock(CourseCategory::class);
             $category->method('getName')->willReturn($categoryName);
             $course->method('getCategory')->willReturn($category);

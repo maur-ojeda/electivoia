@@ -44,10 +44,10 @@ class InterestProfileRepository extends ServiceEntityRepository
     {
         return (int) $this->getEntityManager()->getConnection()->fetchOne(
             'SELECT COUNT(DISTINCT ip.id)'
-            . ' FROM interest_profile ip'
-            . ' INNER JOIN "user" s ON s.id = ip.student_id'
-            . ' WHERE s.school_id = :schoolId'
-            . ' AND (ip.interests::jsonb ->> :key)::float >= :minLevel',
+            .' FROM interest_profile ip'
+            .' INNER JOIN "user" s ON s.id = ip.student_id'
+            .' WHERE s.school_id = :schoolId'
+            .' AND (ip.interests::jsonb ->> :key)::float >= :minLevel',
             ['schoolId' => $schoolId, 'key' => $categoryName, 'minLevel' => $minLevel]
         );
     }

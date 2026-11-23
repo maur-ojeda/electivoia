@@ -72,6 +72,7 @@ class MagicLinkController extends AbstractController
         // Symfony intercepts valid links before reaching here.
         // Reaching here means the link was invalid or expired.
         $this->addFlash('error', 'El enlace de acceso ha expirado o ya fue utilizado. Solicita uno nuevo.');
+
         return $this->redirectToRoute('magic_login');
     }
 }

@@ -63,7 +63,7 @@ class Enrollment
     #[ORM\PrePersist]
     public function setEnrolledAtOnCreate(): void
     {
-        if ($this->enrolledAt === null) {
+        if (null === $this->enrolledAt) {
             $this->enrolledAt = new \DateTime();
         }
     }

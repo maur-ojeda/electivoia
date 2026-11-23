@@ -15,9 +15,9 @@ class InterestProfile
 
     /**
      * @var ?User
-     * Relación OneToOne: El perfil de interés pertenece a un estudiante.
-     * Este es el LADO PROPIETARIO, por lo que lleva inversedBy y JoinColumn.
-     * El valor 'interestProfile' debe coincidir con el nombre de la propiedad en User.php.
+     *            Relación OneToOne: El perfil de interés pertenece a un estudiante.
+     *            Este es el LADO PROPIETARIO, por lo que lleva inversedBy y JoinColumn.
+     *            El valor 'interestProfile' debe coincidir con el nombre de la propiedad en User.php.
      */
     #[ORM\OneToOne(inversedBy: 'interestProfile', targetEntity: User::class, cascade: ['persist', 'remove'])]
     #[ORM\JoinColumn(nullable: false)]
@@ -64,8 +64,9 @@ class InterestProfile
         // Format: "Filosofía:3, Historia:5, ..."
         $parts = [];
         foreach ($this->interests as $category => $score) {
-            $parts[] = $category . ':' . $score;
+            $parts[] = $category.':'.$score;
         }
+
         return implode(', ', $parts);
     }
 }

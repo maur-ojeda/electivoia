@@ -27,7 +27,7 @@ class TenantContext
 
     public function hasSchool(): bool
     {
-        return $this->currentSchool !== null;
+        return null !== $this->currentSchool;
     }
 
     public function reset(): void

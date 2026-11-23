@@ -35,6 +35,7 @@ class EnrollmentService
      *
      * @param string|null $category Filter by category name
      * @param string|null $search   Search term for name or description
+     *
      * @return array{courses: array<int, array{id: int, name: string, category: string|null, teacher: string, schedule: string|null, capacity: string, spots_available: int, enrolled: bool}>, total: int}
      */
     public function getAvailableCourses(?string $category = null, ?string $search = null): array
@@ -57,7 +58,7 @@ class EnrollmentService
                 'category' => $cat?->getName(),
                 'teacher' => $teacher ? $teacher->getFullName() : '',
                 'schedule' => $course->getSchedule(),
-                'capacity' => $course->getCurrentEnrollment() . '/' . $course->getMaxCapacity(),
+                'capacity' => $course->getCurrentEnrollment().'/'.$course->getMaxCapacity(),
                 'spots_available' => $spotsAvailable,
             ];
         }
@@ -77,7 +78,7 @@ class EnrollmentService
     {
         $course = $this->courseRepository->find($courseId);
 
-        if ($course === null) {
+        if (null === $course) {
             return [
                 'id' => 0,
                 'name' => '',
@@ -118,7 +119,7 @@ class EnrollmentService
             'category' => $cat?->getName(),
             'teacher' => $teacher ? $teacher->getFullName() : '',
             'schedule' => $course->getSchedule(),
-            'capacity' => $course->getCurrentEnrollment() . '/' . $course->getMaxCapacity(),
+            'capacity' => $course->getCurrentEnrollment().'/'.$course->getMaxCapacity(),
             'spots_available' => $spotsAvailable,
             'enrolled' => $enrolled,
             'can_enroll' => $canEnroll,
@@ -136,7 +137,7 @@ class EnrollmentService
             'course' => $course,
         ]);
 
-        return $enrollment !== null;
+        return null !== $enrollment;
     }
 
     public function enrollStudent(User $student, Course $course): array // Devuelve un array con resultado y mensaje
@@ -174,62 +175,61 @@ class EnrollmentService
             $this->notificationService->sendEnrollmentConfirmation($student, $course);
 
             return ['success' => true, 'message' => 'Inscripción exitosa.'];
-        } else {
-            // No hay cupo, aplicar regla de prioridad
-            $averageGradeStudent = $student->getAverageGrade();
+        }
+        // No hay cupo, aplicar regla de prioridad
+        $averageGradeStudent = $student->getAverageGrade();
 
-            if ($averageGradeStudent === null) {
-                // Opcional: Si no tiene promedio, no puede inscribirse si está lleno
-                // return ['success' => false, 'message' => 'No puedes inscribirte en un curso lleno sin un promedio de notas registrado.'];
+        if (null === $averageGradeStudent) {
+            // Opcional: Si no tiene promedio, no puede inscribirse si está lleno
+            // return ['success' => false, 'message' => 'No puedes inscribirte en un curso lleno sin un promedio de notas registrado.'];
 
-                // Opcional: Si no tiene promedio, se le da la menor prioridad (no se inscribe)
-                return ['success' => false, 'message' => 'No puedes inscribirte en un curso lleno sin un promedio de notas registrado.'];
-            }
+            // Opcional: Si no tiene promedio, se le da la menor prioridad (no se inscribe)
+            return ['success' => false, 'message' => 'No puedes inscribirte en un curso lleno sin un promedio de notas registrado.'];
+        }
 
-            // Buscar inscripciones en este curso ordenadas por promedio de forma ascendente (menor promedio primero)
-            $enrollmentsInCourse = $this->enrollmentRepository->findEnrollmentsByCourseOrderedByGradeAsc($course); // Necesitas crear este método en el repositorio
+        // Buscar inscripciones en este curso ordenadas por promedio de forma ascendente (menor promedio primero)
+        $enrollmentsInCourse = $this->enrollmentRepository->findEnrollmentsByCourseOrderedByGradeAsc($course); // Necesitas crear este método en el repositorio
 
-            $displacedStudent = null;
-            $displacedEnrollment = null;
+        $displacedStudent = null;
+        $displacedEnrollment = null;
 
-            foreach ($enrollmentsInCourse as $enrollment) {
-                $currentStudent = $enrollment->getStudent();
-                $currentStudentGrade = $currentStudent->getAverageGrade();
+        foreach ($enrollmentsInCourse as $enrollment) {
+            $currentStudent = $enrollment->getStudent();
+            $currentStudentGrade = $currentStudent->getAverageGrade();
 
-                // Si el estudiante actual no tiene promedio o tiene uno menor, es candidato a ser desplazado
-                if ($currentStudentGrade === null || $averageGradeStudent > $currentStudentGrade) {
-                    $displacedStudent = $currentStudent;
-                    $displacedEnrollment = $enrollment;
-                    break; // El primero encontrado con menor promedio (o sin promedio) es el que se va
-                }
-            }
-
-            if ($displacedStudent) {
-                // Desplazar al estudiante con menor promedio
-                $this->entityManager->remove($displacedEnrollment);
-
-                // Crear nueva inscripción para el estudiante con mayor promedio
-                $newEnrollment = new Enrollment();
-                $newEnrollment->setStudent($student);
-                $newEnrollment->setCourse($course);
-                $newEnrollment->setEnrolledAt(new \DateTime());
-
-                $this->entityManager->persist($newEnrollment);
-
-                $this->entityManager->flush();
-
-                $this->notificationService->sendEnrollmentDisplaced($displacedStudent, $student, $course);
-                $this->notificationService->sendEnrollmentConfirmation($student, $course);
-
-                return [
-                    'success' => true,
-                    'message' => "Inscripción exitosa. Has reemplazado a {$displacedStudent->getUserIdentifier()} en el curso.",
-                    'displaced' => $displacedStudent->getUserIdentifier(),
-                ];
-            } else {
-                // Nadie tiene menor promedio, no se puede inscribir
-                return ['success' => false, 'message' => 'No hay cupo disponible y no tienes prioridad suficiente (promedio de notas).'];
+            // Si el estudiante actual no tiene promedio o tiene uno menor, es candidato a ser desplazado
+            if (null === $currentStudentGrade || $averageGradeStudent > $currentStudentGrade) {
+                $displacedStudent = $currentStudent;
+                $displacedEnrollment = $enrollment;
+                break; // El primero encontrado con menor promedio (o sin promedio) es el que se va
             }
         }
+
+        if ($displacedStudent) {
+            // Desplazar al estudiante con menor promedio
+            $this->entityManager->remove($displacedEnrollment);
+
+            // Crear nueva inscripción para el estudiante con mayor promedio
+            $newEnrollment = new Enrollment();
+            $newEnrollment->setStudent($student);
+            $newEnrollment->setCourse($course);
+            $newEnrollment->setEnrolledAt(new \DateTime());
+
+            $this->entityManager->persist($newEnrollment);
+
+            $this->entityManager->flush();
+
+            $this->notificationService->sendEnrollmentDisplaced($displacedStudent, $student, $course);
+            $this->notificationService->sendEnrollmentConfirmation($student, $course);
+
+            return [
+                'success' => true,
+                'message' => "Inscripción exitosa. Has reemplazado a {$displacedStudent->getUserIdentifier()} en el curso.",
+                'displaced' => $displacedStudent->getUserIdentifier(),
+            ];
+        }
+
+        // Nadie tiene menor promedio, no se puede inscribir
+        return ['success' => false, 'message' => 'No hay cupo disponible y no tienes prioridad suficiente (promedio de notas).'];
     }
 }

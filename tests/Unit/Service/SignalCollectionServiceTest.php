@@ -4,7 +4,6 @@ namespace App\Tests\Unit\Service;
 
 use App\Entity\AiSignal;
 use App\Entity\Course;
-use App\Entity\School;
 use App\Entity\User;
 use App\Repository\AiSignalRepository;
 use App\Service\SignalCollectionService;
@@ -50,8 +49,8 @@ class SignalCollectionServiceTest extends TestCase
             ->with($this->callback(function (AiSignal $signal) use ($student, $course): bool {
                 return $signal->getStudent() === $student
                     && $signal->getCourse() === $course
-                    && $signal->getAction() === AiSignal::ACTION_VIEW
-                    && $signal->getCreatedAt() !== null;
+                    && AiSignal::ACTION_VIEW === $signal->getAction()
+                    && null !== $signal->getCreatedAt();
             }));
 
         $signal = $this->service->record($student, AiSignal::ACTION_VIEW, $course);

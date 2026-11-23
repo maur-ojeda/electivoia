@@ -8,12 +8,12 @@ use Doctrine\ORM\Query\SqlWalker;
 use Doctrine\ORM\Query\TokenType;
 
 /**
- * JsonbExists ::= "JSONB_EXISTS" "(" ArithmeticPrimary "," StringPrimary ")"
+ * JsonbExists ::= "JSONB_EXISTS" "(" ArithmeticPrimary "," StringPrimary ")".
  */
 class JsonbExists extends FunctionNode
 {
-    public $jsonField = null;
-    public $key = null;
+    public $jsonField;
+    public $key;
 
     public function parse(Parser $parser): void
     {

@@ -46,6 +46,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         $user = $this->createMock(User::class);
         $user->method('getId')->willReturn($id);
         $user->method('getUserIdentifier')->willReturn($identifier);
+
         return $user;
     }
 
@@ -62,6 +63,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         $course->method('getMaxCapacity')->willReturn($maxCapacity);
         $course->method('getCurrentEnrollment')->willReturn($currentEnrollment);
         $course->method('isActive')->willReturn($isActive);
+
         return $course;
     }
 
@@ -70,6 +72,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
     {
         $response = $this->createMock(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(200);
+
         return $response;
     }
 
@@ -81,6 +84,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         $chunk->method('isTimeout')->willReturn(false);
         $chunk->method('isLast')->willReturn(false);
         $chunk->method('getContent')->willReturn("data: {$data}\ndata: [DONE]\n");
+
         return $chunk;
     }
 
@@ -92,8 +96,8 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             'choices' => [[
                 'delta' => [
                     'tool_calls' => [[
-                        'index'    => 0,
-                        'id'       => 'call_' . $toolName,
+                        'index' => 0,
+                        'id' => 'call_'.$toolName,
                         'function' => ['name' => $toolName, 'arguments' => $argsJson],
                     ]],
                 ],
@@ -103,6 +107,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         $chunk->method('isTimeout')->willReturn(false);
         $chunk->method('isLast')->willReturn(false);
         $chunk->method('getContent')->willReturn("data: {$data}\ndata: [DONE]\n");
+
         return $chunk;
     }
 
@@ -115,14 +120,14 @@ class GeminiChatbotServiceToolCallTest extends TestCase
     private function setupStreamSequence(array $sequence): void
     {
         $responses = [];
-        $chunkMap  = [];
+        $chunkMap = [];
 
         foreach ($sequence as $item) {
             $response = $this->makeStreamResponse();
-            $chunk    = $item['type'] === 'text'
+            $chunk = 'text' === $item['type']
                 ? $this->makeTextChunk($item['text'])
                 : $this->makeToolCallChunk($item['name'], $item['args'] ?? []);
-            $responses[]                      = $response;
+            $responses[] = $response;
             $chunkMap[spl_object_id($response)] = [$chunk];
         }
 
@@ -294,7 +299,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testConfirmEnrollmentActuallyEnrolls(): void
     {
-        $user   = $this->createUser();
+        $user = $this->createUser();
         $course = $this->createCourse();
 
         $this->courseRepository->expects($this->atLeastOnce())->method('find')->with(1)->willReturn($course);
@@ -317,7 +322,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testConfirmEnrollmentHandlesFailure(): void
     {
-        $user   = $this->createUser();
+        $user = $this->createUser();
         $course = $this->createCourse(currentEnrollment: 25, maxCapacity: 25);
 
         $this->courseRepository->method('find')->with(1)->willReturn($course);
@@ -368,15 +373,16 @@ class GeminiChatbotServiceToolCallTest extends TestCase
 
     public function testToolDeclarationsAreIncludedInRequest(): void
     {
-        $capturedJson  = null;
-        $response      = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $capturedJson = null;
+        $response = $this->createMock(ResponseInterface::class);
         $response->method('getStatusCode')->willReturn(200);
-        $chunk         = $this->makeTextChunk('Hola');
+        $chunk = $this->makeTextChunk('Hola');
 
         $this->httpClient
             ->method('request')
             ->willReturnCallback(function ($method, $url, $options) use (&$capturedJson, $response) {
                 $capturedJson = $options['json'];
+
                 return $response;
             });
         $this->httpClient->method('stream')->willReturn(new MockResponseStream([$chunk]));
@@ -387,7 +393,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         $this->assertArrayHasKey('tools', $capturedJson);
         $this->assertCount(4, $capturedJson['tools']);
 
-        $toolNames = array_map(fn($t) => $t['function']['name'], $capturedJson['tools']);
+        $toolNames = array_map(fn ($t) => $t['function']['name'], $capturedJson['tools']);
         $this->assertContains('get_available_courses', $toolNames);
         $this->assertContains('get_course_details', $toolNames);
         $this->assertContains('enroll_in_course', $toolNames);
@@ -407,29 +413,30 @@ class GeminiChatbotServiceToolCallTest extends TestCase
             ->willReturn(['courses' => [], 'total' => 0]);
 
         $capturedMessages = [];
-        $callIndex        = 0;
-        $responses        = [];
-        $chunkMap         = [];
+        $callIndex = 0;
+        $responses = [];
+        $chunkMap = [];
 
-        $resp1  = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $resp1 = $this->createMock(ResponseInterface::class);
         $resp1->method('getStatusCode')->willReturn(200);
         $chunk1 = $this->makeToolCallChunk('get_available_courses', []);
-        $resp2  = $this->createMock(\Symfony\Contracts\HttpClient\ResponseInterface::class);
+        $resp2 = $this->createMock(ResponseInterface::class);
         $resp2->method('getStatusCode')->willReturn(200);
         $chunk2 = $this->makeTextChunk('No hay cursos.');
 
         $responses = [$resp1, $resp2];
-        $chunkMap  = [spl_object_id($resp1) => [$chunk1], spl_object_id($resp2) => [$chunk2]];
+        $chunkMap = [spl_object_id($resp1) => [$chunk1], spl_object_id($resp2) => [$chunk2]];
 
         $this->httpClient
             ->method('request')
             ->willReturnCallback(function ($m, $u, $options) use (&$capturedMessages, &$callIndex, $responses) {
                 $capturedMessages = $options['json']['messages'] ?? [];
+
                 return $responses[$callIndex++];
             });
         $this->httpClient
             ->method('stream')
-            ->willReturnCallback(fn($r) => new MockResponseStream($chunkMap[spl_object_id($r)] ?? []));
+            ->willReturnCallback(fn ($r) => new MockResponseStream($chunkMap[spl_object_id($r)] ?? []));
 
         $this->service->chat('Dame cursos');
 
@@ -439,7 +446,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         // Find the assistant message with tool_calls
         $assistantMsg = null;
         foreach ($capturedMessages as $msg) {
-            if ($msg['role'] === 'assistant' && isset($msg['tool_calls'])) {
+            if ('assistant' === $msg['role'] && isset($msg['tool_calls'])) {
                 $assistantMsg = $msg;
                 break;
             }
@@ -450,7 +457,7 @@ class GeminiChatbotServiceToolCallTest extends TestCase
         // Find the tool result message
         $toolMsg = null;
         foreach ($capturedMessages as $msg) {
-            if ($msg['role'] === 'tool') {
+            if ('tool' === $msg['role']) {
                 $toolMsg = $msg;
                 break;
             }

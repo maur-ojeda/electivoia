@@ -18,18 +18,19 @@ class ExportService
         private EntityManagerInterface $em,
         private TenantContext $tenantContext,
         private Environment $twig,
-    ) {}
+    ) {
+    }
 
     public static function getStudentColumnDefinitions(): array
     {
         return [
-            ['key' => '#', 'label' => '#', 'accessor' => fn(array $row, int $idx) => $idx + 1],
-            ['key' => 'rut', 'label' => 'RUT', 'accessor' => fn(array $row) => $row['rut'] ?? ''],
-            ['key' => 'fullName', 'label' => 'Nombre Completo', 'accessor' => fn(array $row) => $row['fullName'] ?? ''],
-            ['key' => 'email', 'label' => 'Email', 'accessor' => fn(array $row) => $row['email'] ?? ''],
-            ['key' => 'courseName', 'label' => 'Curso', 'accessor' => fn(array $row) => $row['courseName'] ?? ''],
-            ['key' => 'averageGrade', 'label' => 'Promedio', 'accessor' => fn(array $row) => $row['averageGrade'] ?? ''],
-            ['key' => 'enrolledAt', 'label' => 'Fecha Inscripción', 'accessor' => fn(array $row) => $row['enrolledAt'] ?? ''],
+            ['key' => '#', 'label' => '#', 'accessor' => fn (array $row, int $idx) => $idx + 1],
+            ['key' => 'rut', 'label' => 'RUT', 'accessor' => fn (array $row) => $row['rut'] ?? ''],
+            ['key' => 'fullName', 'label' => 'Nombre Completo', 'accessor' => fn (array $row) => $row['fullName'] ?? ''],
+            ['key' => 'email', 'label' => 'Email', 'accessor' => fn (array $row) => $row['email'] ?? ''],
+            ['key' => 'courseName', 'label' => 'Curso', 'accessor' => fn (array $row) => $row['courseName'] ?? ''],
+            ['key' => 'averageGrade', 'label' => 'Promedio', 'accessor' => fn (array $row) => $row['averageGrade'] ?? ''],
+            ['key' => 'enrolledAt', 'label' => 'Fecha Inscripción', 'accessor' => fn (array $row) => $row['enrolledAt'] ?? ''],
         ];
     }
 
@@ -59,8 +60,8 @@ class ExportService
                 'fullName' => $student->getFullName() ?? '',
                 'email' => $student->getEmail() ?? '',
                 'courseName' => $course->getName(),
-                'averageGrade' => $student->getAverageGrade() !== null ? (string) $student->getAverageGrade() : '',
-                'enrolledAt' => $enrollment->getEnrolledAt() !== null
+                'averageGrade' => null !== $student->getAverageGrade() ? (string) $student->getAverageGrade() : '',
+                'enrolledAt' => null !== $enrollment->getEnrolledAt()
                     ? $enrollment->getEnrolledAt()->format('d/m/Y')
                     : '',
             ];
@@ -82,7 +83,7 @@ class ExportService
             $col = 1;
             foreach ($columns as $column) {
                 $sheet->setCellValue([$col, 1], $column['label']);
-                $col++;
+                ++$col;
             }
 
             $row = 2;
@@ -91,9 +92,9 @@ class ExportService
                 foreach ($columns as $column) {
                     $value = ($column['accessor'])($record, $rowIndex);
                     $sheet->setCellValue([$col, $row], $value);
-                    $col++;
+                    ++$col;
                 }
-                $row++;
+                ++$row;
             }
 
             $writer = new Xlsx($spreadsheet);
@@ -101,7 +102,7 @@ class ExportService
         });
 
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="' . $filename . '"');
+        $response->headers->set('Content-Disposition', 'attachment;filename="'.$filename.'"');
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
@@ -137,14 +138,14 @@ class ExportService
 
         $output = $dompdf->output();
 
-        $filename = 'alumnos_' . $course->getName() . '.pdf';
+        $filename = 'alumnos_'.$course->getName().'.pdf';
 
         $response = new StreamedResponse(function () use ($output): void {
             echo $output;
         });
 
         $response->headers->set('Content-Type', 'application/pdf');
-        $response->headers->set('Content-Disposition', 'attachment;filename="' . $filename . '"');
+        $response->headers->set('Content-Disposition', 'attachment;filename="'.$filename.'"');
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
@@ -152,6 +153,6 @@ class ExportService
 
     private function isSuperAdmin(): bool
     {
-        return $this->tenantContext->hasSchool() === false;
+        return false === $this->tenantContext->hasSchool();
     }
 }

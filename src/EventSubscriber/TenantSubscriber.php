@@ -16,7 +16,8 @@ class TenantSubscriber implements EventSubscriberInterface
         private TokenStorageInterface $tokenStorage,
         private TenantContext $tenantContext,
         private EntityManagerInterface $entityManager,
-    ) {}
+    ) {
+    }
 
     public static function getSubscribedEvents(): array
     {
@@ -34,7 +35,7 @@ class TenantSubscriber implements EventSubscriberInterface
         }
 
         $token = $this->tokenStorage->getToken();
-        if ($token === null) {
+        if (null === $token) {
             return;
         }
 
@@ -49,7 +50,7 @@ class TenantSubscriber implements EventSubscriberInterface
         $this->entityManager->refresh($user);
 
         $school = $user->getSchool();
-        if ($school !== null) {
+        if (null !== $school) {
             $this->tenantContext->setCurrentSchool($school);
         }
     }

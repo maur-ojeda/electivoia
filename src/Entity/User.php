@@ -15,9 +15,6 @@ use Symfony\Component\Validator\Constraints as Assert; // Importar la validació
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_RUT', fields: ['rut'])] // Cambiar la restricción de unicidad al campo rut
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
-
-
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -40,23 +37,23 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /**
      * @var Collection<int, Course>
-     * Relación: Un profesor tiene muchos cursos
+     *                              Relación: Un profesor tiene muchos cursos
      */
     #[ORM\OneToMany(targetEntity: Course::class, mappedBy: 'teacher')]
     private Collection $coursesAsTeacher;
 
     /**
      * @var Collection<int, Enrollment>
-     * Relación: Un estudiante tiene muchas inscripciones
-     * NOTA: Esta propiedad fue la elegida para mantener la relación con Enrollment,
-     * eliminando la duplicada '$enrollments'.
+     *                                  Relación: Un estudiante tiene muchas inscripciones
+     *                                  NOTA: Esta propiedad fue la elegida para mantener la relación con Enrollment,
+     *                                  eliminando la duplicada '$enrollments'
      */
     #[ORM\OneToMany(targetEntity: Enrollment::class, mappedBy: 'student')]
     private Collection $enrollmentsAsStudent;
 
     /**
      * @var ?InterestProfile
-     * Relación: Un estudiante tiene un perfil de intereses (uno a uno)
+     *                       Relación: Un estudiante tiene un perfil de intereses (uno a uno)
      */
     #[ORM\OneToOne(mappedBy: 'student', targetEntity: InterestProfile::class, cascade: ['persist', 'remove'])]
     private ?InterestProfile $interestProfile = null;
@@ -120,6 +117,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setActive(bool $active): self
     {
         $this->active = $active;
+
         return $this;
     }
 
@@ -139,8 +137,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->id;
     }
 
-  
-   
     public function getEmail(): ?string
     {
         return $this->email;
@@ -149,6 +145,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEmail(?string $email): static
     {
         $this->email = $email;
+
         return $this;
     }
 
@@ -172,6 +169,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
         $roles = $this->roles;
         $roles[] = 'ROLE_USER';
+
         return array_unique($roles);
     }
 
@@ -181,6 +179,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setRoles(array $roles): static
     {
         $this->roles = $roles ?: ['ROLE_USER'];
+
         return $this;
     }
 
@@ -205,13 +204,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __serialize(): array
     {
         $data = (array) $this;
-        $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
+        $data["\0".self::class."\0password"] = hash('crc32c', $this->password);
 
         return $data;
     }
-
-
-
 
     #[\Deprecated]
     public function eraseCredentials(): void
@@ -464,8 +460,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getSchool(): ?School { return $this->school; }
-    public function setSchool(?School $school): static { $this->school = $school; return $this; }
+    public function getSchool(): ?School
+    {
+        return $this->school;
+    }
+
+    public function setSchool(?School $school): static
+    {
+        $this->school = $school;
+
+        return $this;
+    }
 
     // --- Método para generar la URL del avatar ---
     public function getAvatarUrl(?int $size = 200): string
@@ -477,18 +482,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $encodedIdentifier = urlencode($identifier);
 
         // Construir la URL del avatar
-        $avatarUrl = "https://avatar.iran.liara.run/public/";
+        $avatarUrl = 'https://avatar.iran.liara.run/public/';
 
         // Ajustar la URL según el género
         switch (strtolower($genderParam)) {
             case 'f':
-                $avatarUrl .= "girl/";
+                $avatarUrl .= 'girl/';
                 break;
             case 'm':
-                $avatarUrl .= "boy/";
+                $avatarUrl .= 'boy/';
                 break;
             default:
-                $avatarUrl .= "girl/"; // O 'boy/' o un avatar neutro si es 'Otro' o 'Prefiero no decirlo'
+                $avatarUrl .= 'girl/'; // O 'boy/' o un avatar neutro si es 'Otro' o 'Prefiero no decirlo'
                 break;
         }
 
@@ -501,6 +506,4 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $avatarUrl;
     }
     // --- Fin del método de avatar ---
-
-
 }

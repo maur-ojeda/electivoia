@@ -35,7 +35,7 @@ class GuardianController extends AbstractController
                     ['date' => 'DESC']
                 );
                 $total = count($records);
-                $attended = count(array_filter($records, fn($a) => in_array($a->getStatus(), ['present', 'justified'])));
+                $attended = count(array_filter($records, fn ($a) => in_array($a->getStatus(), ['present', 'justified'])));
                 $percentage = $total > 0 ? round($attended / $total * 100) : null;
 
                 $attendanceData[$course->getId()] = [

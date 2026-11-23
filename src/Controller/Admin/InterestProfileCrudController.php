@@ -12,12 +12,13 @@ use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextEditorField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 
 class InterestProfileCrudController extends AbstractCrudController
 {
-    public function __construct(private TenantContext $tenantContext) {}
+    public function __construct(private TenantContext $tenantContext)
+    {
+    }
 
     public static function getEntityFqcn(): string
     {
@@ -55,21 +56,24 @@ class InterestProfileCrudController extends AbstractCrudController
                 ->onlyOnIndex(),
             TextField::new('interestsBadge', 'Intereses')
                 ->formatValue(function ($value) {
-                    if ($value === 'sin-intereses') {
+                    if ('sin-intereses' === $value) {
                         return '<span class="badge bg-secondary">Sin intereses</span>';
                     }
                     $items = explode(', ', $value);
                     $badges = [];
                     foreach ($items as $item) {
-                        if (strpos($item, ':') === false) continue;
+                        if (false === strpos($item, ':')) {
+                            continue;
+                        }
                         [$category, $score] = explode(':', $item, 2);
-                        $color = match(true) {
+                        $color = match (true) {
                             $score >= 4 => 'success',
                             $score >= 2 => 'warning',
                             default => 'secondary',
                         };
                         $badges[] = sprintf('<span class="badge bg-%s me-1">%s: %s</span>', $color, htmlspecialchars($category), $score);
                     }
+
                     return implode(' ', $badges);
                 })
                 ->renderAsHtml(),

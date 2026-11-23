@@ -18,7 +18,9 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
  */
 class AppUserProvider implements UserProviderInterface, PasswordUpgraderInterface
 {
-    public function __construct(private EntityManagerInterface $em) {}
+    public function __construct(private EntityManagerInterface $em)
+    {
+    }
 
     public function loadUserByIdentifier(string $identifier): UserInterface
     {
@@ -26,7 +28,7 @@ class AppUserProvider implements UserProviderInterface, PasswordUpgraderInterfac
 
         $user = $this->em->getRepository(User::class)->findOneBy(['rut' => $normalized]);
 
-        if ($user === null) {
+        if (null === $user) {
             throw new UserNotFoundException(sprintf('RUT "%s" not found.', $normalized));
         }
 
@@ -44,7 +46,7 @@ class AppUserProvider implements UserProviderInterface, PasswordUpgraderInterfac
 
     public function supportsClass(string $class): bool
     {
-        return $class === User::class || is_subclass_of($class, User::class);
+        return User::class === $class || is_subclass_of($class, User::class);
     }
 
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void

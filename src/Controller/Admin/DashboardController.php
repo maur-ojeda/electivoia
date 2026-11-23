@@ -2,15 +2,12 @@
 
 namespace App\Controller\Admin;
 
-use App\Entity\CourseCategory;
-use App\Entity\School;
-use App\Entity\User;
 use App\Entity\Course;
+use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
 use App\Entity\InterestProfile;
-use App\Controller\Admin\CourseCategoryCrudController;
-use App\Controller\Admin\UserCrudController;
-
+use App\Entity\School;
+use App\Entity\User;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Assets;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
@@ -31,7 +28,7 @@ class DashboardController extends AbstractDashboardController
         // action/controller as query params instead of route params; EasyAdmin
         // can't resolve entity context and throws TypeError. Return 404 early.
         $request = $this->container->get('request_stack')->getCurrentRequest();
-        if ($request !== null && ($request->query->has('crudAction') || $request->query->has('crudControllerFqcn'))) {
+        if (null !== $request && ($request->query->has('crudAction') || $request->query->has('crudControllerFqcn'))) {
             throw new NotFoundHttpException('Legacy EasyAdmin URL format is not supported.');
         }
 

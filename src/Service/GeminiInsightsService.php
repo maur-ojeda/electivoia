@@ -7,7 +7,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Calls Gemini to generate natural-language insights from course statistics.
- * HU-33: "Como sistema de reportes, quiero transformar datos brutos en resúmenes en lenguaje natural."
+ * HU-33: "Como sistema de reportes, quiero transformar datos brutos en resúmenes en lenguaje natural.".
  */
 class GeminiInsightsService
 {
@@ -17,11 +17,13 @@ class GeminiInsightsService
     public function __construct(
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
-        private string $aiApiKey
-    ) {}
+        private string $aiApiKey,
+    ) {
+    }
 
     /**
      * @param array $stats Keys: total_courses, total_enrolled, total_capacity, avg_occupancy, by_category
+     *
      * @return array<string> List of insight sentences, or fallback hardcoded insights on error
      */
     public function generateInsights(array $stats): array
@@ -36,17 +38,17 @@ class GeminiInsightsService
             $response = $this->httpClient->request('POST', self::AI_API_URL, [
                 'timeout' => 90,
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $this->aiApiKey,
-                    'Content-Type'  => 'application/json',
+                    'Authorization' => 'Bearer '.$this->aiApiKey,
+                    'Content-Type' => 'application/json',
                 ],
                 'json' => [
-                    'model'    => self::AI_MODEL,
+                    'model' => self::AI_MODEL,
                     'messages' => [
                         ['role' => 'user', 'content' => $prompt],
                     ],
                     'temperature' => 0.4,
-                    'max_tokens'  => 512,
-                    'stream'      => true,
+                    'max_tokens' => 512,
+                    'stream' => true,
                 ],
             ]);
 
@@ -64,11 +66,11 @@ class GeminiInsightsService
                         continue;
                     }
                     $json = ltrim(substr($line, 6));
-                    if ($json === '[DONE]') {
+                    if ('[DONE]' === $json) {
                         break 2;
                     }
                     $data = json_decode($json, true);
-                    if ($data === null) {
+                    if (null === $data) {
                         continue;
                     }
                     $text .= $data['choices'][0]['delta']['content'] ?? '';
@@ -82,12 +84,13 @@ class GeminiInsightsService
             // Split into individual bullets
             $lines = array_filter(
                 array_map('trim', explode("\n", $text)),
-                fn($l) => $l !== ''
+                fn ($l) => '' !== $l
             );
 
             return array_values($lines);
         } catch (\Throwable $e) {
-            $this->logger->warning('GeminiInsightsService error: ' . $e->getMessage());
+            $this->logger->warning('GeminiInsightsService error: '.$e->getMessage());
+
             return $this->fallbackInsights($stats);
         }
     }

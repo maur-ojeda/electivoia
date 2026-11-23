@@ -8,23 +8,21 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FieldCollection;
 use EasyCorp\Bundle\EasyAdminBundle\Collection\FilterCollection;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
+use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\EntityDto;
 use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\ArrayField;
-use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use EasyCorp\Bundle\EasyAdminBundle\Field\BooleanField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\ChoiceField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\EmailField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\NumberField;
+use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Constraints\Regex;
-
 
 class UserCrudController extends AbstractCrudController
 {
@@ -39,8 +37,9 @@ class UserCrudController extends AbstractCrudController
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
         private RequestStack $requestStack,
-        private TenantContext $tenantContext
-    ) {}
+        private TenantContext $tenantContext,
+    ) {
+    }
 
     public function createIndexQueryBuilder(SearchDto $searchDto, EntityDto $entityDto, FieldCollection $fields, FilterCollection $filters): QueryBuilder
     {
@@ -59,7 +58,7 @@ class UserCrudController extends AbstractCrudController
 
     public function persistEntity(EntityManagerInterface $entityManager, $entity): void
     {
-        if ($entity instanceof User && $entity->getSchool() === null && $this->tenantContext->hasSchool()) {
+        if ($entity instanceof User && null === $entity->getSchool() && $this->tenantContext->hasSchool()) {
             $entity->setSchool($this->tenantContext->getCurrentSchool());
         }
 
@@ -67,7 +66,7 @@ class UserCrudController extends AbstractCrudController
         parent::persistEntity($entityManager, $entity);
 
         // Flash message con la contraseña generada para el admin
-        if ($entity instanceof User && $this->getContext()->getCrud()->getCurrentPage() === Crud::PAGE_NEW) {
+        if ($entity instanceof User && Crud::PAGE_NEW === $this->getContext()->getCrud()->getCurrentPage()) {
             $rut = $entity->getRut();
             if ($rut) {
                 $digits = preg_replace('/[^0-9]/', '', $rut);
@@ -103,8 +102,6 @@ class UserCrudController extends AbstractCrudController
             ->add(\App\Filter\RoleFilter::new('roles', 'Rol'));
     }
 
-
-
     // 1. GENERAR CONTRASEÑA TEMPORAL (ahora basada en RUT) Y ASIGNARLA A LA PROPIEDAD NO MAPEADA 'plainPassword'.
     public function createEntity(string $entityFqcn): User
     {
@@ -137,7 +134,7 @@ class UserCrudController extends AbstractCrudController
     {
         // Obtener la entidad actual para lógica condicional
         $currentUser = $this->getContext()?->getEntity()?->getInstance();
-        $isNewPage = $pageName === Crud::PAGE_NEW;
+        $isNewPage = Crud::PAGE_NEW === $pageName;
 
         $fields = [
             IdField::new('id')->onlyOnIndex(),
@@ -154,7 +151,7 @@ class UserCrudController extends AbstractCrudController
                     new Regex(
                         pattern: '/^\d{7,8}-[\dKk]$/',
                         message: 'El RUT debe tener el formato 12345678-9 o 12345678-K.'
-                    )
+                    ),
                 ]),
 
             ChoiceField::new('gender', 'Género')->setChoices([
@@ -164,7 +161,6 @@ class UserCrudController extends AbstractCrudController
                 'Prefiero no decirlo' => 'Prefiero no decirlo',
             ])->allowMultipleChoices(false)->renderAsBadges(),
 
-
             EmailField::new('email', 'Email')
                 ->setRequired(false)
                 ->setHelp('Opcional. Se usará para notificaciones de inscripción.'),
@@ -173,13 +169,12 @@ class UserCrudController extends AbstractCrudController
                 ->setChoices(self::CHILEAN_GRADES)
                 ->allowMultipleChoices(false)
                 ->renderAsNativeWidget(), // Muestra como <select> estándar
-            
+
             NumberField::new('averageGrade', 'Promedio General')
                 ->setNumDecimals(1)
                 ->setHelp('Promedio de notas del estudiante (escala 1.0 - 7.0)'),
-            
-            BooleanField::new('active', 'Activo'), // ← Campo para desactivar
 
+            BooleanField::new('active', 'Activo'), // ← Campo para desactivar
         ];
 
         // --- Campo de Contraseña ---
@@ -201,7 +196,7 @@ class UserCrudController extends AbstractCrudController
                 ->setFormTypeOption('attr', [
                     'type' => 'text',
                     'readonly' => 'readonly',
-                    'style' => 'font-family: monospace; font-size: 1.2em; background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; padding: 8px 12px;' // Estilo para resaltar la contraseña
+                    'style' => 'font-family: monospace; font-size: 1.2em; background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; padding: 8px 12px;', // Estilo para resaltar la contraseña
                 ])
                 // Actualizamos el mensaje para reflejar la nueva lógica
                 ->setHelp("Contraseña generada (primeros 6 dígitos del RUT): <code style='font-family: monospace; font-size: 1.2em; background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px;'>{$generatedPassword}</code>. Anótela si no va a cambiarla manualmente.");
@@ -228,26 +223,27 @@ class UserCrudController extends AbstractCrudController
             ->renderAsBadges();
 
         // Lógica condicional para 'Pupilos' (Guardians)
-        if ($pageName !== Crud::PAGE_NEW) {
+        if (Crud::PAGE_NEW !== $pageName) {
             if ($currentUser instanceof User && in_array('ROLE_GUARDIAN', $currentUser->getRoles())) {
                 $school = $this->tenantContext->getCurrentSchool();
-            $guardianQb = function ($repo) use ($school) {
-                $qb = $repo->createQueryBuilder('u')
-                    ->where('json_array_contains(u.roles, :role) = true')
-                    ->setParameter('role', 'ROLE_STUDENT')
-                    ->orderBy('u.fullName', 'ASC');
-                if ($school !== null) {
-                    $qb->andWhere('u.school = :school')->setParameter('school', $school);
-                }
-                return $qb;
-            };
-            $fields[] = AssociationField::new('guardianStudents', 'Pupilos')
-                    ->setFormTypeOptions([
-                        'by_reference' => false,
-                        'query_builder' => $guardianQb,
-                    ])
-                    ->setHelp('Solo muestra estudiantes del mismo colegio.')
-                    ->onlyOnForms();
+                $guardianQb = function ($repo) use ($school) {
+                    $qb = $repo->createQueryBuilder('u')
+                        ->where('json_array_contains(u.roles, :role) = true')
+                        ->setParameter('role', 'ROLE_STUDENT')
+                        ->orderBy('u.fullName', 'ASC');
+                    if (null !== $school) {
+                        $qb->andWhere('u.school = :school')->setParameter('school', $school);
+                    }
+
+                    return $qb;
+                };
+                $fields[] = AssociationField::new('guardianStudents', 'Pupilos')
+                        ->setFormTypeOptions([
+                            'by_reference' => false,
+                            'query_builder' => $guardianQb,
+                        ])
+                        ->setHelp('Solo muestra estudiantes del mismo colegio.')
+                        ->onlyOnForms();
             }
         }
 
@@ -271,7 +267,7 @@ class UserCrudController extends AbstractCrudController
         // 💡 FIX: Acceder al formulario subyacente a través del Request, ya que getContext()->getForm() falla.
         $request = $this->requestStack->getCurrentRequest();
         $plainPassword = null;
-        $isNewPage = $this->getContext()->getCrud()->getCurrentPage() === Crud::PAGE_NEW;
+        $isNewPage = Crud::PAGE_NEW === $this->getContext()->getCrud()->getCurrentPage();
 
         if ($request && $request->isMethod('POST')) {
             $submittedData = $request->request->all();

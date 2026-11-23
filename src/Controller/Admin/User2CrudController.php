@@ -18,7 +18,9 @@ use EasyCorp\Bundle\EasyAdminBundle\Dto\SearchDto;
  */
 class User2CrudController extends AbstractCrudController
 {
-    public function __construct(private TenantContext $tenantContext) {}
+    public function __construct(private TenantContext $tenantContext)
+    {
+    }
 
     public static function getEntityFqcn(): string
     {

@@ -4,7 +4,6 @@ namespace App\Tests\Unit\Service;
 
 use App\Entity\Course;
 use App\Entity\CourseCategory;
-use App\Entity\Enrollment;
 use App\Entity\InterestProfile;
 use App\Entity\School;
 use App\Entity\User;
@@ -73,7 +72,7 @@ class RecommendationServiceSignalTest extends TestCase
             $student->method('getInterestProfile')->willReturn(null);
         }
 
-        if ($schoolId !== null) {
+        if (null !== $schoolId) {
             $school = $this->createMock(School::class);
             $school->method('getId')->willReturn($schoolId);
             $student->method('getSchool')->willReturn($school);
@@ -100,7 +99,7 @@ class RecommendationServiceSignalTest extends TestCase
         $course->method('getCurrentEnrollment')->willReturn($currentEnrollment);
         $course->method('getTargetGrades')->willReturn($targetGrades);
 
-        if ($categoryId !== null) {
+        if (null !== $categoryId) {
             $category = $this->createMock(CourseCategory::class);
             $category->method('getId')->willReturn($categoryId);
             $category->method('getName')->willReturn($categoryName);

@@ -16,13 +16,15 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminImportController extends AbstractController
 {
-    public function __construct(private TenantContext $tenantContext) {}
+    public function __construct(private TenantContext $tenantContext)
+    {
+    }
 
     #[Route('/import', name: 'import', methods: ['GET', 'POST'])]
     public function import(
         Request $request,
         EntityManagerInterface $em,
-        UserPasswordHasherInterface $hasher
+        UserPasswordHasherInterface $hasher,
     ): Response {
         $result = null;
 
@@ -30,14 +32,16 @@ class AdminImportController extends AbstractController
             set_time_limit(300);
             $file = $request->files->get('csv_file');
 
-            if (!$file || $file->getClientOriginalExtension() !== 'csv') {
+            if (!$file || 'csv' !== $file->getClientOriginalExtension()) {
                 $this->addFlash('error', 'Debes subir un archivo con extensión .csv');
+
                 return $this->redirectToRoute('admin_users_import');
             }
 
             $handle = fopen($file->getPathname(), 'r');
-            if ($handle === false) {
+            if (false === $handle) {
                 $this->addFlash('error', 'No se pudo leer el archivo.');
+
                 return $this->redirectToRoute('admin_users_import');
             }
 
@@ -50,10 +54,10 @@ class AdminImportController extends AbstractController
             fgetcsv($handle);
 
             while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-                $lineNumber++;
+                ++$lineNumber;
 
                 // Support semicolon separator fallback
-                if (count($row) === 1) {
+                if (1 === count($row)) {
                     $row = str_getcsv($row[0], ';');
                 }
 
@@ -64,8 +68,8 @@ class AdminImportController extends AbstractController
 
                 [$rut, $fullName, $grade] = array_map('trim', $row);
                 $rut = \App\Security\AppUserProvider::normalizeRut($rut);
-                $averageGrade = isset($row[3]) && $row[3] !== '' ? (float) str_replace(',', '.', trim($row[3])) : null;
-                $email = isset($row[4]) && trim($row[4]) !== '' ? trim($row[4]) : null;
+                $averageGrade = isset($row[3]) && '' !== $row[3] ? (float) str_replace(',', '.', trim($row[3])) : null;
+                $email = isset($row[4]) && '' !== trim($row[4]) ? trim($row[4]) : null;
 
                 // Validate RUT format
                 if (!preg_match('/^\d{7,8}-[\dKk]$/', $rut)) {
@@ -82,7 +86,7 @@ class AdminImportController extends AbstractController
                 // Check duplicate
                 $existing = $em->getRepository(User::class)->findOneBy(['rut' => $rut]);
                 if ($existing) {
-                    $duplicates++;
+                    ++$duplicates;
                     continue;
                 }
 
@@ -104,7 +108,7 @@ class AdminImportController extends AbstractController
                 $user->setRoles(['ROLE_STUDENT']);
                 $user->setActive(true);
 
-                if ($averageGrade !== null) {
+                if (null !== $averageGrade) {
                     $user->setAverageGrade($averageGrade);
                 }
                 if ($email) {
@@ -119,16 +123,16 @@ class AdminImportController extends AbstractController
                 }
 
                 $em->persist($user);
-                $created++;
+                ++$created;
             }
 
             fclose($handle);
             $em->flush();
 
             $result = [
-                'created'    => $created,
+                'created' => $created,
                 'duplicates' => $duplicates,
-                'errors'     => $errors,
+                'errors' => $errors,
             ];
         }
 

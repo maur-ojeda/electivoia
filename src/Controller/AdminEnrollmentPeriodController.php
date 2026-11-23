@@ -14,27 +14,31 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class AdminEnrollmentPeriodController extends AbstractController
 {
-    public function __construct(private TenantContext $tenantContext) {}
+    public function __construct(private TenantContext $tenantContext)
+    {
+    }
 
     #[Route('', name: '', methods: ['GET', 'POST'])]
     public function index(Request $request, EntityManagerInterface $em): Response
     {
         $school = $this->tenantContext->getCurrentSchool();
 
-        if ($school === null) {
+        if (null === $school) {
             $this->addFlash('error', 'No hay colegio asignado a tu cuenta.');
+
             return $this->redirectToRoute('admin_user_index');
         }
 
         if ($request->isMethod('POST')) {
             $startRaw = $request->request->get('enrollmentStart');
-            $endRaw   = $request->request->get('enrollmentEnd');
+            $endRaw = $request->request->get('enrollmentEnd');
 
             $school->setEnrollmentStart($startRaw ? new \DateTimeImmutable($startRaw) : null);
-            $school->setEnrollmentEnd($endRaw   ? new \DateTimeImmutable($endRaw)   : null);
+            $school->setEnrollmentEnd($endRaw ? new \DateTimeImmutable($endRaw) : null);
 
             $em->flush();
             $this->addFlash('success', 'Período de inscripción actualizado.');
+
             return $this->redirectToRoute('admin_enrollment_period');
         }
 

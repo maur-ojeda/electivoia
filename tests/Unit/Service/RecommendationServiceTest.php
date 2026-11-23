@@ -7,10 +7,10 @@ use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
 use App\Entity\InterestProfile;
 use App\Entity\User;
+use App\Repository\AiSignalRepository;
 use App\Repository\CourseRepository;
 use App\Repository\EnrollmentRepository;
 use App\Repository\InterestProfileRepository;
-use App\Repository\AiSignalRepository;
 use App\Service\RecommendationService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -80,7 +80,7 @@ class RecommendationServiceTest extends TestCase
         $course->method('getCurrentEnrollment')->willReturn($currentEnrollment);
         $course->method('getTargetGrades')->willReturn($targetGrades);
 
-        if ($categoryName !== null) {
+        if (null !== $categoryName) {
             $category = $this->createMock(CourseCategory::class);
             $category->method('getName')->willReturn($categoryName);
             $course->method('getCategory')->willReturn($category);

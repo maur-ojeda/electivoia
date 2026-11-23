@@ -33,26 +33,27 @@ class SuperAdminController extends AbstractController
     public function __construct(
         private UserPasswordHasherInterface $passwordHasher,
         private NotificationService $notificationService,
-        private SluggerInterface $slugger
-    ) {}
+        private SluggerInterface $slugger,
+    ) {
+    }
 
     #[Route('', name: 'dashboard')]
     public function dashboard(EntityManagerInterface $em): Response
     {
-        $schools   = $em->getRepository(School::class)->findBy([], ['createdAt' => 'DESC']);
+        $schools = $em->getRepository(School::class)->findBy([], ['createdAt' => 'DESC']);
         $totalUsers = $em->getRepository(User::class)->count([]);
         $totalSchools = count($schools);
 
         $schoolStats = [];
         foreach ($schools as $school) {
-            $users   = $em->getRepository(User::class)->count(['school' => $school]);
+            $users = $em->getRepository(User::class)->count(['school' => $school]);
             $schoolStats[] = ['school' => $school, 'users' => $users];
         }
 
         return $this->render('super_admin/dashboard.html.twig', [
-            'schoolStats'  => $schoolStats,
+            'schoolStats' => $schoolStats,
             'totalSchools' => $totalSchools,
-            'totalUsers'   => $totalUsers,
+            'totalUsers' => $totalUsers,
         ]);
     }
 
@@ -72,9 +73,9 @@ class SuperAdminController extends AbstractController
             $em->persist($school);
 
             // --- Admin user ---
-            $adminEmail    = $request->request->get('adminEmail');
+            $adminEmail = $request->request->get('adminEmail');
             $adminFullName = $request->request->get('adminFullName');
-            $adminRut      = $request->request->get('adminRut');
+            $adminRut = $request->request->get('adminRut');
             $plainPassword = bin2hex(random_bytes(8)); // 16-char secure password
 
             $admin = new User();
@@ -92,7 +93,7 @@ class SuperAdminController extends AbstractController
 
             // --- HDU-S7-03: Seed default categories if none exist ---
             $existingCount = $em->getRepository(CourseCategory::class)->count([]);
-            if ($existingCount === 0) {
+            if (0 === $existingCount) {
                 foreach (self::DEFAULT_CATEGORIES as $cat) {
                     $category = new CourseCategory();
                     $category->setName($cat['name']);
@@ -107,6 +108,7 @@ class SuperAdminController extends AbstractController
             $this->notificationService->sendSchoolWelcome($admin, $school, $plainPassword);
 
             $this->addFlash('success', "Colegio \"{$school->getName()}\" creado. Email de bienvenida enviado a {$adminEmail}.");
+
             return $this->redirectToRoute('super_admin_dashboard');
         }
 
@@ -125,13 +127,14 @@ class SuperAdminController extends AbstractController
             $school->setSlug(strtolower($this->slugger->slug($rawSlug)->toString()));
 
             $startRaw = $request->request->get('enrollmentStart');
-            $endRaw   = $request->request->get('enrollmentEnd');
+            $endRaw = $request->request->get('enrollmentEnd');
             $school->setEnrollmentStart($startRaw ? new \DateTimeImmutable($startRaw) : null);
             $school->setEnrollmentEnd($endRaw ? new \DateTimeImmutable($endRaw) : null);
 
             $em->flush();
 
             $this->addFlash('success', "Colegio \"{$school->getName()}\" actualizado.");
+
             return $this->redirectToRoute('super_admin_dashboard');
         }
 
@@ -141,7 +144,7 @@ class SuperAdminController extends AbstractController
     #[Route('/school/{id}/toggle', name: 'school_toggle', methods: ['POST'])]
     public function toggleSchool(School $school, Request $request, EntityManagerInterface $em): Response
     {
-        if (!$this->isCsrfTokenValid('toggle_school_' . $school->getId(), $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('toggle_school_'.$school->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
@@ -150,6 +153,7 @@ class SuperAdminController extends AbstractController
 
         $state = $school->isActive() ? 'activado' : 'suspendido';
         $this->addFlash('success', "Colegio \"{$school->getName()}\" {$state}.");
+
         return $this->redirectToRoute('super_admin_dashboard');
     }
 }

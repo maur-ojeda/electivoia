@@ -3,14 +3,14 @@
 namespace App\Controller\Admin;
 
 // Importa AbstractController en lugar de AbstractCrudController
-use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
-use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController; // O AbstractController
 use Doctrine\ORM\EntityManagerInterface;
+// O AbstractController
+use EasyCorp\Bundle\EasyAdminBundle\Config\Crud;
+use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
 
 // Extiende de AbstractController
 class UserListByRoleController extends AbstractController

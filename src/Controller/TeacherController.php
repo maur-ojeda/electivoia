@@ -2,24 +2,23 @@
 
 namespace App\Controller;
 
-use App\Service\ExportService;
-use App\Service\TenantContext;
-use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\HttpFoundation\Request;
+use App\Entity\Attendance;
 use App\Entity\Course;
 use App\Entity\CourseCategory;
 use App\Entity\Enrollment;
-use App\Entity\Attendance;
 use App\Entity\User;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Symfony\Component\ExpressionLanguage\Expression;
+use App\Service\ExportService;
+use App\Service\TenantContext;
+use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\ExpressionLanguage\Expression;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/teacher', name: 'teacher_')]
 #[IsGranted(new Expression('is_granted("ROLE_TEACHER") or is_granted("ROLE_ADMIN")'))]
@@ -28,7 +27,8 @@ class TeacherController extends AbstractController
     public function __construct(
         private TenantContext $tenantContext,
         private ExportService $exportService,
-    ) {}
+    ) {
+    }
 
     #[Route('/courses', name: 'courses')]
     public function courses(Request $request, EntityManagerInterface $em): Response
@@ -41,7 +41,7 @@ class TeacherController extends AbstractController
         // Subconsulta para contar inscripciones (evita N+1 al contar)
         $countQb = $em->createQueryBuilder()
             ->select('c.id, COUNT(e.id) as enrollmentCount')
-            ->from(\App\Entity\Course::class, 'c')
+            ->from(Course::class, 'c')
             ->leftJoin('c.enrollments', 'e')
             ->where('c.teacher = :teacher')
             ->andWhere('c.isActive = true')
@@ -57,9 +57,9 @@ class TeacherController extends AbstractController
             $countQb->andWhere('c.category = :categoryId')
                 ->setParameter('categoryId', $selectedCategory);
         }
-        if ($searchQuery !== '') {
+        if ('' !== $searchQuery) {
             $countQb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search')
-                ->setParameter('search', '%' . strtolower($searchQuery) . '%');
+                ->setParameter('search', '%'.strtolower($searchQuery).'%');
         }
 
         $countResults = $countQb->groupBy('c.id')->getQuery()->getResult();
@@ -71,7 +71,7 @@ class TeacherController extends AbstractController
         // Consulta principal: cursos + relaciones (optimizada con fetch join)
         $qb = $em->createQueryBuilder()
             ->select('c, cat, t, e, s')
-            ->from(\App\Entity\Course::class, 'c')
+            ->from(Course::class, 'c')
             ->leftJoin('c.category', 'cat')
             ->leftJoin('c.teacher', 't')
             ->leftJoin('c.enrollments', 'e')
@@ -89,9 +89,9 @@ class TeacherController extends AbstractController
             $qb->andWhere('c.category = :categoryId')
                 ->setParameter('categoryId', $selectedCategory);
         }
-        if ($searchQuery !== '') {
+        if ('' !== $searchQuery) {
             $qb->andWhere('LOWER(c.name) LIKE :search OR LOWER(c.description) LIKE :search')
-                ->setParameter('search', '%' . strtolower($searchQuery) . '%');
+                ->setParameter('search', '%'.strtolower($searchQuery).'%');
         }
 
         $courses = $qb->getQuery()->getResult();
@@ -104,15 +104,9 @@ class TeacherController extends AbstractController
         }
 
         // Obtener categorías para el filtro
-        $allCategories = $em->getRepository(\App\Entity\CourseCategory::class)->findAll();
-
+        $allCategories = $em->getRepository(CourseCategory::class)->findAll();
 
         $enrollmentStatus = $request->query->get('enrollmentStatus');
-
-
-
-
-
 
         return $this->render('teacher/courses.html.twig', [
             'courses' => $courses,
@@ -134,7 +128,7 @@ class TeacherController extends AbstractController
         }
         // Obtener alumnos inscritos
         $enrollments = $em->getRepository(Enrollment::class)->findBy(['course' => $course]);
-        $students = array_map(fn($e) => $e->getStudent(), $enrollments);
+        $students = array_map(fn ($e) => $e->getStudent(), $enrollments);
 
         // Fecha actual (o permitir seleccionar)
         $date = new \DateTime();
@@ -163,7 +157,7 @@ class TeacherController extends AbstractController
     {
         $date = new \DateTime();
 
-        // CORRECCIÓN: Se obtienen todos los datos del POST y se accede a las claves con el 
+        // CORRECCIÓN: Se obtienen todos los datos del POST y se accede a las claves con el
         // operador ?? [] para evitar el error de tipo en el segundo argumento de InputBag::get().
         $postData = $request->request->all();
         $studentIds = $postData['student_ids'] ?? [];
@@ -195,6 +189,7 @@ class TeacherController extends AbstractController
 
         $em->flush();
         $this->addFlash('success', 'Asistencia registrada correctamente.');
+
         return $this->redirectToRoute('teacher_attendance', ['id' => $course->getId()]);
     }
 
@@ -231,9 +226,9 @@ class TeacherController extends AbstractController
             );
 
             $total = count($records);
-            $present = count(array_filter($records, fn($a) => $a->getStatus() === 'present'));
-            $absent = count(array_filter($records, fn($a) => $a->getStatus() === 'absent'));
-            $justified = count(array_filter($records, fn($a) => $a->getStatus() === 'justified'));
+            $present = count(array_filter($records, fn ($a) => 'present' === $a->getStatus()));
+            $absent = count(array_filter($records, fn ($a) => 'absent' === $a->getStatus()));
+            $justified = count(array_filter($records, fn ($a) => 'justified' === $a->getStatus()));
             $percentage = $total > 0 ? round(($present + $justified) / $total * 100) : null;
 
             $reportData[] = [
@@ -246,7 +241,7 @@ class TeacherController extends AbstractController
             ];
         }
 
-        usort($reportData, fn($a, $b) => ($a['percentage'] ?? -1) <=> ($b['percentage'] ?? -1));
+        usort($reportData, fn ($a, $b) => ($a['percentage'] ?? -1) <=> ($b['percentage'] ?? -1));
 
         return $this->render('teacher/report.html.twig', [
             'course' => $course,
@@ -285,30 +280,30 @@ class TeacherController extends AbstractController
                 $student = $enrollment->getStudent();
                 $records = $em->getRepository(Attendance::class)->findBy(['student' => $student, 'course' => $course]);
                 $total = count($records);
-                $present = count(array_filter($records, fn($a) => $a->getStatus() === 'present'));
-                $absent = count(array_filter($records, fn($a) => $a->getStatus() === 'absent'));
-                $justified = count(array_filter($records, fn($a) => $a->getStatus() === 'justified'));
+                $present = count(array_filter($records, fn ($a) => 'present' === $a->getStatus()));
+                $absent = count(array_filter($records, fn ($a) => 'absent' === $a->getStatus()));
+                $justified = count(array_filter($records, fn ($a) => 'justified' === $a->getStatus()));
                 $percentage = $total > 0 ? round(($present + $justified) / $total * 100) : 0;
 
-                $sheet->setCellValue('A' . $row, $student->getRut());
-                $sheet->setCellValue('B' . $row, $student->getFullName());
-                $sheet->setCellValue('C' . $row, $student->getGrade());
-                $sheet->setCellValue('D' . $row, $student->getAverageGrade());
-                $sheet->setCellValue('E' . $row, $total);
-                $sheet->setCellValue('F' . $row, $present);
-                $sheet->setCellValue('G' . $row, $absent);
-                $sheet->setCellValue('H' . $row, $justified);
-                $sheet->setCellValue('I' . $row, $percentage . '%');
-                $row++;
+                $sheet->setCellValue('A'.$row, $student->getRut());
+                $sheet->setCellValue('B'.$row, $student->getFullName());
+                $sheet->setCellValue('C'.$row, $student->getGrade());
+                $sheet->setCellValue('D'.$row, $student->getAverageGrade());
+                $sheet->setCellValue('E'.$row, $total);
+                $sheet->setCellValue('F'.$row, $present);
+                $sheet->setCellValue('G'.$row, $absent);
+                $sheet->setCellValue('H'.$row, $justified);
+                $sheet->setCellValue('I'.$row, $percentage.'%');
+                ++$row;
             }
 
             $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         });
 
-        $filename = 'reporte_asistencia_' . $course->getName() . '_' . date('Y-m-d') . '.xlsx';
+        $filename = 'reporte_asistencia_'.$course->getName().'_'.date('Y-m-d').'.xlsx';
         $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', 'attachment;filename="' . $filename . '"');
+        $response->headers->set('Content-Disposition', 'attachment;filename="'.$filename.'"');
         $response->headers->set('Cache-Control', 'max-age=0');
 
         return $response;
@@ -333,7 +328,7 @@ class TeacherController extends AbstractController
             $categoryId = $data['category'] ?? null;
             $schedule = trim($data['schedule'] ?? '');
 
-            if ($name === '') {
+            if ('' === $name) {
                 $errors[] = 'El nombre del curso es obligatorio.';
             }
             if ($maxCapacity < 1) {
@@ -357,7 +352,7 @@ class TeacherController extends AbstractController
                     $course->setSchool($this->tenantContext->getCurrentSchool());
                 }
 
-                if ($deadlineRaw !== '') {
+                if ('' !== $deadlineRaw) {
                     $course->setEnrollmentDeadline(new \DateTimeImmutable($deadlineRaw));
                 }
                 if ($categoryId) {
@@ -368,6 +363,7 @@ class TeacherController extends AbstractController
                 $em->persist($course);
                 $em->flush();
                 $this->addFlash('success', 'Curso creado correctamente.');
+
                 return $this->redirectToRoute('teacher_courses');
             }
         }
@@ -407,14 +403,14 @@ class TeacherController extends AbstractController
             $categoryId = $data['category'] ?? null;
             $schedule = trim($data['schedule'] ?? '');
 
-            if ($name === '') {
+            if ('' === $name) {
                 $errors[] = 'El nombre del curso es obligatorio.';
             }
             if ($maxCapacity < 1) {
                 $errors[] = 'La capacidad máxima debe ser al menos 1.';
             }
             if ($maxCapacity < $course->getCurrentEnrollment()) {
-                $errors[] = 'No puedes reducir la capacidad por debajo de los alumnos ya inscritos (' . $course->getCurrentEnrollment() . ').';
+                $errors[] = 'No puedes reducir la capacidad por debajo de los alumnos ya inscritos ('.$course->getCurrentEnrollment().').';
             }
             if (empty($targetGrades)) {
                 $errors[] = 'Debes seleccionar al menos un grado objetivo.';
@@ -425,7 +421,7 @@ class TeacherController extends AbstractController
                 $course->setDescription($description ?: null);
                 $course->setMaxCapacity($maxCapacity);
                 $course->setTargetGrades($targetGrades);
-                $course->setEnrollmentDeadline($deadlineRaw !== '' ? new \DateTimeImmutable($deadlineRaw) : null);
+                $course->setEnrollmentDeadline('' !== $deadlineRaw ? new \DateTimeImmutable($deadlineRaw) : null);
                 $course->setSchedule($schedule ?: null);
 
                 $category = $categoryId ? $em->getRepository(CourseCategory::class)->find($categoryId) : null;
@@ -433,6 +429,7 @@ class TeacherController extends AbstractController
 
                 $em->flush();
                 $this->addFlash('success', 'Curso actualizado correctamente.');
+
                 return $this->redirectToRoute('teacher_courses');
             }
         } else {
@@ -467,7 +464,7 @@ class TeacherController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if (!$this->isCsrfTokenValid('toggle_course_' . $course->getId(), $request->request->get('_token'))) {
+        if (!$this->isCsrfTokenValid('toggle_course_'.$course->getId(), $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Invalid CSRF token.');
         }
 
@@ -476,6 +473,7 @@ class TeacherController extends AbstractController
 
         $msg = $course->isActive() ? 'Curso activado — ya aparece en el catálogo.' : 'Curso desactivado — ya no aparece en el catálogo.';
         $this->addFlash('success', $msg);
+
         return $this->redirectToRoute('teacher_courses');
     }
 
@@ -509,7 +507,7 @@ class TeacherController extends AbstractController
         }
 
         $data = $this->exportService->getStudentExportData($course);
-        $filename = 'alumnos_' . $course->getName() . '.xlsx';
+        $filename = 'alumnos_'.$course->getName().'.xlsx';
 
         return $this->exportService->generateStudentExcel($data, $filename);
     }
