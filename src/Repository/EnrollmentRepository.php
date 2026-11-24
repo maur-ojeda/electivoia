@@ -29,10 +29,12 @@ class EnrollmentRepository extends ServiceEntityRepository
     public function findEnrollmentsByCourseOrderedByGradeAsc(Course $course): array
     {
         $qb = $this->createQueryBuilder('e')
-            ->join('e.student', 's') // Asegúrate de que 'student' es el nombre correcto de la relación en Enrollment
+            ->join('e.student', 's')
             ->where('e.course = :course')
             ->setParameter('course', $course)
-            ->orderBy('COALESCE(s.averageGrade, 0.0)', 'ASC'); // Ordena por promedio, tratando NULL como 0.0
+            // COALESCE is not part of DQL; CASE yields the same "null counts as 0.0"
+            // ordering and is portable across the supported database engines.
+            ->orderBy('CASE WHEN s.averageGrade IS NULL THEN 0.0 ELSE s.averageGrade END', 'ASC');
 
         return $qb->getQuery()->getResult();
     }
