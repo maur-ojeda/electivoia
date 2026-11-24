@@ -2,6 +2,8 @@
 
 Rama: `fix/issue-13-insights-intereses` · Runner: `php bin/phpunit` · Issue: https://github.com/maur-ojeda/electivoia/issues/13
 
+PR: #25 · Commit: `204ab4c` · Kaneo: #41 (HU-R03)
+
 ## Specs
 
 **S1.** `GET /admin/reports/insights` muestra, por grado, qué porcentaje de los estudiantes prefiere cada categoría, calculado desde `InterestProfile.interests`.
