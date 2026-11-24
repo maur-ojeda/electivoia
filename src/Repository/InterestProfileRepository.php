@@ -66,6 +66,68 @@ class InterestProfileRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * Aggregates the interests declared by the students of a school, grouped by
+     * grade. Feeds the admin insights report (issue #13).
+     *
+     * A student "prefers" a category when the declared level reaches $minLevel.
+     * The denominator per grade counts only students that declared at least one
+     * interest (level >= 1): StudentController::profile() persists a row with
+     * every category at zero for a student that answered nothing, and counting
+     * those rows would understate every percentage.
+     *
+     * Returns [grade => ['total' => answered profiles, 'categories' => [category => students]]].
+     *
+     * @return array<string, array{total: int, categories: array<string, int>}>
+     */
+    public function countPreferencesByGradeInSchool(int $schoolId, int $minLevel = 3): array
+    {
+        $profiles = $this->createQueryBuilder('ip')
+            ->select('ip', 's')
+            ->innerJoin('ip.student', 's')
+            ->where('s.school = :schoolId')
+            ->andWhere('s.grade IS NOT NULL')
+            ->setParameter('schoolId', $schoolId)
+            ->getQuery()
+            ->getResult();
+
+        $result = [];
+
+        foreach ($profiles as $profile) {
+            $grade = $profile->getStudent()?->getGrade();
+
+            if (null === $grade || '' === $grade) {
+                continue;
+            }
+
+            $answered = [];
+            foreach ($profile->getInterests() as $category => $level) {
+                $level = (int) $level;
+                if ($level >= 1) {
+                    $answered[(string) $category] = $level;
+                }
+            }
+
+            // A profile the student never answered is not part of the population.
+            if ([] === $answered) {
+                continue;
+            }
+
+            $result[$grade] ??= ['total' => 0, 'categories' => []];
+            ++$result[$grade]['total'];
+
+            foreach ($answered as $category => $level) {
+                if ($level >= $minLevel) {
+                    $result[$grade]['categories'][$category] = ($result[$grade]['categories'][$category] ?? 0) + 1;
+                }
+            }
+        }
+
+        ksort($result);
+
+        return $result;
+    }
+
     //    /**
     //     * @return InterestProfile[] Returns an array of InterestProfile objects
     //     */
