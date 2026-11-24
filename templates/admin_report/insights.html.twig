@@ -43,6 +43,22 @@
 				{% endfor %}
 			</ul>
 		</div>
+
+		{% if stats.interest_by_grade is not empty %}
+			<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+				<h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Preferencias por curso</h2>
+				<ul class="space-y-1">
+					{% for grade, data in stats.interest_by_grade %}
+						{%- set parts = [] -%}
+						{%- for cat in data.categories|slice(0, 5) -%}
+							{%- set parts = parts|merge([cat.name ~ ' ' ~ cat.pct ~ '%']) -%}
+						{%- endfor -%}
+						<li class="text-sm text-gray-700 dark:text-gray-300">{{ grade }} · {{ data.total }} {{ data.total == 1 ? 'perfil' : 'perfiles' }} · {{ parts|join(', ') }}</li>
+					{% endfor %}
+				</ul>
+				<p class="text-xs text-gray-400 dark:text-gray-500 mt-3">Nivel 3 o más, sobre los estudiantes que respondieron.</p>
+			</div>
+		{% endif %}
 	</div>
 
 	<div class="lg:col-span-2">

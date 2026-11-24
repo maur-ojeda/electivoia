@@ -4,7 +4,9 @@ namespace App\Controller;
 
 use App\Entity\Course;
 use App\Entity\Enrollment;
+use App\Entity\InterestProfile;
 use App\Entity\User;
+use App\Repository\InterestProfileRepository;
 use App\Service\GeminiInsightsService;
 use App\Service\TenantContext;
 use Doctrine\ORM\EntityManagerInterface;
@@ -335,6 +337,7 @@ class AdminReportController extends AbstractController
             'total_capacity' => $totalCapacity,
             'avg_occupancy' => $totalCapacity > 0 ? round($totalEnrolled / $totalCapacity * 100, 1) : 0,
             'by_category' => $byCategory,
+            'interest_by_grade' => $this->buildInterestStats(),
         ];
 
         $aiInsights = $this->insightsService->generateInsights($stats);
@@ -343,6 +346,61 @@ class AdminReportController extends AbstractController
             'stats' => $stats,
             'aiInsights' => $aiInsights,
         ]);
+    }
+
+    /**
+     * Per-grade preference summary built from the students' interest profiles.
+     *
+     * "Prefers" means level >= 3 (the threshold used across the app). The
+     * percentage is over the students of that grade that actually answered.
+     * Returns an empty array when the admin has no school context, because the
+     * profiles cannot be scoped.
+     *
+     * @return array<string, array{total: int, categories: list<array{name: string, count: int, pct: float}>}>
+     */
+    private function buildInterestStats(): array
+    {
+        if (!$this->tenantContext->hasSchool()) {
+            return [];
+        }
+
+        $school = $this->tenantContext->getCurrentSchool();
+
+        if (null === $school?->getId()) {
+            return [];
+        }
+
+        /** @var InterestProfileRepository $profiles */
+        $profiles = $this->em->getRepository(InterestProfile::class);
+        $raw = $profiles->countPreferencesByGradeInSchool($school->getId());
+
+        $stats = [];
+
+        foreach ($raw as $grade => $data) {
+            $categories = [];
+            foreach ($data['categories'] as $name => $count) {
+                $categories[] = [
+                    'name' => (string) $name,
+                    'count' => $count,
+                    'pct' => round($count / $data['total'] * 100, 1),
+                ];
+            }
+
+            usort($categories, static function (array $a, array $b): int {
+                if ($a['count'] !== $b['count']) {
+                    return $b['count'] <=> $a['count'];
+                }
+
+                return strcmp($a['name'], $b['name']);
+            });
+
+            $stats[$grade] = [
+                'total' => $data['total'],
+                'categories' => $categories,
+            ];
+        }
+
+        return $stats;
     }
 
     private function buildComparativeMatrix(): array
