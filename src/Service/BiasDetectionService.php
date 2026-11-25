@@ -160,9 +160,6 @@ class BiasDetectionService
             }
 
             $grade = $row['grade'] ?? 'Sin grado';
-            if (null === $grade) {
-                $grade = 'Sin grado';
-            }
 
             $byCategory[$category]['grade'][$grade] =
                 ($byCategory[$category]['grade'][$grade] ?? 0) + 1;

@@ -259,12 +259,6 @@ parameters:
 			path: src/Service/BiasDetectionService.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between null and string will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: src/Service/BiasDetectionService.php
-
-		-
 			message: '#^Method App\\Service\\EnrollmentService\:\:getAvailableCourses\(\) should return array\{courses\: array\<int, array\{id\: int, name\: string, category\: string\|null, teacher\: string, schedule\: string\|null, capacity\: string, spots_available\: int, enrolled\: bool\}\>, total\: int\} but returns array\{courses\: list\<array\{id\: mixed, name\: mixed, category\: mixed, teacher\: mixed, schedule\: mixed, capacity\: non\-falsy\-string, spots_available\: \(float\|int\)\}\>, total\: int\<0, max\>\}\.$#'
 			identifier: return.type
 			count: 1
@@ -275,12 +269,6 @@ parameters:
 			identifier: property.onlyWritten
 			count: 1
 			path: src/Service/EnrollmentService.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between null and mixed will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: src/Service/GeminiChatbotService.php
 
 		-
 			message: '#^Property App\\Service\\RecommendationService\:\:\$em is never read, only written\.$#'
