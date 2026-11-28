@@ -286,7 +286,7 @@ class GeminiChatbotService
 
                 $delta = $data['choices'][0]['delta'] ?? [];
 
-                if (isset($delta['content']) && null !== $delta['content']) {
+                if (isset($delta['content'])) {
                     $content .= $delta['content'];
                 }
 
