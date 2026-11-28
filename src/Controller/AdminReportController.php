@@ -197,32 +197,32 @@ class AdminReportController extends AbstractController
         // Header row
         $col = 2;
         foreach ($matrix['categories'] as $cat) {
-            $sheet->setCellValueByColumnAndRow($col, 1, $cat);
+            $sheet->setCellValue([$col, 1], $cat);
             ++$col;
         }
-        $sheet->setCellValueByColumnAndRow($col, 1, 'TOTAL');
+        $sheet->setCellValue([$col, 1], 'TOTAL');
 
         // Data rows
         $row = 2;
         foreach ($matrix['grades'] as $grade) {
-            $sheet->setCellValueByColumnAndRow(1, $row, $grade);
+            $sheet->setCellValue([1, $row], $grade);
             $col = 2;
             $rowTotal = 0;
             foreach ($matrix['categories'] as $cat) {
                 $val = $matrix['matrix'][$grade][$cat] ?? 0;
-                $sheet->setCellValueByColumnAndRow($col, $row, $val);
+                $sheet->setCellValue([$col, $row], $val);
                 $rowTotal += $val;
                 ++$col;
             }
-            $sheet->setCellValueByColumnAndRow($col, $row, $rowTotal);
+            $sheet->setCellValue([$col, $row], $rowTotal);
             ++$row;
         }
 
         // Totals row
-        $sheet->setCellValueByColumnAndRow(1, $row, 'TOTAL');
+        $sheet->setCellValue([1, $row], 'TOTAL');
         $col = 2;
         foreach ($matrix['categories'] as $cat) {
-            $sheet->setCellValueByColumnAndRow($col, $row, $matrix['totals'][$cat] ?? 0);
+            $sheet->setCellValue([$col, $row], $matrix['totals'][$cat] ?? 0);
             ++$col;
         }
 
